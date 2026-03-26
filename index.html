@@ -50,7 +50,7 @@ body {
   line-height: 1.5;
 }
 
-/* ââ HEADER ââ */
+/* ── HEADER ── */
 .header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -89,7 +89,7 @@ body {
   white-space: nowrap;
 }
 
-/* ââ NAV ââ */
+/* ── NAV ── */
 .nav {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -139,7 +139,7 @@ body {
 }
 .nav-tab.active .step-num { background: var(--accent); color: white; }
 
-/* ââ MAIN ââ */
+/* ── MAIN ── */
 .main {
   max-width: 1100px;
   margin: 0 auto;
@@ -149,12 +149,12 @@ body {
 .section { display: none; }
 .section.active { display: block; }
 
-/* ââ SECTION HEADER ââ */
+/* ── SECTION HEADER ── */
 .section-header { margin-bottom: 22px; padding-left: 14px; border-left: 3px solid var(--accent); }
 .section-title { font-size: 21px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
 .section-subtitle { color: var(--text-2); font-size: 13px; max-width: 560px; line-height: 1.55; }
 
-/* ââ CARDS ââ */
+/* ── CARDS ── */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -163,7 +163,7 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* ââ BUTTONS ââ */
+/* ── BUTTONS ── */
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px;
@@ -185,7 +185,7 @@ body {
 .btn-sm { padding: 5px 11px; font-size: 12px; }
 .btn-xs { padding: 3px 8px; font-size: 11px; }
 
-/* ââ INPUTS ââ */
+/* ── INPUTS ── */
 input, textarea, select {
   font-family: inherit; font-size: 13px;
   border: 1px solid var(--border);
@@ -205,9 +205,9 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
-/* âââââââââââââââââââââââââââââââââââââââ
-   STEP 1 â PLAN YOUR WEEK
-âââââââââââââââââââââââââââââââââââââââ */
+/* ═══════════════════════════════════════
+   STEP 1 – PLAN YOUR WEEK
+═══════════════════════════════════════ */
 .week-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -269,9 +269,9 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   line-height: 1.55;
 }
 
-/* âââââââââââââââââââââââââââââââââââââââ
-   STEP 2 â RECIPES
-âââââââââââââââââââââââââââââââââââââââ */
+/* ═══════════════════════════════════════
+   STEP 2 – RECIPES
+═══════════════════════════════════════ */
 .meal-sections { display: flex; flex-direction: column; gap: 30px; }
 .meal-section-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -334,9 +334,9 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   gap: 8px;
 }
 
-/* âââââââââââââââââââââââââââââââââââââââ
+/* ═══════════════════════════════════════
    RECIPE LIBRARY
-âââââââââââââââââââââââââââââââââââââââ */
+═══════════════════════════════════════ */
 .lib-intro {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -451,9 +451,9 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   .lib-grid { grid-template-columns: 1fr; }
 }
 
-/* âââââââââââââââââââââââââââââââââââââââ
-   STEP 3 â MEAL PLAN
-âââââââââââââââââââââââââââââââââââââââ */
+/* ═══════════════════════════════════════
+   STEP 3 – MEAL PLAN
+═══════════════════════════════════════ */
 .meal-plan-wrap {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -554,9 +554,9 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 }
 .cell-filled:hover .cell-remove { display: flex; }
 
-/* âââââââââââââââââââââââââââââââââââââââ
-   STEP 4 â GROCERY LIST
-âââââââââââââââââââââââââââââââââââââââ */
+/* ═══════════════════════════════════════
+   STEP 4 – GROCERY LIST
+═══════════════════════════════════════ */
 .grocery-toolbar {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
@@ -585,7 +585,7 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 .grocery-item-name { font-size: 13px; }
 .grocery-item-name.done { text-decoration: line-through; color: var(--text-3); }
 .grocery-item-qty { font-size: 12px; color: var(--text-2); font-weight: 500; }
-.grocery-item-qty::before { content: 'Â·'; margin-right: 5px; margin-left: 1px; color: var(--border-dark); }
+.grocery-item-qty::before { content: '·'; margin-right: 5px; margin-left: 1px; color: var(--border-dark); }
 .grocery-item-qty .hint { color: var(--text-3); font-weight: 400; font-size: 11px; }
 .list-only-section { margin-bottom: 22px; }
 .list-only-items { display: flex; flex-direction: column; gap: 0; }
@@ -610,9 +610,9 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 .grocery-empty .empty-icon { font-size: 40px; margin-bottom: 12px; }
 .grocery-empty p { font-size: 13px; max-width: 280px; margin: 0 auto; line-height: 1.55; }
 
-/* âââââââââââââââââââââââââââââââââââââââ
+/* ═══════════════════════════════════════
    FREEZER
-âââââââââââââââââââââââââââââââââââââââ */
+═══════════════════════════════════════ */
 .freezer-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
 .freezer-list { display: flex; flex-direction: column; gap: 10px; }
 .freezer-card {
@@ -647,9 +647,9 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   color: var(--text-3);
 }
 
-/* âââââââââââââââââââââââââââââââââââââââ
+/* ═══════════════════════════════════════
    MODAL
-âââââââââââââââââââââââââââââââââââââââ */
+═══════════════════════════════════════ */
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(10,20,50,0.45);
@@ -743,9 +743,9 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 .rpo-name { font-size: 13px; font-weight: 600; flex: 1; }
 .rpo-sub { font-size: 11px; color: var(--text-3); }
 
-/* âââââââââââââââââââââââââââââââââââââââ
+/* ═══════════════════════════════════════
    RESPONSIVE
-âââââââââââââââââââââââââââââââââââââââ */
+═══════════════════════════════════════ */
 @media (max-width: 900px) {
   .freezer-layout { grid-template-columns: 1fr; }
 }
@@ -760,6 +760,7 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   .main { padding: 16px 14px 60px; }
   .section-title { font-size: 18px; }
 }
+
 /* ── AUTH SCREEN ── */
 #authScreen {
   min-height: 100vh;
@@ -834,7 +835,11 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
       </svg>
       <div class="logo-text">Meal Planning <span>OS</span></div>
     </div>
-    <div class="week-badge" id="weekBadge">Week of â</div>
+    <div class="user-menu">
+      <div class="week-badge" id="weekBadge">Week of —</div>
+      <span class="user-email" id="userEmail"></span>
+      <button class="logout-btn" onclick="signOut()">Sign out</button>
+    </div>
   </div>
 </div>
 
@@ -845,8 +850,8 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
     <div class="nav-tab" onclick="switchTab('step2')"><div class="step-num">2</div> Go-To Meals</div>
     <div class="nav-tab" onclick="switchTab('step3')"><div class="step-num">3</div> Meal Plan</div>
     <div class="nav-tab" onclick="switchTab('step4')"><div class="step-num">4</div> Grocery List</div>
-    <div class="nav-tab" onclick="switchTab('freezer')">âï¸ Freezer</div>
-    <div class="nav-tab" onclick="switchTab('library')">ð Recipe Library</div>
+    <div class="nav-tab" onclick="switchTab('freezer')">❄️ Freezer</div>
+    <div class="nav-tab" onclick="switchTab('library')">📚 Recipe Library</div>
   </div>
 </div>
 
@@ -857,12 +862,12 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   <div id="step1" class="section active">
     <div class="section-header">
       <div class="section-title">Plan Your Week</div>
-      <div class="section-subtitle">Start here â before you think about food. A packed AM means breakfast needs to be ready to go. A busy PM means an easy dinner or planned takeout. Your schedule shapes your meals, not the other way around.</div>
+      <div class="section-subtitle">Start here — before you think about food. A packed AM means breakfast needs to be ready to go. A busy PM means an easy dinner or planned takeout. Your schedule shapes your meals, not the other way around.</div>
     </div>
     <div class="week-grid" id="weekGrid"></div>
     <div class="week-tip" style="margin-top:18px">
-      <span style="font-size:16px;flex-shrink:0">â¡</span>
-      <span><strong>The rule:</strong> Map your week before deciding what to eat. Your schedule drives your meal choices â not the other way around. Commitments you add here will appear in your meal plan as a reminder.</span>
+      <span style="font-size:16px;flex-shrink:0">⚡</span>
+      <span><strong>The rule:</strong> Map your week before deciding what to eat. Your schedule drives your meal choices — not the other way around. Commitments you add here will appear in your meal plan as a reminder.</span>
     </div>
   </div>
 
@@ -871,13 +876,13 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
     <div class="section-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div>
         <div class="section-title">Your Go-To Meals</div>
-        <div class="section-subtitle">Build your No-Decision Menu. Max 5 per meal category â that's intentional. Fewer choices, less decision fatigue. These save automatically so you only build this once.</div>
+        <div class="section-subtitle">Build your No-Decision Menu. Max 5 per meal category — that's intentional. Fewer choices, less decision fatigue. These save automatically so you only build this once.</div>
       </div>
-      <button class="btn btn-secondary" style="flex-shrink:0;margin-top:4px;font-size:12px" onclick="switchTab('library')">ð Browse Library</button>
+      <button class="btn btn-secondary" style="flex-shrink:0;margin-top:4px;font-size:12px" onclick="switchTab('library')">📚 Browse Library</button>
     </div>
     <div class="meal-sections" id="mealSections"></div>
     <div class="starter-note">
-      <span>ð¾</span>
+      <span>💾</span>
       <span>Everything saves automatically to your browser. Your recipes will be here every time you come back. Add your own or browse the Recipe Library to get started.</span>
     </div>
   </div>
@@ -889,8 +894,8 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
       <div class="section-subtitle">Curated recipes from the Meal Planning OS kitchen. Browse, pick what fits your life, and add up to 5 per meal category to your Go-To Meals.</div>
     </div>
     <div class="lib-intro">
-      <div class="lib-intro-icon">ð¨âð³</div>
-      <div class="lib-intro-text"><strong>How this works:</strong> Find a recipe you like, hit "Add to My Go-Tos," and it'll appear in Step 2 with all the ingredients already loaded â ready to use in your meal plan and grocery list. You can edit any recipe after adding it.</div>
+      <div class="lib-intro-icon">👨‍🍳</div>
+      <div class="lib-intro-text"><strong>How this works:</strong> Find a recipe you like, hit "Add to My Go-Tos," and it'll appear in Step 2 with all the ingredients already loaded — ready to use in your meal plan and grocery list. You can edit any recipe after adding it.</div>
     </div>
     <div class="lib-filters" id="libFilters"></div>
     <div class="lib-grid" id="libGrid"></div>
@@ -900,7 +905,7 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   <div id="step3" class="section">
     <div class="section-header">
       <div class="section-title">Your Meal Plan</div>
-      <div class="section-subtitle">Click any slot to assign a meal. Your week's commitments show above each day so you can plan around them. Type any meal name, choose a category, or pick from your go-to recipes â whatever's fastest.</div>
+      <div class="section-subtitle">Click any slot to assign a meal. Your week's commitments show above each day so you can plan around them. Type any meal name, choose a category, or pick from your go-to recipes — whatever's fastest.</div>
     </div>
     <div class="meal-plan-wrap">
       <table class="meal-plan-table" id="mealPlanTable"></table>
@@ -917,7 +922,7 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
       <div style="font-size:13px;color:var(--text-2)" id="groceryMeta"></div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-secondary btn-sm" onclick="uncheckAll()">Uncheck All</button>
-        <button class="btn btn-primary btn-sm" onclick="renderGrocery()">â» Rebuild List</button>
+        <button class="btn btn-primary btn-sm" onclick="renderGrocery()">↻ Rebuild List</button>
       </div>
     </div>
     <div class="grocery-main" id="groceryMain"></div>
@@ -926,8 +931,8 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   <!-- FREEZER -->
   <div id="freezer" class="section">
     <div class="section-header">
-      <div class="section-title">âï¸ Freezer Inventory</div>
-      <div class="section-subtitle">Your freezer is a productivity tool. Log extra portions when you batch cook. Pull frozen meals into your plan on busy nights. Oldest meals show first â that's FIFO.</div>
+      <div class="section-title">❄️ Freezer Inventory</div>
+      <div class="section-subtitle">Your freezer is a productivity tool. Log extra portions when you batch cook. Pull frozen meals into your plan on busy nights. Oldest meals show first — that's FIFO.</div>
     </div>
     <div class="freezer-layout">
       <div>
@@ -943,7 +948,7 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
           <div style="font-size:13px;color:var(--text-2);line-height:1.6">
             <strong>First In, First Out.</strong> Always eat your oldest frozen meals first. Keeps your inventory fresh and prevents waste.<br><br>
             The meal marked <span style="background:var(--accent);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">USE FIRST</span> is oldest.<br><br>
-            Frozen meals last <strong>3â6 months</strong>. Always label with the date made and expiration.
+            Frozen meals last <strong>3–6 months</strong>. Always label with the date made and expiration.
           </div>
           <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
             <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Add to Meal Plan</div>
@@ -956,12 +961,12 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 
 </div><!-- /main -->
 
-<!-- âââ MODAL: Recipe âââ -->
+<!-- ═══ MODAL: Recipe ═══ -->
 <div class="modal-overlay" id="recipeModal">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="recipeModalTitle">Add Recipe</div>
-      <button class="modal-close" onclick="closeModal('recipeModal')">â</button>
+      <button class="modal-close" onclick="closeModal('recipeModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -976,19 +981,19 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
         <div class="form-group">
           <label>Meal Type</label>
           <select id="r_type">
-            <option value="breakfast">ð Breakfast</option>
-            <option value="lunch">âï¸ Lunch</option>
-            <option value="dinner">ð Dinner</option>
+            <option value="breakfast">🌅 Breakfast</option>
+            <option value="lunch">☀️ Lunch</option>
+            <option value="dinner">🌙 Dinner</option>
           </select>
         </div>
       </div>
       <div class="form-group">
         <label>Prep Notes (optional)</label>
-        <textarea id="r_notes" placeholder="Quick tip or prep reminderâ¦" style="min-height:52px"></textarea>
+        <textarea id="r_notes" placeholder="Quick tip or prep reminder…" style="min-height:52px"></textarea>
       </div>
       <div class="divider"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <label style="margin:0">Ingredients <span style="font-weight:400;color:var(--text-3);font-size:11px">â total amounts for the full batch</span></label>
+        <label style="margin:0">Ingredients <span style="font-weight:400;color:var(--text-3);font-size:11px">— total amounts for the full batch</span></label>
         <button class="btn btn-secondary btn-sm" onclick="addIngRow()">+ Add</button>
       </div>
       <div class="ing-header">
@@ -998,18 +1003,18 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
     </div>
     <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
       <button class="btn btn-secondary" onclick="closeModal('recipeModal')">Cancel</button>
-      <button id="revertBtn" style="display:none;background:none;border:none;font-size:12px;color:var(--text-3);cursor:pointer;font-family:inherit;font-weight:600;padding:4px 2px" onclick="revertRecipe()">â© Revert to Original</button>
+      <button id="revertBtn" style="display:none;background:none;border:none;font-size:12px;color:var(--text-3);cursor:pointer;font-family:inherit;font-weight:600;padding:4px 2px" onclick="revertRecipe()">↩ Revert to Original</button>
       <button class="btn btn-primary" onclick="saveRecipe()">Save Recipe</button>
     </div>
   </div>
 </div>
 
-<!-- âââ MODAL: Assign Meal âââ -->
+<!-- ═══ MODAL: Assign Meal ═══ -->
 <div class="modal-overlay" id="assignModal">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="assignModalTitle">Assign Meal</div>
-      <button class="modal-close" onclick="closeModal('assignModal')">â</button>
+      <button class="modal-close" onclick="closeModal('assignModal')">✕</button>
     </div>
     <div class="modal-body" id="assignModalBody"></div>
     <div class="modal-footer">
@@ -1019,12 +1024,12 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   </div>
 </div>
 
-<!-- âââ MODAL: Freezer âââ -->
+<!-- ═══ MODAL: Freezer ═══ -->
 <div class="modal-overlay" id="freezerModal">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">Log Freezer Meal</div>
-      <button class="modal-close" onclick="closeModal('freezerModal')">â</button>
+      <button class="modal-close" onclick="closeModal('freezerModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
@@ -1047,12 +1052,12 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   </div>
 </div>
 
-<!-- âââ MODAL: Freezer â Plan âââ -->
+<!-- ═══ MODAL: Freezer → Plan ═══ -->
 <div class="modal-overlay" id="fzPlanModal">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">Add to Meal Plan</div>
-      <button class="modal-close" onclick="closeModal('fzPlanModal')">â</button>
+      <button class="modal-close" onclick="closeModal('fzPlanModal')">✕</button>
     </div>
     <div class="modal-body">
       <p style="font-size:13px;color:var(--text-2);margin-bottom:14px">Which slot would you like to assign this to?</p>
@@ -1083,9 +1088,9 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 </div>
 
 <script>
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╔═══════════════════════════════════════╗
 //   DATA
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╚═══════════════════════════════════════╝
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
   mealPlan:'mpos_plan_v2', staples:'mpos_staples_v2',
@@ -1096,46 +1101,46 @@ const K = {
 const DAYS = ['monday','tuesday','wednesday','thursday','friday'];
 const DAY_FULL = {monday:'Monday',tuesday:'Tuesday',wednesday:'Wednesday',thursday:'Thursday',friday:'Friday'};
 const MEALS = ['breakfast','lunch','dinner'];
-const MEAL_ICON = {breakfast:'ð',lunch:'âï¸',dinner:'ð'};
+const MEAL_ICON = {breakfast:'🌅',lunch:'☀️',dinner:'🌙'};
 const CATS = ['Produce','Protein','Grains & Breads','Dairy / Dairy-Free','Pantry & Seasonings','Freezer / Flex','Snacks / Extras'];
-const CAT_ICON = {'Produce':'ð¥¬','Protein':'ð','Grains & Breads':'ð¾','Dairy / Dairy-Free':'ð¥','Pantry & Seasonings':'ð§','Freezer / Flex':'âï¸','Snacks / Extras':'ð¥'};
+const CAT_ICON = {'Produce':'🥬','Protein':'🍗','Grains & Breads':'🌾','Dairy / Dairy-Free':'🥛','Pantry & Seasonings':'🧂','Freezer / Flex':'❄️','Snacks / Extras':'🥜'};
 
 const BREAKFAST_TYPES = [
-  {id:'easy',    icon:'â¡', name:'Easy Go-To',   sub:'Your no-decision breakfast'},
-  {id:'prep',    icon:'ð¥£', name:'Meal Prep',     sub:'Made ahead of time'},
-  {id:'quick',   icon:'â±ï¸', name:'Quick & Simple',sub:'Under 5 minutes'},
-  {id:'out',     icon:'â', name:'Out / On the Go',sub:'Coffee shop, grab & go'},
+  {id:'easy',    icon:'⚡', name:'Easy Go-To',   sub:'Your no-decision breakfast'},
+  {id:'prep',    icon:'🥣', name:'Meal Prep',     sub:'Made ahead of time'},
+  {id:'quick',   icon:'⏱️', name:'Quick & Simple',sub:'Under 5 minutes'},
+  {id:'out',     icon:'☕', name:'Out / On the Go',sub:'Coffee shop, grab & go'},
 ];
 const LUNCH_TYPES = [
-  {id:'easy',     icon:'â¡', name:'Easy Lunch',      sub:'Quick and reliable'},
-  {id:'leftovers',icon:'ð±', name:'Leftovers',        sub:'From yesterday\'s dinner'},
-  {id:'freezer',  icon:'âï¸', name:'Freezer Meal',     sub:'Pull from your freezer'},
-  {id:'lunchout', icon:'ð¥¡', name:'Lunch Out',         sub:'Takeout, delivery, or dining out'},
+  {id:'easy',     icon:'⚡', name:'Easy Lunch',      sub:'Quick and reliable'},
+  {id:'leftovers',icon:'🍱', name:'Leftovers',        sub:'From yesterday\'s dinner'},
+  {id:'freezer',  icon:'❄️', name:'Freezer Meal',     sub:'Pull from your freezer'},
+  {id:'lunchout', icon:'🥡', name:'Lunch Out',         sub:'Takeout, delivery, or dining out'},
 ];
 const DINNER_TYPES = [
-  {id:'goto',    icon:'â¡', name:'Easy Go-To',                  sub:'A reliable weeknight staple'},
-  {id:'freezer', icon:'âï¸', name:'Freezer Meal',               sub:'Pull from your freezer'},
-  {id:'takeout', icon:'ð¥¡', name:'Takeout / Delivery / Dining Out', sub:'Planned â not last minute'},
-  {id:'fun',     icon:'â¨', name:'Fun Night',                   sub:'Something new or special'},
+  {id:'goto',    icon:'⚡', name:'Easy Go-To',                  sub:'A reliable weeknight staple'},
+  {id:'freezer', icon:'❄️', name:'Freezer Meal',               sub:'Pull from your freezer'},
+  {id:'takeout', icon:'🥡', name:'Takeout / Delivery / Dining Out', sub:'Planned — not last minute'},
+  {id:'fun',     icon:'✨', name:'Fun Night',                   sub:'Something new or special'},
 ];
 const TYPE_MAP = {breakfast:BREAKFAST_TYPES, lunch:LUNCH_TYPES, dinner:DINNER_TYPES};
 
-// Starter recipes â only loaded on first visit
+// Starter recipes — only loaded on first visit
 const STARTER_RECIPES = [
   {id:'sr1',type:'breakfast',name:'Overnight Oatmeal',servings:5,
    notes:'Make 5 jars in under 10 minutes. Base: oats + milk 1:1 ratio.',
    ingredients:[
      {name:'Oats',qty:'1 cup',category:'Grains & Breads'},
      {name:'Milk',qty:'1 cup',category:'Dairy / Dairy-Free'},
-     {name:'Mixed Berries',qty:'Â½ cup',category:'Produce'},
-     {name:'Greek Yogurt',qty:'Â¼ cup',category:'Dairy / Dairy-Free'},
+     {name:'Mixed Berries',qty:'½ cup',category:'Produce'},
+     {name:'Greek Yogurt',qty:'¼ cup',category:'Dairy / Dairy-Free'},
    ]},
   {id:'sr2',type:'breakfast',name:'Yogurt Parfait',servings:2,
    notes:'Layer and go. Great for rushed mornings.',
    ingredients:[
      {name:'Greek Yogurt',qty:'1 cup',category:'Dairy / Dairy-Free'},
-     {name:'Granola',qty:'Â½ cup',category:'Grains & Breads'},
-     {name:'Berries',qty:'Â½ cup',category:'Produce'},
+     {name:'Granola',qty:'½ cup',category:'Grains & Breads'},
+     {name:'Berries',qty:'½ cup',category:'Produce'},
    ]},
   {id:'sr3',type:'lunch',name:'Tuna Sandwich + Apple',servings:2,
    notes:'Prep in under 10 min, or make the night before.',
@@ -1155,7 +1160,7 @@ const STARTER_RECIPES = [
      {name:'Garlic',qty:'3 cloves',category:'Produce'},
    ]},
   {id:'sr5',type:'dinner',name:'Sheet Pan Chicken & Veggies',servings:4,
-   notes:'350Â°F for 30-45 min. Easy weeknight meal â make extra for leftover lunch.',
+   notes:'350°F for 30-45 min. Easy weeknight meal — make extra for leftover lunch.',
    ingredients:[
      {name:'Chicken',qty:'1 lb',category:'Protein'},
      {name:'Red Potatoes',qty:'4',category:'Produce'},
@@ -1167,17 +1172,17 @@ const STARTER_RECIPES = [
    ingredients:[
      {name:'Pasta',qty:'8 oz',category:'Grains & Breads'},
      {name:'Marinara Sauce',qty:'1 jar',category:'Pantry & Seasonings'},
-     {name:'Parmesan',qty:'Â¼ cup',category:'Dairy / Dairy-Free'},
+     {name:'Parmesan',qty:'¼ cup',category:'Dairy / Dairy-Free'},
    ]},
 ];
 
-// ââ RECIPE LIBRARY âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-// Curated by Meal Planning OS. These are read-only â users copy them into
+// ── RECIPE LIBRARY ─────────────────────────────────────────────────────────
+// Curated by Meal Planning OS. These are read-only — users copy them into
 // their own Go-To Meals. libraryId is preserved on the copy so we can detect
 // "already added" without a name match.
 const LIBRARY_RECIPES = [
 
-  // ââ BREAKFAST ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── BREAKFAST ──────────────────────────────────────────────────────────
   {id:'lb1', type:'breakfast', name:'PB Banana Smoothie', servings:1,
    tags:['Under 5 Min','High Protein'],
    notes:'Blend and go. Under 3 minutes. Double the batch if you\'re making for two.',
@@ -1193,7 +1198,7 @@ const LIBRARY_RECIPES = [
    notes:'Toast the bread, mash the avo, fry the egg. On the table in 8 minutes.',
    ingredients:[
      {name:'Bread',        qty:'2 slices', category:'Grains & Breads'},
-     {name:'Avocado',      qty:'Â½',        category:'Produce'},
+     {name:'Avocado',      qty:'½',        category:'Produce'},
      {name:'Eggs',         qty:'2',        category:'Protein'},
      {name:'Salt & Pepper',qty:'to taste', category:'Pantry & Seasonings'},
    ]},
@@ -1213,15 +1218,15 @@ const LIBRARY_RECIPES = [
      {name:'Bananas', qty:'2',     category:'Produce'},
      {name:'Oats',    qty:'1 cup', category:'Grains & Breads'},
      {name:'Honey',   qty:'1 tbsp',category:'Pantry & Seasonings'},
-     {name:'Berries', qty:'Â½ cup', category:'Produce'},
+     {name:'Berries', qty:'½ cup', category:'Produce'},
    ]},
 
-  // ââ LUNCH ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── LUNCH ──────────────────────────────────────────────────────────────
   {id:'lb5', type:'lunch', name:'Rotisserie Chicken Rice Bowl', servings:2,
    tags:['Easy Lunch','High Protein'],
-   notes:'Grab a rotisserie chicken from the store. Shred it over rice and greens â done in 5 minutes once the rice is cooked.',
+   notes:'Grab a rotisserie chicken from the store. Shred it over rice and greens — done in 5 minutes once the rice is cooked.',
    ingredients:[
-     {name:'Rotisserie Chicken', qty:'Â½ chicken', category:'Protein'},
+     {name:'Rotisserie Chicken', qty:'½ chicken', category:'Protein'},
      {name:'Rice',               qty:'1 cup',     category:'Grains & Breads'},
      {name:'Mixed Greens',       qty:'2 cups',    category:'Produce'},
      {name:'Olive Oil',          qty:'1 tbsp',    category:'Pantry & Seasonings'},
@@ -1233,7 +1238,7 @@ const LIBRARY_RECIPES = [
    ingredients:[
      {name:'Large Tortilla', qty:'1',     category:'Grains & Breads'},
      {name:'Turkey',         qty:'4 oz',  category:'Protein'},
-     {name:'Avocado',        qty:'Â½',     category:'Produce'},
+     {name:'Avocado',        qty:'½',     category:'Produce'},
      {name:'Spinach',        qty:'1 cup', category:'Produce'},
      {name:'Mustard',        qty:'1 tbsp',category:'Pantry & Seasonings'},
    ]},
@@ -1245,7 +1250,7 @@ const LIBRARY_RECIPES = [
      {name:'Chickpeas',       qty:'1 can',  category:'Protein'},
      {name:'Cucumber',        qty:'1',      category:'Produce'},
      {name:'Cherry Tomatoes', qty:'1 cup',  category:'Produce'},
-     {name:'Feta',            qty:'Â¼ cup',  category:'Dairy / Dairy-Free'},
+     {name:'Feta',            qty:'¼ cup',  category:'Dairy / Dairy-Free'},
      {name:'Olive Oil',       qty:'2 tbsp', category:'Pantry & Seasonings'},
      {name:'Lemon Juice',     qty:'1 tbsp', category:'Pantry & Seasonings'},
    ]},
@@ -1260,7 +1265,7 @@ const LIBRARY_RECIPES = [
      {name:'Bread',   qty:'4 slices',category:'Grains & Breads'},
    ]},
 
-  // ââ DINNER âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── DINNER ─────────────────────────────────────────────────────────────
   {id:'lb9', type:'dinner', name:'White Chicken Chili', servings:6,
    tags:['Freezer Friendly','Batch Cook','High Protein'],
    notes:'Make a big batch and freeze half. On a busy night, just pull it from the freezer. One of the best weapons in your meal planning arsenal.',
@@ -1275,7 +1280,7 @@ const LIBRARY_RECIPES = [
 
   {id:'lb10', type:'dinner', name:'Baked Salmon & Roasted Broccoli', servings:2,
    tags:['Quick & Easy','High Protein'],
-   notes:'400Â°F for 20 minutes. One pan, minimal cleanup. The go-to when you want something healthy without the effort.',
+   notes:'400°F for 20 minutes. One pan, minimal cleanup. The go-to when you want something healthy without the effort.',
    ingredients:[
      {name:'Salmon Fillets', qty:'2',       category:'Protein'},
      {name:'Broccoli',       qty:'2 cups',  category:'Produce'},
@@ -1290,7 +1295,7 @@ const LIBRARY_RECIPES = [
    ingredients:[
      {name:'Ground Turkey',  qty:'1 lb',    category:'Protein'},
      {name:'Egg',            qty:'1',       category:'Protein'},
-     {name:'Breadcrumbs',    qty:'Â¼ cup',   category:'Grains & Breads'},
+     {name:'Breadcrumbs',    qty:'¼ cup',   category:'Grains & Breads'},
      {name:'Garlic',         qty:'2 cloves',category:'Produce'},
      {name:'Marinara Sauce', qty:'1 jar',   category:'Pantry & Seasonings'},
    ]},
@@ -1301,8 +1306,8 @@ const LIBRARY_RECIPES = [
    ingredients:[
      {name:'Small Tortillas', qty:'4',     category:'Grains & Breads'},
      {name:'Black Beans',     qty:'1 can', category:'Protein'},
-     {name:'Salsa',           qty:'Â½ cup', category:'Pantry & Seasonings'},
-     {name:'Shredded Cheese', qty:'Â¼ cup', category:'Dairy / Dairy-Free'},
+     {name:'Salsa',           qty:'½ cup', category:'Pantry & Seasonings'},
+     {name:'Shredded Cheese', qty:'¼ cup', category:'Dairy / Dairy-Free'},
      {name:'Lime',            qty:'1',     category:'Produce'},
    ]},
 ];
@@ -1330,12 +1335,12 @@ let flexItems = load(K.flexItems, DEFAULT_FLEX);
 let freezer   = load(K.freezer, []);
 let checks    = load(K.checks, {});
 
-// First visit â blank slate, let users build their own menu
+// First visit — blank slate, let users build their own menu
 if (recipes === null) { recipes = []; save(K.recipes, recipes); }
 
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╔═══════════════════════════════════════╗
 //   NAV
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╚═══════════════════════════════════════╝
 function switchTab(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
@@ -1348,22 +1353,22 @@ function switchTab(id){
   if(id==='freezer') renderFreezer();
 }
 
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╔═══════════════════════════════════════╗
 //   RECIPE LIBRARY
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╚═══════════════════════════════════════╝
 let _libFilter='all';
 let _libTagFilter='';
 
 function renderLibrary(){
-  // ââ Meal type filter âââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Meal type filter ─────────────────────────────────────────────────────
   const filterEl=document.getElementById('libFilters');
   const filters=[
     {id:'all',       label:'All'},
-    {id:'breakfast', label:'ð Breakfast'},
-    {id:'lunch',     label:'âï¸ Lunch'},
-    {id:'dinner',    label:'ð Dinner'},
+    {id:'breakfast', label:'🌅 Breakfast'},
+    {id:'lunch',     label:'☀️ Lunch'},
+    {id:'dinner',    label:'🌙 Dinner'},
   ];
-  // ââ Tag filter (derived from all recipes) ââââââââââââââââââââââââââââââââ
+  // ── Tag filter (derived from all recipes) ────────────────────────────────
   const allTags=[...new Set(LIBRARY_RECIPES.flatMap(r=>r.tags||[]))];
   filterEl.innerHTML=`
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
@@ -1374,7 +1379,7 @@ function renderLibrary(){
       ${allTags.map(t=>`<button class="lib-filter-btn lib-filter-tag${_libTagFilter===t?' active':''}" onclick="_libTagFilter='${t}';renderLibrary()">${t}</button>`).join('')}
     </div>`;
 
-  // ââ Recipe grid âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Recipe grid ─────────────────────────────────────────────────────────
   const grid=document.getElementById('libGrid');
   let filtered=_libFilter==='all'?LIBRARY_RECIPES:LIBRARY_RECIPES.filter(r=>r.type===_libFilter);
   if(_libTagFilter) filtered=filtered.filter(r=>(r.tags||[]).includes(_libTagFilter));
@@ -1400,14 +1405,14 @@ function renderLibrary(){
     // Footer action
     let footerAction='';
     if(alreadyAdded){
-      footerAction=`<span class="lib-badge-added">â In Your Go-Tos</span>`;
+      footerAction=`<span class="lib-badge-added">✓ In Your Go-Tos</span>`;
     } else if(catFull){
       footerAction=`<span class="lib-badge-full">Category full (5/5)</span>`;
     } else {
       footerAction=`<button class="btn btn-primary lib-add-btn" onclick="addFromLibrary('${lr.id}')">+ Add to My Go-Tos</button>`;
     }
 
-    // Tag pills â colour-coded by category
+    // Tag pills — colour-coded by category
     const tagColorMap={
       'Freezer Friendly':'freezer','Batch Cook':'batch','Meal Prep':'mealprep',
       'Under 5 Min':'quick','Under 15 Min':'quick','Quick & Easy':'quick',
@@ -1446,7 +1451,7 @@ function addFromLibrary(id){
   // Double-check limits
   if(recipes.some(r=>r.libraryId===id)) return;
   if(recipes.filter(r=>r.type===lr.type).length>=5){
-    alert('Your '+lr.type+' category is full â remove one recipe to make room, then try again.');
+    alert('Your '+lr.type+' category is full — remove one recipe to make room, then try again.');
     return;
   }
   // Copy recipe into user's list
@@ -1465,9 +1470,9 @@ function addFromLibrary(id){
   renderMealSections();   // keep Step 2 in sync
 }
 
-// âââââââââââââââââââââââââââââââââââââââââ
-//   STEP 1 â WEEK NOTES
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╔═══════════════════════════════════════╗
+//   STEP 1 — WEEK NOTES
+// ╚═══════════════════════════════════════╝
 function renderWeek(){
   // Week badge
   const now=new Date(), d=now.getDay();
@@ -1486,12 +1491,12 @@ function renderWeek(){
       <div class="day-header"><div class="day-name">${DAY_FULL[day]}</div></div>
       <div class="day-slots">
         <div class="day-slot">
-          <div class="slot-label"><span>ð</span> AM</div>
-          <textarea data-day="${day}" data-slot="am" placeholder="Morning meeting, workout, early drop-offâ¦">${notes.am||''}</textarea>
+          <div class="slot-label"><span>🌅</span> AM</div>
+          <textarea data-day="${day}" data-slot="am" placeholder="Morning meeting, workout, early drop-off…">${notes.am||''}</textarea>
         </div>
         <div class="day-slot">
-          <div class="slot-label"><span>ð</span> PM</div>
-          <textarea data-day="${day}" data-slot="pm" placeholder="Late calls, family plans, dinner outâ¦">${notes.pm||''}</textarea>
+          <div class="slot-label"><span>🌙</span> PM</div>
+          <textarea data-day="${day}" data-slot="pm" placeholder="Late calls, family plans, dinner out…">${notes.pm||''}</textarea>
         </div>
       </div>`;
     grid.appendChild(card);
@@ -1508,21 +1513,21 @@ function renderWeek(){
   });
 }
 
-// âââââââââââââââââââââââââââââââââââââââââ
-//   STEP 2 â RECIPES
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╔═══════════════════════════════════════╗
+//   STEP 2 — RECIPES
+// ╚═══════════════════════════════════════╝
 function renderMealSections(){
   const el=document.getElementById('mealSections');
   el.innerHTML='';
   // First-time empty state
   if(recipes.length===0){
     el.innerHTML=`<div style="text-align:center;padding:40px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)">
-      <div style="font-size:36px;margin-bottom:12px">ð½ï¸</div>
+      <div style="font-size:36px;margin-bottom:12px">🍽️</div>
       <div style="font-size:15px;font-weight:800;margin-bottom:6px">Your menu is empty</div>
-      <div style="font-size:13px;color:var(--text-2);max-width:320px;margin:0 auto 18px;line-height:1.55">Add your go-to meals here â recipes you already know and trust. Or browse the library to get started fast.</div>
+      <div style="font-size:13px;color:var(--text-2);max-width:320px;margin:0 auto 18px;line-height:1.55">Add your go-to meals here — recipes you already know and trust. Or browse the library to get started fast.</div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="openRecipeModal(null,'breakfast')">+ Add a Recipe</button>
-        <button class="btn btn-secondary" onclick="switchTab('library')">ð Browse Library</button>
+        <button class="btn btn-secondary" onclick="switchTab('library')">📚 Browse Library</button>
       </div>
     </div>`;
     return;
@@ -1537,7 +1542,7 @@ function renderMealSections(){
           <div class="meal-type-icon ${type}">${MEAL_ICON[type]}</div>
           <div>
             <div class="meal-type-title">${type.charAt(0).toUpperCase()+type.slice(1)}</div>
-            <div class="meal-slots-count">${list.length}/5 â ${rem>0?rem+' slot'+(rem>1?'s':'')+' left':'No-Decision Menu locked in â'}</div>
+            <div class="meal-slots-count">${list.length}/5 — ${rem>0?rem+' slot'+(rem>1?'s':'')+' left':'No-Decision Menu locked in ✓'}</div>
           </div>
         </div>
         ${rem>0?`<button class="btn btn-secondary btn-sm" onclick="openRecipeModal(null,'${type}')">+ Add Recipe</button>`:''}
@@ -1569,7 +1574,7 @@ function renderMealSections(){
     } else {
       const max=document.createElement('div');
       max.className='max-reached';
-      max.innerHTML=`<strong>5/5 â</strong><span>Menu locked in â no decisions needed.</span>`;
+      max.innerHTML=`<strong>5/5 ✓</strong><span>Menu locked in — no decisions needed.</span>`;
       grid.appendChild(max);
     }
   });
@@ -1602,7 +1607,7 @@ function addIngRow(ing){
     <input type="text" placeholder="e.g. Oats" value="${ing?ing.name:''}">
     <input type="text" placeholder="1 cup" value="${ing?ing.qty:''}">
     <select>${opts}</select>
-    <button onclick="this.closest('.ing-row').remove()" title="Remove">â</button>`;
+    <button onclick="this.closest('.ing-row').remove()" title="Remove">✕</button>`;
   document.getElementById('ingRows').appendChild(row);
 }
 function saveRecipe(){
@@ -1610,7 +1615,7 @@ function saveRecipe(){
   if(!name){document.getElementById('r_name').focus();return;}
   const type=document.getElementById('r_type').value;
   const existing=recipes.filter(r=>r.type===type&&r.id!==_editId).length;
-  if(existing>=5){alert('You\'ve reached the limit for '+type+' â 5 per category is all you need. That\'s the whole point.');return;}
+  if(existing>=5){alert('You\'ve reached the limit for '+type+' — 5 per category is all you need. That\'s the whole point.');return;}
   const ings=Array.from(document.querySelectorAll('#ingRows .ing-row')).map(row=>{
     const ins=row.querySelectorAll('input');
     return{name:ins[0].value.trim(),qty:ins[1].value.trim(),category:row.querySelector('select').value};
@@ -1643,9 +1648,9 @@ function deleteRecipe(id){
   renderMealSections();
 }
 
-// âââââââââââââââââââââââââââââââââââââââââ
-//   STEP 3 â MEAL PLAN
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╔═══════════════════════════════════════╗
+//   STEP 3 — MEAL PLAN
+// ╚═══════════════════════════════════════╝
 function renderMealPlan(){
   const tbl=document.getElementById('mealPlanTable');
   tbl.innerHTML='';
@@ -1655,8 +1660,8 @@ function renderMealPlan(){
   DAYS.forEach(d=>{
     const n=weekNotes[d]||{};
     let coms='';
-    if(n.am) coms+=`<div class="th-commitment"><span class="th-commitment-icon">ð</span><span class="th-commitment-text">${n.am}</span></div>`;
-    if(n.pm) coms+=`<div class="th-commitment"><span class="th-commitment-icon">ð</span><span class="th-commitment-text">${n.pm}</span></div>`;
+    if(n.am) coms+=`<div class="th-commitment"><span class="th-commitment-icon">🌅</span><span class="th-commitment-text">${n.am}</span></div>`;
+    if(n.pm) coms+=`<div class="th-commitment"><span class="th-commitment-icon">🌙</span><span class="th-commitment-text">${n.pm}</span></div>`;
     h+=`<th><div class="th-inner"><div class="th-day">${DAY_FULL[d]}</div>${coms}</div></th>`;
   });
   h+='</tr>';
@@ -1679,7 +1684,7 @@ function renderMealPlan(){
         const cls=getCellClass(meal,asgn);
         const tag=getCellTag(meal,asgn);
         row+=`<div class="cell-filled ${cls}" onclick="openAssignModal('${d}','${meal}')">
-          <button class="cell-remove" onclick="event.stopPropagation();removeCell('${d}','${meal}')">â</button>
+          <button class="cell-remove" onclick="event.stopPropagation();removeCell('${d}','${meal}')">✕</button>
           <div class="cell-meal-name">${asgn.name}</div>
           <div class="cell-servings">${asgn.servings} serving${asgn.servings!==1?'s':''}</div>
           ${tag}
@@ -1702,16 +1707,16 @@ function getCellTag(meal,a){
   const t=a.mealType;
   if(!t) return '';
   const map={
-    easy:'<span class="cell-tag tag-goto">â¡ Easy Go-To</span>',
-    prep:'<span class="cell-tag tag-goto">ð¥£ Meal Prep</span>',
-    quick:'<span class="cell-tag tag-goto">â±ï¸ Quick</span>',
-    out:'<span class="cell-tag tag-takeout">â Out</span>',
-    leftovers:'<span class="cell-tag tag-leftovers">ð± Leftovers</span>',
-    freezer:'<span class="cell-tag tag-freezer">âï¸ Freezer</span>',
-    lunchout:'<span class="cell-tag tag-lunchout">ð¥¡ Lunch Out</span>',
-    goto:'<span class="cell-tag tag-goto">â¡ Easy Go-To</span>',
-    takeout:'<span class="cell-tag tag-takeout">ð¥¡ Takeout / Dining Out</span>',
-    fun:'<span class="cell-tag tag-fun">â¨ Fun Night</span>',
+    easy:'<span class="cell-tag tag-goto">⚡ Easy Go-To</span>',
+    prep:'<span class="cell-tag tag-goto">🥣 Meal Prep</span>',
+    quick:'<span class="cell-tag tag-goto">⏱️ Quick</span>',
+    out:'<span class="cell-tag tag-takeout">☕ Out</span>',
+    leftovers:'<span class="cell-tag tag-leftovers">🍱 Leftovers</span>',
+    freezer:'<span class="cell-tag tag-freezer">❄️ Freezer</span>',
+    lunchout:'<span class="cell-tag tag-lunchout">🥡 Lunch Out</span>',
+    goto:'<span class="cell-tag tag-goto">⚡ Easy Go-To</span>',
+    takeout:'<span class="cell-tag tag-takeout">🥡 Takeout / Dining Out</span>',
+    fun:'<span class="cell-tag tag-fun">✨ Fun Night</span>',
   };
   return map[t]||'';
 }
@@ -1742,8 +1747,8 @@ function openAssignModal(day,meal){
   html+='</div>';
   // Meal name (optional)
   html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;margin-top:4px">Meal Name <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>`;
-  html+=`<div class="form-group" style="margin-bottom:10px"><input type="text" id="a_mealName" placeholder="Leave blank to use the type label, or type a specific mealâ¦" value="${existing?existing.name:''}"></div>`;
-  // Freezer picker â shown when freezer type selected
+  html+=`<div class="form-group" style="margin-bottom:10px"><input type="text" id="a_mealName" placeholder="Leave blank to use the type label, or type a specific meal…" value="${existing?existing.name:''}"></div>`;
+  // Freezer picker — shown when freezer type selected
   const isFreezerType=_aC.mealType==='freezer';
   html+=`<div id="freezerPickerSection" style="display:${isFreezerType?'block':'none'}">`;
   html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Pick from your Freezer</div>`;
@@ -1751,15 +1756,15 @@ function openAssignModal(day,meal){
     freezer.forEach(f=>{
       const sel=_aC.freezerId===f.id?'sel':'';
       html+=`<div class="recipe-pick-opt ${sel}" data-fid="${f.id}" onclick="pickFreezerItem('${f.id}','${f.name.replace(/'/g,"\\'")}',${f.servings})">
-        <span style="font-size:18px">ð§</span>
-        <div style="flex:1"><div class="rpo-name">${f.name}</div><div class="rpo-sub">${f.servings} srv Â· Made ${fmtDate(f.dateMade)}</div></div>
+        <span style="font-size:18px">🧊</span>
+        <div style="flex:1"><div class="rpo-name">${f.name}</div><div class="rpo-sub">${f.servings} srv · Made ${fmtDate(f.dateMade)}</div></div>
       </div>`;
     });
   } else {
     html+=`<div style="font-size:13px;color:var(--text-3);padding:12px 0">No meals in your freezer yet. Log some in the Freezer tab.</div>`;
   }
   html+='</div>';
-  // Recipe picker â hidden when freezer type selected
+  // Recipe picker — hidden when freezer type selected
   if(typeRecipes.length>0){
     html+=`<div id="recipePickerSection" style="display:${isFreezerType?'none':'block'}">`;
     html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Pick from your Go-To Meals <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>`;
@@ -1817,7 +1822,7 @@ function pickFreezerItem(id,name,servings){
   document.getElementById('a_servings').value=servings;
 }
 function confirmAssign(){
-  // Name is optional â fall back to type label or "Meal"
+  // Name is optional — fall back to type label or "Meal"
   let name=(document.getElementById('a_mealName').value||'').trim();
   if(!name){
     const typeLabel=TYPE_MAP[_aC.meal]?.find(t=>t.id===_aC.mealType)?.name;
@@ -1838,9 +1843,9 @@ function confirmAssign(){
   renderMealPlan();
 }
 
-// âââââââââââââââââââââââââââââââââââââââââ
-//   STEP 4 â GROCERY LIST
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╔═══════════════════════════════════════╗
+//   STEP 4 — GROCERY LIST
+// ╚═══════════════════════════════════════╝
 
 // Pluralize common grocery units
 function pluralUnit(unit, total){
@@ -1854,7 +1859,7 @@ function pluralUnit(unit, total){
 function toFrac(n){
   if(n===0) return '0';
   const whole=Math.floor(n), dec=+(n-whole).toFixed(3);
-  const map=[[0.125,'â'],[0.25,'Â¼'],[0.333,'â'],[0.5,'Â½'],[0.667,'â'],[0.75,'Â¾'],[0.875,'â']];
+  const map=[[0.125,'⅛'],[0.25,'¼'],[0.333,'⅓'],[0.5,'½'],[0.667,'⅔'],[0.75,'¾'],[0.875,'⅞']];
   if(dec===0) return String(whole);
   const closest=map.reduce((a,b)=>Math.abs(b[0]-dec)<Math.abs(a[0]-dec)?b:a);
   return (whole>0?whole:'')+closest[1];
@@ -1870,112 +1875,112 @@ function practicalHint(ingredientName, total, unit){
 
   // BERRIES (any kind)
   if(/berr/.test(n) && isCup){
-    if(total<=1)  return 'â 1 small clamshell';
-    if(total<=2)  return 'â 1 pint container';
-    if(total<=4)  return 'â 1 quart container';
-    return 'â '+Math.ceil(total/4)+' quart containers';
+    if(total<=1)  return '≈ 1 small clamshell';
+    if(total<=2)  return '≈ 1 pint container';
+    if(total<=4)  return '≈ 1 quart container';
+    return '≈ '+Math.ceil(total/4)+' quart containers';
   }
   // OATS
   if(/oat/.test(n) && isCup){
-    if(total<=6)  return 'â 1 small canister';
-    if(total<=14) return 'â 1 standard canister';
-    return 'â '+Math.ceil(total/14)+' canisters';
+    if(total<=6)  return '≈ 1 small canister';
+    if(total<=14) return '≈ 1 standard canister';
+    return '≈ '+Math.ceil(total/14)+' canisters';
   }
   // YOGURT (greek or plain)
   if(/yogurt/.test(n) && isCup){
-    if(total<=0.5) return 'â 1 individual cup';
-    if(total<=2)   return 'â 1 small tub (17oz)';
-    if(total<=4)   return 'â 1 large tub (32oz)';
-    return 'â '+Math.ceil(total/4)+' large tubs';
+    if(total<=0.5) return '≈ 1 individual cup';
+    if(total<=2)   return '≈ 1 small tub (17oz)';
+    if(total<=4)   return '≈ 1 large tub (32oz)';
+    return '≈ '+Math.ceil(total/4)+' large tubs';
   }
   // GRANOLA
   if(/granola/.test(n) && isCup){
-    if(total<=4) return 'â 1 bag';
-    return 'â '+Math.ceil(total/4)+' bags';
+    if(total<=4) return '≈ 1 bag';
+    return '≈ '+Math.ceil(total/4)+' bags';
   }
-  // MILK (cups â gallon context)
+  // MILK (cups — gallon context)
   if(/\bmilk\b/.test(n) && isCup){
-    if(total<=4)  return 'â 1 qt';
-    if(total<=8)  return 'â 1 half-gallon';
-    if(total<=16) return 'â 1 gallon';
-    return 'â '+Math.ceil(total/16)+' gallons';
+    if(total<=4)  return '≈ 1 qt';
+    if(total<=8)  return '≈ 1 half-gallon';
+    if(total<=16) return '≈ 1 gallon';
+    return '≈ '+Math.ceil(total/16)+' gallons';
   }
   // BROTH / STOCK
   if(/(broth|stock)/.test(n) && isCup){
-    if(total<=4)  return 'â 1 small carton (32oz)';
-    if(total<=8)  return 'â 1 large carton (64oz)';
-    return 'â '+Math.ceil(total/8)+' large cartons';
+    if(total<=4)  return '≈ 1 small carton (32oz)';
+    if(total<=8)  return '≈ 1 large carton (64oz)';
+    return '≈ '+Math.ceil(total/8)+' large cartons';
   }
   // EGGS
   if(/\begg\b/.test(n)){
-    if(total<=6)  return 'â Â½ dozen';
-    if(total<=12) return 'â 1 dozen';
-    return 'â '+Math.ceil(total/12)+' dozen';
+    if(total<=6)  return '≈ ½ dozen';
+    if(total<=12) return '≈ 1 dozen';
+    return '≈ '+Math.ceil(total/12)+' dozen';
   }
   // PASTA / NOODLES
   if(/(pasta|spaghetti|penne|fettuccin|linguine|noodle|macaroni)/.test(n)){
-    if(isOz){ const b=Math.ceil(total/16); return 'â '+b+' box'+(b>1?'es':'')+' (1 lb each)'; }
-    if(isCup){ const b=Math.ceil(total/4);  return 'â '+b+' box'+(b>1?'es':''); }
+    if(isOz){ const b=Math.ceil(total/16); return '≈ '+b+' box'+(b>1?'es':'')+' (1 lb each)'; }
+    if(isCup){ const b=Math.ceil(total/4);  return '≈ '+b+' box'+(b>1?'es':''); }
   }
   // RICE
   if(/\brice\b/.test(n) && isCup){
-    if(total<=4) return 'â 1 small bag';
-    if(total<=8) return 'â 1 standard bag';
-    return 'â '+Math.ceil(total/8)+' bags';
+    if(total<=4) return '≈ 1 small bag';
+    if(total<=8) return '≈ 1 standard bag';
+    return '≈ '+Math.ceil(total/8)+' bags';
   }
-  // BEANS / LENTILS / CHICKPEAS (dry cups â cans)
+  // BEANS / LENTILS / CHICKPEAS (dry cups → cans)
   if(/(bean|lentil|chickpea)/.test(n) && isCup){
     // ~1.5 cups cooked per can
     const cans=Math.ceil(total/1.5);
-    return 'â '+cans+' can'+(cans>1?'s':'');
+    return '≈ '+cans+' can'+(cans>1?'s':'');
   }
   // NUT BUTTER / PEANUT BUTTER
   if(/(nut butter|peanut butter|almond butter)/.test(n) && isTbsp){
-    if(total<=16) return 'â 1 small jar';
-    return 'â 1 large jar';
+    if(total<=16) return '≈ 1 small jar';
+    return '≈ 1 large jar';
   }
   // HONEY
   if(/\bhoney\b/.test(n) && isTbsp){
-    if(total<=16) return 'â 1 small bottle';
-    return 'â 1 standard bottle';
+    if(total<=16) return '≈ 1 small bottle';
+    return '≈ 1 standard bottle';
   }
   // OLIVE OIL / OIL
   if(/oil/.test(n) && isTbsp){
-    if(total<=32) return 'â 1 bottle';
+    if(total<=32) return '≈ 1 bottle';
   }
   // PARMESAN / CHEESE (shredded, in cups)
   if(/(parmesan|mozzarella|cheddar|feta|cheese)/.test(n) && isCup){
-    if(total<=1)  return 'â 1 small bag';
-    if(total<=2)  return 'â 1 standard bag';
-    return 'â '+Math.ceil(total/2)+' bags';
+    if(total<=1)  return '≈ 1 small bag';
+    if(total<=2)  return '≈ 1 standard bag';
+    return '≈ '+Math.ceil(total/2)+' bags';
   }
   // SPINACH / ARUGULA / GREENS (cups)
   if(/(spinach|arugula|kale|greens|lettuce)/.test(n) && isCup){
-    if(total<=4) return 'â 1 small bag';
-    if(total<=8) return 'â 1 large bag';
-    return 'â '+Math.ceil(total/8)+' large bags';
+    if(total<=4) return '≈ 1 small bag';
+    if(total<=8) return '≈ 1 large bag';
+    return '≈ '+Math.ceil(total/8)+' large bags';
   }
   return null;
 }
 
-// Master hint function â ingredient lookup first, then unit conversion fallback
+// Master hint function — ingredient lookup first, then unit conversion fallback
 function shoppingHint(ingredientName, total, unit){
   const specific=practicalHint(ingredientName, total, unit);
   if(specific) return specific;
   // Generic unit conversions
   const u=(unit||'').toLowerCase().replace(/s$/,'').trim();
   if(['cup','c'].includes(u) && total>=2){
-    if(total>=16){ return 'â '+toFrac(total/16)+' gal'; }
-    const q=total/4; return 'â '+toFrac(q)+' qt'+(q===1?'':'s');
+    if(total>=16){ return '≈ '+toFrac(total/16)+' gal'; }
+    const q=total/4; return '≈ '+toFrac(q)+' qt'+(q===1?'':'s');
   }
   if(['tbsp','tbs','tablespoon'].includes(u) && total>=8){
-    const c=total/16; return 'â '+toFrac(c)+' cup'+(c===1?'':'s');
+    const c=total/16; return '≈ '+toFrac(c)+' cup'+(c===1?'':'s');
   }
   if(['tsp','teaspoon'].includes(u) && total>=6){
-    return 'â '+toFrac(total/3)+' tbsp';
+    return '≈ '+toFrac(total/3)+' tbsp';
   }
   if(['oz','ounce'].includes(u) && total>=16){
-    const lb=total/16; return 'â '+toFrac(lb)+' lb'+(lb===1?'':'s');
+    const lb=total/16; return '≈ '+toFrac(lb)+' lb'+(lb===1?'':'s');
   }
   return null;
 }
@@ -1998,7 +2003,7 @@ function renderGrocery(){
       const k=ing.name.toLowerCase().trim();
       if(!agg[cat][k]) agg[cat][k]={name:ing.name,qtys:[],rawQty:ing.qty};
       const n=parseFloat(ing.qty);
-      // qty is total batch amount â scale by (assigned servings / batch size)
+      // qty is total batch amount — scale by (assigned servings / batch size)
       agg[cat][k].qtys.push(isNaN(n)?null:n*(srv/(r.servings||1)));
     });
   }));
@@ -2011,8 +2016,8 @@ function renderGrocery(){
 
   if(Object.keys(agg).length===0){
     container.innerHTML=`<div class="grocery-empty">
-      <div class="empty-icon">ð</div>
-      <p>Assign recipes to your meal plan in Step 3 and your list will build itself â sorted by store section, quantities already calculated.</p>
+      <div class="empty-icon">🛒</div>
+      <p>Assign recipes to your meal plan in Step 3 and your list will build itself — sorted by store section, quantities already calculated.</p>
     </div>`;
   } else {
     CATS.forEach(cat=>{
@@ -2029,7 +2034,7 @@ function renderGrocery(){
         const nums=item.qtys.filter(n=>n!==null);
         if(nums.length>0){
           const total=nums.reduce((a,b)=>a+b,0);
-          const rawUnit=item.rawQty?item.rawQty.replace(/^[\d.Â½Â¼Â¾\s\/]+/,'').trim():'';
+          const rawUnit=item.rawQty?item.rawQty.replace(/^[\d.½¼¾\s\/]+/,'').trim():'';
           // Pluralize common units when total > 1
           const unit=rawUnit&&total!==1?pluralUnit(rawUnit,total):rawUnit;
           qty=toFrac(total)+(unit?' '+unit:'');
@@ -2042,7 +2047,7 @@ function renderGrocery(){
         </div>`;
       });
       sec.innerHTML=`<div class="category-header">
-        <span class="category-icon">${CAT_ICON[cat]||'ð¦'}</span>
+        <span class="category-icon">${CAT_ICON[cat]||'📦'}</span>
         <span class="category-name">${cat}</span>
         <span class="category-count">${count} item${count!==1?'s':''}</span>
       </div>${rows}`;
@@ -2050,10 +2055,10 @@ function renderGrocery(){
     });
   }
 
-  // Weekly Staples â no checkboxes, list style
-  renderListSection(container,'ð Weekly Staples','Your recurring essentials â add these to your cart every week.',staples,'staples',()=>renderGrocery(),true);
+  // Weekly Staples — no checkboxes, list style
+  renderListSection(container,'📌 Weekly Staples','Your recurring essentials — add these to your cart every week.',staples,'staples',()=>renderGrocery(),true);
   // Flex & Backup
-  renderListSection(container,'ð Flex & Backup Items','Your rescue plan for busy nights. Cheaper and better than last-minute delivery.',flexItems,'flex',()=>renderGrocery(),false);
+  renderListSection(container,'🛟 Flex & Backup Items','Your rescue plan for busy nights. Cheaper and better than last-minute delivery.',flexItems,'flex',()=>renderGrocery(),false);
 }
 
 function renderListSection(container,title,subtitle,items,type,refresh,isStaples){
@@ -2064,7 +2069,7 @@ function renderListSection(container,title,subtitle,items,type,refresh,isStaples
   items.forEach(item=>{
     rows+=`<div class="list-item-row">
       <span class="item-name">${item.name}</span>
-      <button class="item-remove" onclick="${isStaples?'removeStaple':'removeFlexItem'}('${item.id}')">â</button>
+      <button class="item-remove" onclick="${isStaples?'removeStaple':'removeFlexItem'}('${item.id}')">✕</button>
     </div>`;
   });
   sec.innerHTML=`<div class="category-header" style="margin-top:10px">
@@ -2074,7 +2079,7 @@ function renderListSection(container,title,subtitle,items,type,refresh,isStaples
   <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">${subtitle}</div>
   <div class="list-only-items" id="list-${type}">${rows}</div>
   <div class="add-list-item" style="margin-top:8px">
-    <input type="text" id="${inputId}" placeholder="Add itemâ¦" onkeydown="if(event.key==='Enter')${isStaples?'addStaple':'addFlexItem'}()">
+    <input type="text" id="${inputId}" placeholder="Add item…" onkeydown="if(event.key==='Enter')${isStaples?'addStaple':'addFlexItem'}()">
     <button class="btn btn-secondary btn-sm" onclick="${isStaples?'addStaple':'addFlexItem'}()">Add</button>
   </div>`;
   container.appendChild(sec);
@@ -2099,9 +2104,9 @@ function addFlexItem(){
 }
 function removeFlexItem(id){ flexItems=flexItems.filter(f=>f.id!==id); save(K.flexItems,flexItems); renderGrocery(); }
 
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╔═══════════════════════════════════════╗
 //   FREEZER
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╚═══════════════════════════════════════╝
 function openFreezerModal(){
   const today=new Date(), exp=new Date(today);
   exp.setMonth(exp.getMonth()+3);
@@ -2126,7 +2131,7 @@ function renderFreezer(){
   if(!list) return;
   if(freezer.length===0){
     list.innerHTML=`<div class="freezer-empty">
-      <div style="font-size:42px;margin-bottom:12px">âï¸</div>
+      <div style="font-size:42px;margin-bottom:12px">❄️</div>
       <div style="font-size:14px;font-weight:700;margin-bottom:6px">Nothing frozen yet</div>
       <div style="font-size:13px">Next time you batch cook, make a few extra portions and log them here. Pulled from the freezer on a busy night = the easiest dinner you'll ever plan.</div>
     </div>`; return;
@@ -2138,14 +2143,14 @@ function renderFreezer(){
     const days=Math.round((exp-today)/(86400000));
     let cls='exp-ok',txt=`Expires in ${days} days`;
     if(days<0){cls='exp-danger';txt=`Expired ${Math.abs(days)} days ago`;}
-    else if(days<30){cls='exp-warn';txt=`Expires soon â ${days} days`;}
+    else if(days<30){cls='exp-warn';txt=`Expires soon — ${days} days`;}
     const card=document.createElement('div');
     card.className='freezer-card'+(i===0?' use-first':'');
     card.innerHTML=`
-      <div class="freezer-icon">ð§</div>
+      <div class="freezer-icon">🧊</div>
       <div class="freezer-body">
         <div class="freezer-name">${f.name}${i===0?'<span class="fifo-badge">USE FIRST</span>':''}</div>
-        <div class="freezer-meta">Made ${fmtDate(f.dateMade)} Â· ${f.servings} serving${f.servings!==1?'s':''}</div>
+        <div class="freezer-meta">Made ${fmtDate(f.dateMade)} · ${f.servings} serving${f.servings!==1?'s':''}</div>
         ${f.notes?`<div class="freezer-note">${f.notes}</div>`:''}
         <div class="freezer-exp ${cls}">${txt}</div>
       </div>
@@ -2174,9 +2179,9 @@ function removeFreezerItem(id){
   freezer=freezer.filter(f=>f.id!==id); save(K.freezer,freezer); renderFreezer();
 }
 
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╔═══════════════════════════════════════╗
 //   UTILS
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╚═══════════════════════════════════════╝
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function toDateInput(d){ return d.toISOString().split('T')[0]; }
 function fmtDate(s){
@@ -2190,9 +2195,9 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
   o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
 });
 
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╔═══════════════════════════════════════╗
 //   INIT
-// âââââââââââââââââââââââââââââââââââââââââ
+// ╚═══════════════════════════════════════╝
 renderWeek();
 renderMealSections();
 </script>
@@ -2202,12 +2207,15 @@ renderMealSections();
   <div style="font-size:11px;color:var(--text-3);margin-bottom:5px">
     Questions or feedback? <a href="mailto:steven@mealplanningos.com" style="color:var(--accent);text-decoration:none;font-weight:600">steven@mealplanningos.com</a>
   </div>
-  <div style="font-size:11px;color:var(--text-3)">Meal Planning OS (Beta) &nbsp;Â·&nbsp; Built from 300,000+ meals</div>
+  <div style="font-size:11px;color:var(--text-3)">Meal Planning OS (Beta) &nbsp;·&nbsp; Built from 300,000+ meals</div>
 </div>
 
 </div><!-- /appRoot -->
 
 <script>
+// ============================================================
+// SUPABASE AUTH + SYNC
+// ============================================================
 const SUPABASE_URL  = 'https://vgtsxthotnnvknrqyhec.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_lq13XvUG9YsoiHrU8p36qg_EXE0vo8f';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2215,6 +2223,7 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let _currentUser = null;
 let _saveTimer   = null;
 
+// ── Show/hide app vs login screen ──
 function showApp(user) {
   _currentUser = user;
   document.getElementById('authScreen').style.display = 'none';
@@ -2226,61 +2235,148 @@ function showAuth() {
   document.getElementById('authScreen').style.display = 'flex';
   document.getElementById('appRoot').style.display    = 'none';
 }
+
+// ── Magic link login ──
 async function sendMagicLink() {
   const email = document.getElementById('authEmail').value.trim();
   const msg   = document.getElementById('authMsg');
   const btn   = document.getElementById('authBtn');
   if (!email) { msg.textContent = 'Please enter your email.'; msg.className = 'auth-msg error'; return; }
-  btn.disabled = true; btn.textContent = 'Sending…';
-  const { error } = await _sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
-  if (error) { msg.textContent = 'Something went wrong. Please try again.'; msg.className = 'auth-msg error'; btn.disabled = false; btn.textContent = 'Send Magic Link'; }
-  else { msg.textContent = '✓ Magic link sent! Check your email and click the link to sign in.'; msg.className = 'auth-msg success'; btn.textContent = 'Link sent'; }
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  const { error } = await _sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.origin }
+  });
+  if (error) {
+    msg.textContent = 'Something went wrong. Please try again.';
+    msg.className = 'auth-msg error';
+    btn.disabled = false;
+    btn.textContent = 'Send Magic Link';
+  } else {
+    msg.textContent = '✓ Magic link sent! Check your email and click the link to sign in.';
+    msg.className = 'auth-msg success';
+    btn.textContent = 'Link sent';
+  }
 }
-async function signOut() { await _sb.auth.signOut(); showAuth(); }
+
+// ── Sign out ──
+async function signOut() {
+  await _sb.auth.signOut();
+  showAuth();
+}
+
+// ── Load user data from Supabase ──
 async function loadFromSupabase(userId) {
-  const { data, error } = await _sb.from('user_data').select('*').eq('user_id', userId).single();
+  const { data, error } = await _sb
+    .from('user_data')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
   if (error || !data) return null;
   return data;
 }
-function scheduleSyncToSupabase() { if (!_currentUser) return; clearTimeout(_saveTimer); _saveTimer = setTimeout(syncToSupabase, 2000); }
+
+// ── Save all app state to Supabase (debounced 2s) ──
+function scheduleSyncToSupabase() {
+  if (!_currentUser) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(syncToSupabase, 2000);
+}
+
 async function syncToSupabase() {
   if (!_currentUser) return;
-  const payload = { user_id: _currentUser.id, recipes, assignments: mealPlan, week_notes: weekNotes, week_start: localStorage.getItem('mpos_weekstart') || '', freezer, groceries: { staples, flexItems, checks }, updated_at: new Date().toISOString() };
+  const payload = {
+    user_id:    _currentUser.id,
+    recipes:    recipes,
+    assignments: mealPlan,
+    week_notes: weekNotes,
+    week_start: localStorage.getItem('mpos_weekstart') || '',
+    freezer:    freezer,
+    groceries:  { staples, flexItems, checks },
+    updated_at: new Date().toISOString()
+  };
   await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
 }
+
+// ── Migrate localStorage → Supabase on first login ──
 async function migrateIfNeeded(userId) {
+  // Check if user already has cloud data
   const cloud = await loadFromSupabase(userId);
-  if (cloud) return cloud;
+  if (cloud) return cloud; // already has data, use it
+
+  // No cloud data — check if localStorage has anything worth migrating
   const localRecipes = localStorage.getItem('mpos_recipes_v2');
-  if (!localRecipes) return null;
+  if (!localRecipes) return null; // nothing to migrate
+
+  // Migrate local data to Supabase
   await syncToSupabase();
-  return null;
+  return null; // data is now in Supabase, normal load will pick it up
 }
+
+// ── Apply cloud data to app state ──
 function applyCloudData(data) {
   if (!data) return;
-  if (Array.isArray(data.recipes)) { recipes = data.recipes; save(K.recipes, recipes); }
-  if (data.assignments) { mealPlan = data.assignments; save(K.mealPlan, mealPlan); }
-  if (data.week_notes) { weekNotes = data.week_notes; save(K.weekNotes, weekNotes); }
-  if (data.freezer) { freezer = data.freezer; save(K.freezer, freezer); }
+  if (Array.isArray(data.recipes))    { recipes   = data.recipes;    save(K.recipes,  recipes); }
+  if (data.assignments)               { mealPlan  = data.assignments; save(K.mealPlan, mealPlan); }
+  if (data.week_notes)                { weekNotes = data.week_notes;  save(K.weekNotes, weekNotes); }
+  if (data.freezer)                   { freezer   = data.freezer;     save(K.freezer,  freezer); }
   if (data.groceries) {
-    if (data.groceries.staples) { staples = data.groceries.staples; save(K.staples, staples); }
+    if (data.groceries.staples)   { staples   = data.groceries.staples;   save(K.staples,   staples); }
     if (data.groceries.flexItems) { flexItems = data.groceries.flexItems; save(K.flexItems, flexItems); }
-    if (data.groceries.checks) { checks = data.groceries.checks; save(K.checks, checks); }
+    if (data.groceries.checks)    { checks    = data.groceries.checks;    save(K.checks,    checks); }
   }
 }
+
+// ── Bootstrap: check session on load ──
 async function initAuth() {
   const { data: { session } } = await _sb.auth.getSession();
-  if (session) { showApp(session.user); await migrateIfNeeded(session.user.id); const cloud = await loadFromSupabase(session.user.id); applyCloudData(cloud); renderAll(); }
-  else { showAuth(); }
+
+  if (session) {
+    showApp(session.user);
+    await migrateIfNeeded(session.user.id);
+    const cloud = await loadFromSupabase(session.user.id);
+    applyCloudData(cloud);
+    renderAll();
+  } else {
+    showAuth();
+  }
+
+  // Listen for auth state changes (magic link clicks, sign outs)
   _sb.auth.onAuthStateChange(async (event, session) => {
-    if (session) { showApp(session.user); await migrateIfNeeded(session.user.id); const cloud = await loadFromSupabase(session.user.id); applyCloudData(cloud); renderAll(); }
-    else { showAuth(); }
+    if (session) {
+      showApp(session.user);
+      await migrateIfNeeded(session.user.id);
+      const cloud = await loadFromSupabase(session.user.id);
+      applyCloudData(cloud);
+      renderAll();
+    } else {
+      showAuth();
+    }
   });
 }
+
+// ── Patch save() to also trigger cloud sync ──
 const _origSave = save;
-window.save = function(k, v) { _origSave(k, v); scheduleSyncToSupabase(); };
-function renderAll() { renderWeek(); renderMealSections(); renderMealPlan(); renderGrocery(); renderFreezer(); renderLibrary(); updateWeekBadge(); }
+window.save = function(k, v) {
+  _origSave(k, v);
+  scheduleSyncToSupabase();
+};
+
+// ── Render everything after data load ──
+function renderAll() {
+  renderWeek();
+  renderMealSections();
+  renderMealPlan();
+  renderGrocery();
+  renderFreezer();
+  renderLibrary();
+  updateWeekBadge();
+}
+
+// ── Start ──
 initAuth();
 </script>
+
 </body>
 </html>
