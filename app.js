@@ -1150,7 +1150,7 @@ async function signIn() {
   if (!email || !password) { setAuthMsg('Please enter your email and password.', true); return; }
 
   setAuthMsg('Signing in…', false);
-  const { error } = await _sb.auth.signInWithPassword({ email, password });
+  const { data, error } = await _sb.auth.signInWithPassword({ email, password });
   if (error) {
     setAuthMsg(error.message === 'Invalid login credentials'
       ? 'Incorrect email or password. Try again, or use "Create Account" if you\'re new.'
@@ -1167,7 +1167,7 @@ async function signUp() {
   if (password.length < 6)  { setAuthMsg('Password must be at least 6 characters.', true); return; }
 
   setAuthMsg('Creating account…', false);
-  const { error } = await _sb.auth.signUp({ email, password });
+  const { data, error } = await _sb.auth.signUp({ email, password });
   if (error) {
     setAuthMsg(error.message, true);
     return;
