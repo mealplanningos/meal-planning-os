@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Meal Planning OS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- LANDING ─ default view for logged-out visitors -->
+<div id="landingScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <svg class="logo-svg" viewBox="0 0 40 40" fill="none">
+        <rect width="40" height="40" rx="10" fill="#1E5EFF"/>
+        <path d="M10 20h5l4-8 4 16 4-12 3 4h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span style="font-size:17px;font-weight:800;letter-spacing:-0.4px">Meal Planning <span style="color:var(--accent)">OS</span></span>
+    </div>
+    <h1 class="auth-title">Stop stressing about dinner.</h1>
+    <p class="auth-sub">Plan your week, build your grocery list, and actually stick to it — all in one simple app built for real life.</p>
+    <div class="access-gate-price">$29</div>
+    <div class="access-gate-price-sub">one-time payment · lifetime access</div>
+    <button id="landingCheckoutBtn" class="btn-get-access" onclick="startCheckout()" style="width:100%;margin-top:8px">Get Access — $29 one-time</button>
+    <div id="landingMsg" class="auth-msg"></div>
+    <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-2)">
+      Already have an account? <a onclick="showAuth()" style="color:var(--accent);cursor:pointer;font-weight:600">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH SCREEN ─ sign in / sign up (shown after payment or via "Sign in" link) -->
+<div id="authScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <svg class="logo-svg" viewBox="0 0 40 40" fill="none">
+        <rect width="40" height="40" rx="10" fill="#1E5EFF"/>
+        <path d="M10 20h5l4-8 4 16 4-12 3 4h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span style="font-size:17px;font-weight:800;letter-spacing:-0.4px">Meal Planning <span style="color:var(--accent)">OS</span></span>
+    </div>
+    <!-- Post-payment confirmation message (shown when redirected from Stripe) -->
+    <div id="authContextMsg" style="display:none;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;margin-bottom:14px;text-align:center;line-height:1.5"></div>
+    <h1 class="auth-title" id="authTitle">Sign in to your account</h1>
+    <div class="form-group">
+      <input type="email" id="authEmail" class="form-control" placeholder="you@example.com" onkeydown="if(event.key==='Enter')handleAuth()">
+    </div>
+    <div class="form-group">
+      <input type="password" id="authPassword" class="form-control" placeholder="Password (min. 6 characters)" onkeydown="if(event.key==='Enter')handleAuth()">
+    </div>
+    <button id="authBtn" class="btn btn-primary" style="width:100%" onclick="handleAuth()">Sign In</button>
+    <div id="authMsg" class="auth-msg"></div>
+    <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--text-2)">
+      <span id="authToggleText">Don't have an account?</span><a onclick="toggleAuthMode()" style="color:var(--accent);cursor:pointer;font-weight:600;margin-left:4px" id="authToggleLink">Sign up</a>
+    </div>
+    <div style="text-align:center;margin-top:12px">
+      <a onclick="showLanding()" style="font-size:12px;color:var(--text-3);cursor:pointer">← Back</a>
+    </div>
+  </div>
+</div>
+
+<!-- ACCESS GATE ─ logged in but not paid -->
+<div id="accessGate" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
+  <div class="access-gate-box">
+    <div class="access-gate-icon">🥗</div>
+    <h2 class="access-gate-title">Get Full Access</h2>
+    <p class="access-gate-sub">You're signed in! Unlock Meal Planning OS to start building your weekly plan, grocery list, and freezer inventory.</p>
+    <div class="access-gate-price">$29</div>
+    <div class="access-gate-price-sub">one-time payment · lifetime access</div>
+    <button id="checkoutBtn" class="btn-get-access" onclick="startCheckout()">Get Access — $29 one-time</button>
+    <div class="access-gate-signout">Signed in as <span id="userEmail"></span> · <a onclick="signOut()">Sign out</a></div>
+  </div>
+</div>
+
+<!-- APP ROOT ─ shown when logged in + paid -->
+<div id="appRoot" style="display:none">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <!-- Logo SVG -->
+      <svg class="logo-svg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="34" height="34" rx="8" fill="#FFFFFF" stroke="#DDE4F0"/>
+        <g stroke="#0D1829" stroke-width="1.6" stroke-linecap="round">
+          <line x1="10" y1="10" x2="10" y2="24"/>
+          <line x1="17" y1="10" x2="17" y2="24"/>
+          <line x1="24" y1="10" x2="24" y2="24"/>
+          <line x1="10" y1="10" x2="24" y2="10"/>
+          <line x1="10" y1="17" x2="24" y2="17"/>
+          <line x1="10" y1="24" x2="24" y2="24"/>
+        </g>
+      </svg>
+      <div class="logo-text">Meal Planning <span>OS</span></div>
+    </div>
+    <div class="user-menu">
+      <div class="week-badge" id="weekBadge">Week of —</div>
+      <span class="user-email" id="userEmail"></span>
+      <button class="logout-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-inner">
+    <div class="nav-tab active" onclick="switchTab('step1')"><div class="step-num">1</div> Plan Your Week</div>
+    <div class="nav-tab" onclick="switchTab('step2')"><div class="step-num">2</div> Go-To Meals</div>
+    <div class="nav-tab" onclick="switchTab('step3')"><div class="step-num">3</div> Meal Plan</div>
+    <div class="nav-tab" onclick="switchTab('step4')"><div class="step-num">4</div> Grocery List</div>
+    <div class="nav-tab" onclick="switchTab('freezer')">❄️ Freezer</div>
+    <div class="nav-tab" onclick="switchTab('library')">📚 Recipe Library</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- STEP 1 -->
+  <div id="step1" class="section active">
+    <div class="section-header">
+      <div class="section-title">Plan Your Week</div>
+      <div class="section-subtitle">Start here — before you think about food. A packed AM means breakfast needs to be ready to go. A busy PM means an easy dinner or planned takeout. Your schedule shapes your meals, not the other way around.</div>
+    </div>
+    <div class="week-grid" id="weekGrid"></div>
+    <div class="week-tip" style="margin-top:18px">
+      <span style="font-size:16px;flex-shrink:0">⚡</span>
+      <span><strong>The rule:</strong> Map your week before deciding what to eat. Your schedule drives your meal choices — not the other way around. Commitments you add here will appear in your meal plan as a reminder.</span>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="step2" class="section">
+    <div class="section-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div>
+        <div class="section-title">Your Go-To Meals</div>
+        <div class="section-subtitle">Build your No-Decision Menu. Max 5 per meal category — that's intentional. Fewer choices, less decision fatigue. These save automatically so you only build this once.</div>
+      </div>
+      <button class="btn btn-secondary" style="flex-shrink:0;margin-top:4px;font-size:12px" onclick="switchTab('library')">📚 Browse Library</button>
+    </div>
+    <div class="meal-sections" id="mealSections"></div>
+    <div class="starter-note">
+      <span>💾</span>
+      <span>Everything saves automatically to your browser. Your recipes will be here every time you come back. Add your own or browse the Recipe Library to get started.</span>
+    </div>
+  </div>
+
+  <!-- LIBRARY -->
+  <div id="library" class="section">
+    <div class="section-header">
+      <div class="section-title">Recipe Library</div>
+      <div class="section-subtitle">Curated recipes from the Meal Planning OS kitchen. Browse, pick what fits your life, and add up to 5 per meal category to your Go-To Meals.</div>
+    </div>
+    <div class="lib-intro">
+      <div class="lib-intro-icon">👨‍🍳</div>
+      <div class="lib-intro-text"><strong>How this works:</strong> Find a recipe you like, hit "Add to My Go-Tos," and it'll appear in Step 2 with all the ingredients already loaded — ready to use in your meal plan and grocery list. You can edit any recipe after adding it.</div>
+    </div>
+    <div class="lib-filters" id="libFilters"></div>
+    <div class="lib-grid" id="libGrid"></div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="step3" class="section">
+    <div class="section-header">
+      <div class="section-title">Your Meal Plan</div>
+      <div class="section-subtitle">Click any slot to assign a meal. Your week's commitments show above each day so you can plan around them. Type any meal name, choose a category, or pick from your go-to recipes — whatever's fastest.</div>
+    </div>
+    <div class="meal-plan-wrap">
+      <table class="meal-plan-table" id="mealPlanTable"></table>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div id="step4" class="section">
+    <div class="section-header">
+      <div class="section-title">Grocery List</div>
+      <div class="section-subtitle">Auto-built from your meal plan. Sorted by store section. Check off as you shop. Your staples and backup items are always at the bottom.</div>
+    </div>
+    <div class="grocery-toolbar">
+      <div style="font-size:13px;color:var(--text-2)" id="groceryMeta"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="uncheckAll()">Uncheck All</button>
+        <button class="btn btn-primary btn-sm" onclick="renderGrocery()">↻ Rebuild List</button>
+      </div>
+    </div>
+    <div class="grocery-main" id="groceryMain"></div>
+  </div>
+
+  <!-- FREEZER -->
+  <div id="freezer" class="section">
+    <div class="section-header">
+      <div class="section-title">❄️ Freezer Inventory</div>
+      <div class="section-subtitle">Your freezer is a productivity tool. Log extra portions when you batch cook. Pull frozen meals into your plan on busy nights. Oldest meals show first — that's FIFO.</div>
+    </div>
+    <div class="freezer-layout">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div style="font-size:14px;font-weight:700">Frozen Meals</div>
+          <button class="btn btn-primary btn-sm" onclick="openFreezerModal()">+ Log a Meal</button>
+        </div>
+        <div class="freezer-list" id="freezerList"></div>
+      </div>
+      <div>
+        <div class="card">
+          <div style="font-size:14px;font-weight:800;margin-bottom:8px">FIFO Method</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+            <strong>First In, First Out.</strong> Always eat your oldest frozen meals first. Keeps your inventory fresh and prevents waste.<br><br>
+            The meal marked <span style="background:var(--accent);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">USE FIRST</span> is oldest.<br><br>
+            Frozen meals last <strong>3–6 months</strong>. Always label with the date made and expiration.
+          </div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Add to Meal Plan</div>
+            <div style="font-size:12px;color:var(--text-2)">Hit <strong>"Add to Plan"</strong> on any meal to pull it into your week.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ═══ MODAL: Recipe ═══ -->
+<div class="modal-overlay" id="recipeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="recipeModalTitle">Add Recipe</div>
+      <button class="modal-close" onclick="closeModal('recipeModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Recipe Name</label>
+        <input type="text" id="r_name" placeholder="e.g. Overnight Oatmeal">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Servings Per Batch</label>
+          <input type="number" id="r_servings" min="1" max="50" value="4">
+        </div>
+        <div class="form-group">
+          <label>Meal Type</label>
+          <select id="r_type">
+            <option value="breakfast">🌅 Breakfast</option>
+            <option value="lunch">☀️ Lunch</option>
+            <option value="dinner">🌙 Dinner</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Prep Notes (optional)</label>
+        <textarea id="r_notes" placeholder="Quick tip or prep reminder…" style="min-height:52px"></textarea>
+      </div>
+      <div class="divider"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <label style="margin:0">Ingredients <span style="font-weight:400;color:var(--text-3);font-size:11px">— total amounts for the full batch</span></label>
+        <button class="btn btn-secondary btn-sm" onclick="addIngRow()">+ Add</button>
+      </div>
+      <div class="ing-header">
+        <label>Ingredient</label><label>Amount</label><label>Category</label><div></div>
+      </div>
+      <div id="ingRows"></div>
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-secondary" onclick="closeModal('recipeModal')">Cancel</button>
+      <button id="revertBtn" style="display:none;background:none;border:none;font-size:12px;color:var(--text-3);cursor:pointer;font-family:inherit;font-weight:600;padding:4px 2px" onclick="revertRecipe()">↩ Revert to Original</button>
+      <button class="btn btn-primary" onclick="saveRecipe()">Save Recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Assign Meal ═══ -->
+<div class="modal-overlay" id="assignModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="assignModalTitle">Assign Meal</div>
+      <button class="modal-close" onclick="closeModal('assignModal')">✕</button>
+    </div>
+    <div class="modal-body" id="assignModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('assignModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmAssign()">Assign</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Freezer ═══ -->
+<div class="modal-overlay" id="freezerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log Freezer Meal</div>
+      <button class="modal-close" onclick="closeModal('freezerModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Meal Name</label>
+        <input type="text" id="fz_name" placeholder="e.g. Chicken Chili">
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Date Made</label><input type="date" id="fz_made"></div>
+        <div class="form-group"><label>Expiration Date</label><input type="date" id="fz_exp"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Servings Frozen</label><input type="number" id="fz_servings" min="1" value="2"></div>
+        <div class="form-group"><label>Notes (optional)</label><input type="text" id="fz_notes" placeholder="e.g. No dairy"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('freezerModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveFreezerItem()">Log Meal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Freezer → Plan ═══ -->
+<div class="modal-overlay" id="fzPlanModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add to Meal Plan</div>
+      <button class="modal-close" onclick="closeModal('fzPlanModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-2);margin-bottom:14px">Which slot would you like to assign this to?</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Day</label>
+          <select id="fzp_day">
+            <option value="monday">Monday</option><option value="tuesday">Tuesday</option>
+            <option value="wednesday">Wednesday</option><option value="thursday">Thursday</option>
+            <option value="friday">Friday</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Meal</label>
+          <select id="fzp_meal">
+            <option value="dinner">Dinner</option>
+            <option value="lunch">Lunch</option>
+            <option value="breakfast">Breakfast</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('fzPlanModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmFzPlan()">Add to Plan</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- FOOTER -->
+<div style="text-align:center;padding:28px 20px 40px;margin-top:24px;border-top:1px solid var(--border)">
+  <div style="font-size:11px;color:var(--text-3);margin-bottom:5px">
+    Questions or feedback? <a href="mailto:steven@mealplanningos.com" style="color:var(--accent);text-decoration:none;font-weight:600">steven@mealplanningos.com</a>
+  </div>
+  <div style="font-size:11px;color:var(--text-3)">Meal Planning OS (Beta) &nbsp;·&nbsp; Built from 300,000+ meals</div>
+</div>
+
+</div><!-- /appRoot -->
+
+<script src="app.js"></script>
+</body>
+</html>
