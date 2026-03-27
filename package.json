@@ -1,6 +1,7 @@
 {
-  "name": "meal-planning-os-functions",
+  "name": "meal-planning-os",
   "version": "1.0.0",
+  "description": "Meal Planning OS — Netlify Functions dependencies",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "stripe": "^14.0.0"

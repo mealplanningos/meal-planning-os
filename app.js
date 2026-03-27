@@ -1110,210 +1110,132 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
 renderWeek();
 renderMealSections();
 
+
 // ============================================================
-// SUPABASE AUTH + SYNC  (Supabase JS SDK loaded in index.html)
+// SUPABASE AUTH + SYNC
 // ============================================================
+// HOW DATA IS STORED:
+//   user_access  — keyed by EMAIL.  Webhook writes here after payment.
+//   user_data    — keyed by USER ID (UUID). App reads/writes here.
+//   localStorage — fast local cache only. Supabase is source of truth.
+// ============================================================
+
 const SUPABASE_URL = 'https://vgtsxthotnnvknrqyhec.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_lq13XvUG9YsoiHrU8p36qg_EXE0vo8f';
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_ANON_KEY = 'sb_publishable_lq13XvUG9YsoiHrU8p36qg_EXE0vo8f';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let _currentUser = null;
 let _saveTimer   = null;
 
-// ── UI state helpers ─────────────────────────────────────────
-let _authMode = 'signin';
-
-function showLanding() {
-  _currentUser = null;
-  document.getElementById('landingScreen').style.display = 'flex';
-  document.getElementById('authScreen').style.display    = 'none';
-  document.getElementById('accessGate').style.display    = 'none';
-  document.getElementById('appRoot').style.display       = 'none';
+// ── Auth tab switching ────────────────────────────────────────
+function switchAuthTab(tab) {
+  const isSignIn = tab === 'signin';
+  document.getElementById('tabSignIn').classList.toggle('active', isSignIn);
+  document.getElementById('tabSignUp').classList.toggle('active', !isSignIn);
+  document.getElementById('panelSignIn').style.display = isSignIn ? 'block' : 'none';
+  document.getElementById('panelSignUp').style.display = isSignIn ? 'none' : 'block';
+  document.getElementById('authMsg').textContent = '';
 }
 
-// context: optional string shown as a green confirmation banner above the form
-function showAuth(context) {
-  _currentUser = null;
-  _authMode = 'signin';
-  document.getElementById('landingScreen').style.display = 'none';
-  document.getElementById('authScreen').style.display    = 'flex';
-  document.getElementById('accessGate').style.display    = 'none';
-  document.getElementById('appRoot').style.display       = 'none';
-  // Reset form
-  const e = document.getElementById('authEmail');
-  const p = document.getElementById('authPassword');
-  const m = document.getElementById('authMsg');
-  const b = document.getElementById('authBtn');
-  const t = document.getElementById('authTitle');
-  if (e) e.value = '';
-  if (p) p.value = '';
-  if (m) { m.textContent = ''; m.className = 'auth-msg'; }
-  if (b) { b.textContent = 'Sign In'; b.disabled = false; }
-  if (t) t.textContent = 'Sign in to your account';
-  // Show post-payment context banner if provided
-  const ctx = document.getElementById('authContextMsg');
-  if (ctx) {
-    if (context) { ctx.textContent = context; ctx.style.display = 'block'; }
-    else          { ctx.textContent = '';      ctx.style.display = 'none';  }
+function setAuthMsg(text, isError) {
+  const el = document.getElementById('authMsg');
+  el.textContent = text;
+  el.className = 'auth-msg ' + (isError ? 'error' : 'success');
+}
+
+// ── Sign In (returning users) ─────────────────────────────────
+async function signIn() {
+  const email    = document.getElementById('siEmail').value.trim();
+  const password = document.getElementById('siPassword').value;
+  if (!email || !password) { setAuthMsg('Please enter your email and password.', true); return; }
+
+  setAuthMsg('Signing in…', false);
+  const { error } = await _sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    setAuthMsg(error.message === 'Invalid login credentials'
+      ? 'Incorrect email or password. Try again, or use "Create Account" if you\'re new.'
+      : error.message, true);
   }
+  // On success, onAuthStateChange fires → handleSession
+}
+
+// ── Sign Up (new users who already paid) ─────────────────────
+async function signUp() {
+  const email    = document.getElementById('suEmail').value.trim();
+  const password = document.getElementById('suPassword').value;
+  if (!email || !password) { setAuthMsg('Please enter your email and password.', true); return; }
+  if (password.length < 6)  { setAuthMsg('Password must be at least 6 characters.', true); return; }
+
+  setAuthMsg('Creating account…', false);
+  const { error } = await _sb.auth.signUp({ email, password });
+  if (error) {
+    setAuthMsg(error.message, true);
+    return;
+  }
+  setAuthMsg('Account created! Signing you in…', false);
+  // signUp auto-signs in → onAuthStateChange fires → handleSession
+}
+
+// ── Sign Out ──────────────────────────────────────────────────
+async function signOut() {
+  await _sb.auth.signOut();
+  _currentUser = null;
+  showAuth();
+}
+
+// ── UI State ──────────────────────────────────────────────────
+function showAuth() {
+  document.getElementById('authScreen').style.display  = 'flex';
+  document.getElementById('accessGate').style.display  = 'none';
+  document.getElementById('appRoot').style.display     = 'none';
 }
 
 function showAccessGate(user) {
   _currentUser = user;
-  document.getElementById('landingScreen').style.display = 'none';
-  document.getElementById('authScreen').style.display    = 'none';
-  document.getElementById('accessGate').style.display    = 'flex';
-  document.getElementById('appRoot').style.display       = 'none';
-  const ue = document.getElementById('userEmail');
-  if (ue) ue.textContent = user.email;
+  document.getElementById('authScreen').style.display  = 'none';
+  document.getElementById('accessGate').style.display  = 'flex';
+  document.getElementById('appRoot').style.display     = 'none';
+  document.getElementById('gateEmail').textContent     = user.email;
 }
 
 function showApp(user) {
   _currentUser = user;
-  document.getElementById('landingScreen').style.display = 'none';
-  document.getElementById('authScreen').style.display    = 'none';
-  document.getElementById('accessGate').style.display    = 'none';
-  document.getElementById('appRoot').style.display       = 'block';
-  const ue = document.getElementById('userEmail');
-  if (ue) ue.textContent = user.email;
+  document.getElementById('authScreen').style.display  = 'none';
+  document.getElementById('accessGate').style.display  = 'none';
+  document.getElementById('appRoot').style.display     = 'block';
+  document.getElementById('userEmail').textContent     = user.email;
 }
 
-// ── Email + Password Auth ─────────────────────────────────────
-function toggleAuthMode() {
-  _authMode = _authMode === 'signin' ? 'signup' : 'signin';
-  const s = _authMode === 'signup';
-  document.getElementById('authTitle').textContent      = s ? 'Create your account'      : 'Sign in to your account';
-  document.getElementById('authBtn').textContent        = s ? 'Sign Up'                  : 'Sign In';
-  document.getElementById('authToggleText').textContent = s ? 'Already have an account?' : "Don't have an account?";
-  document.getElementById('authToggleLink').textContent = s ? 'Sign in'                  : 'Sign up';
-  document.getElementById('authMsg').textContent        = '';
-  document.getElementById('authMsg').className          = 'auth-msg';
-}
-
-async function handleAuth() {
-  const email    = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value;
-  const msg      = document.getElementById('authMsg');
-  const btn      = document.getElementById('authBtn');
-
-  if (!email || !password) {
-    msg.textContent = 'Please enter your email and password.';
-    msg.className = 'auth-msg error'; return;
-  }
-  if (password.length < 6) {
-    msg.textContent = 'Password must be at least 6 characters.';
-    msg.className = 'auth-msg error'; return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = _authMode === 'signin' ? 'Signing in…' : 'Creating account…';
-
-  if (_authMode === 'signin') {
-    const { error } = await _sb.auth.signInWithPassword({ email, password });
-    if (error) {
-      msg.textContent = error.message || 'Sign in failed. Please check your credentials.';
-      msg.className = 'auth-msg error'; btn.disabled = false; btn.textContent = 'Sign In';
-    }
-    // On success, onAuthStateChange fires → handleSession()
-  } else {
-    const { data, error } = await _sb.auth.signUp({ email, password });
-    if (error) {
-      msg.textContent = error.message || 'Sign up failed. Please try again.';
-      msg.className = 'auth-msg error'; btn.disabled = false; btn.textContent = 'Sign Up'; return;
-    }
-    // Create a profile row for metadata (access is via payment_entitlements, not profiles)
-    if (data.user) {
-      await _sb.from('profiles').upsert({
-        id: data.user.id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
-    }
-    if (data.session) {
-      // Email confirmation disabled — logged in immediately, onAuthStateChange fires
-    } else {
-      msg.textContent = '✓ Account created! Check your email to confirm, then sign in here.';
-      msg.className = 'auth-msg success'; btn.disabled = false; btn.textContent = 'Sign Up';
-    }
-  }
-}
-
-// ── Sign out ─────────────────────────────────────────────────
-async function signOut() {
-  await _sb.auth.signOut();
-  showLanding();
-}
-
-// ── Check and claim payment entitlement ──────────────────────
-// Source of truth for access. Never trusts the URL — always queries the DB.
-async function checkAndClaimAccess(userId) {
-  // 1. Already claimed and active for this user?
-  const { data: active } = await _sb
-    .from('payment_entitlements')
-    .select('id')
-    .eq('claimed_by_user_id', userId)
-    .eq('access_status', 'active')
-    .eq('payment_status', 'paid')
+// ── Access Check: query user_access by email ──────────────────
+// The webhook writes the customer's email here after Stripe payment.
+// This is the ONLY source of truth for access.
+async function hasAccess(email) {
+  const normalizedEmail = email.toLowerCase().trim();
+  const { data, error } = await _sb
+    .from('user_access')
+    .select('has_access')
+    .eq('email', normalizedEmail)
     .maybeSingle();
-  if (active) return true;
 
-  // 2. Unclaimed paid entitlement matching this user's email? (RLS enforces email match)
-  const { data: unclaimed } = await _sb
-    .from('payment_entitlements')
-    .select('id')
-    .eq('payment_status', 'paid')
-    .eq('access_status', 'unclaimed')
-    .maybeSingle();
-  if (!unclaimed) return false;
-
-  // 3. Claim it — link this user_id to the entitlement
-  const { error } = await _sb
-    .from('payment_entitlements')
-    .update({
-      claimed_by_user_id: userId,
-      claimed_at:         new Date().toISOString(),
-      access_status:      'active',
-      granted_at:         new Date().toISOString(),
-      updated_at:         new Date().toISOString(),
-    })
-    .eq('id', unclaimed.id)
-    .eq('access_status', 'unclaimed'); // Guard against race conditions
-
-  if (error) { console.error('Failed to claim entitlement:', error.message); return false; }
-  return true;
-}
-
-// ── Stripe: start checkout (no login required) ───────────────
-async function startCheckout() {
-  // Works from both landing page and access gate
-  const btn = document.getElementById('landingCheckoutBtn') || document.getElementById('checkoutBtn');
-  const msg = document.getElementById('landingMsg');
-  if (btn) { btn.disabled = true; btn.textContent = 'Redirecting to checkout…'; }
-  try {
-    const res = await fetch('/.netlify/functions/create-checkout-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    });
-    const { url, error } = await res.json();
-    if (error || !url) throw new Error(error || 'No checkout URL returned');
-    window.location.href = url;
-  } catch (err) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Get Access — $29 one-time'; }
-    if (msg) { msg.textContent = 'Something went wrong. Please try again.'; msg.className = 'auth-msg error'; }
+  if (error) {
+    console.error('Access check error:', error.message);
+    return false;
   }
+  return data?.has_access === true;
 }
 
-// ── Cloud load / save ─────────────────────────────────────────
+// ── Cloud Persistence ─────────────────────────────────────────
+// user_data is keyed by user_id (UUID from Supabase auth).
+// This is stable — it never changes even if email changes.
+
 async function loadFromSupabase(userId) {
   const { data, error } = await _sb
-    .from('user_data').select('*').eq('user_id', userId).single();
-  if (error || !data) return null;
+    .from('user_data')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) { console.error('Load error:', error.message); return null; }
   return data;
-}
-
-function scheduleSyncToSupabase() {
-  if (!_currentUser) return;
-  clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(syncToSupabase, 2000);
 }
 
 async function syncToSupabase() {
@@ -1326,18 +1248,18 @@ async function syncToSupabase() {
     week_start:  localStorage.getItem('mpos_weekstart') || '',
     freezer:     freezer,
     groceries:   { staples, flexItems, checks },
-    updated_at:  new Date().toISOString()
+    updated_at:  new Date().toISOString(),
   };
-  await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
+  const { error } = await _sb
+    .from('user_data')
+    .upsert(payload, { onConflict: 'user_id' });
+  if (error) console.error('Sync error:', error.message);
 }
 
-async function migrateIfNeeded(userId) {
-  const cloud = await loadFromSupabase(userId);
-  if (cloud) return cloud;
-  const localRecipes = localStorage.getItem('mpos_recipes_v2');
-  if (!localRecipes) return null;
-  await syncToSupabase();
-  return null;
+function scheduleSyncToSupabase() {
+  if (!_currentUser) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(syncToSupabase, 2000);
 }
 
 function applyCloudData(data) {
@@ -1358,65 +1280,43 @@ function renderAll() {
   renderGrocery(); renderFreezer(); renderLibrary(); updateWeekBadge();
 }
 
-// ── Patch save() to also trigger cloud sync ───────────────────
+// ── Patch save() to also schedule a cloud sync ────────────────
 const _origSave = save;
 window.save = function(k, v) { _origSave(k, v); scheduleSyncToSupabase(); };
 
-// ── Bootstrap ────────────────────────────────────────────────
-async function initAuth() {
-  const { data: { session } } = await _sb.auth.getSession();
-  const params        = new URLSearchParams(window.location.search);
-  const isPostPayment = params.get('payment') === 'success';
-
-  if (session) {
-    await handleSession(session);
-  } else if (isPostPayment) {
-    // User paid but has no active session (e.g. private browsing, different device)
-    window.history.replaceState({}, '', window.location.pathname);
-    showAuth('🎉 Payment confirmed! Create an account (or sign in) with the same email you used at checkout to get instant access.');
-  } else {
-    showLanding();
-  }
-
-  _sb.auth.onAuthStateChange(async (_event, session) => {
-    if (session) await handleSession(session);
-    else showLanding();
-  });
-}
-
+// ── Session Handler ───────────────────────────────────────────
 async function handleSession(session) {
-  const user   = session.user;
-  const params = new URLSearchParams(window.location.search);
+  const user = session.user;
 
-  // Clean up URL immediately so refreshing doesn't re-trigger polling
-  if (params.get('payment') === 'success') {
-    window.history.replaceState({}, '', window.location.pathname);
-    // Webhook may not have fired yet — poll up to 6s
-    let tries = 0;
-    while (tries < 6) {
-      const access = await checkAndClaimAccess(user.id);
-      if (access) { showApp(user); await loadAndRender(user.id); return; }
-      await new Promise(r => setTimeout(r, 1000));
-      tries++;
-    }
-    // Webhook took too long — show access gate; user can refresh to retry
+  const paid = await hasAccess(user.email);
+  if (!paid) {
     showAccessGate(user);
     return;
   }
 
-  const access = await checkAndClaimAccess(user.id);
-  if (!access) { showAccessGate(user); return; }
-
   showApp(user);
-  await loadAndRender(user.id);
-}
-
-async function loadAndRender(userId) {
-  await migrateIfNeeded(userId);
-  const cloud = await loadFromSupabase(userId);
+  const cloud = await loadFromSupabase(user.id);
   applyCloudData(cloud);
+
+  // If no cloud data yet, migrate anything in localStorage
+  if (!cloud) await syncToSupabase();
+
   renderAll();
 }
 
-// ── Start ────────────────────────────────────────────────────
+// ── Bootstrap ─────────────────────────────────────────────────
+async function initAuth() {
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) {
+    await handleSession(session);
+  } else {
+    showAuth();
+  }
+
+  _sb.auth.onAuthStateChange(async (_event, session) => {
+    if (session) await handleSession(session);
+    else showAuth();
+  });
+}
+
 initAuth();

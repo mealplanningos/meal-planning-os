@@ -6,13 +6,16 @@
   <title>Meal Planning OS</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <!-- Supabase SDK -->
+  <!-- Supabase SDK (anon/public client only — no secrets here) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<!-- LANDING ─ default view for logged-out visitors -->
-<div id="landingScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
+<!-- ═══════════════════════════════════════════════════
+  AUTH SCREEN — shown when logged out
+  Two tabs: Sign In (returning users) and Create Account (new users who already purchased)
+════════════════════════════════════════════════════ -->
+<div id="authScreen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
   <div class="auth-box">
     <div class="auth-logo">
       <svg class="logo-svg" viewBox="0 0 40 40" fill="none">
@@ -21,69 +24,66 @@
       </svg>
       <span style="font-size:17px;font-weight:800;letter-spacing:-0.4px">Meal Planning <span style="color:var(--accent)">OS</span></span>
     </div>
-    <h1 class="auth-title">Stop stressing about dinner.</h1>
-    <p class="auth-sub">Plan your week, build your grocery list, and actually stick to it — all in one simple app built for real life.</p>
-    <div class="access-gate-price">$29</div>
-    <div class="access-gate-price-sub">one-time payment · lifetime access</div>
-    <button id="landingCheckoutBtn" class="btn-get-access" onclick="startCheckout()" style="width:100%;margin-top:8px">Get Access — $29 one-time</button>
-    <div id="landingMsg" class="auth-msg"></div>
-    <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-2)">
-      Already have an account? <a onclick="showAuth()" style="color:var(--accent);cursor:pointer;font-weight:600">Sign in</a>
-    </div>
-  </div>
-</div>
 
-<!-- AUTH SCREEN ─ sign in / sign up (shown after payment or via "Sign in" link) -->
-<div id="authScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
-  <div class="auth-box">
-    <div class="auth-logo">
-      <svg class="logo-svg" viewBox="0 0 40 40" fill="none">
-        <rect width="40" height="40" rx="10" fill="#1E5EFF"/>
-        <path d="M10 20h5l4-8 4 16 4-12 3 4h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span style="font-size:17px;font-weight:800;letter-spacing:-0.4px">Meal Planning <span style="color:var(--accent)">OS</span></span>
+    <!-- Tab toggle -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignIn" onclick="switchAuthTab('signin')">Sign In</button>
+      <button class="auth-tab" id="tabSignUp" onclick="switchAuthTab('signup')">Create Account</button>
     </div>
-    <!-- Post-payment confirmation message (shown when redirected from Stripe) -->
-    <div id="authContextMsg" style="display:none;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;margin-bottom:14px;text-align:center;line-height:1.5"></div>
-    <h1 class="auth-title" id="authTitle">Sign in to your account</h1>
-    <div class="form-group">
-      <input type="email" id="authEmail" class="form-control" placeholder="you@example.com" onkeydown="if(event.key==='Enter')handleAuth()">
+
+    <!-- Sign In panel -->
+    <div id="panelSignIn">
+      <p class="auth-sub">Welcome back — sign in to your account.</p>
+      <div class="form-group">
+        <input type="email" id="siEmail" class="form-control" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <input type="password" id="siPassword" class="form-control" placeholder="Password">
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="signIn()">Sign In</button>
     </div>
-    <div class="form-group">
-      <input type="password" id="authPassword" class="form-control" placeholder="Password (min. 6 characters)" onkeydown="if(event.key==='Enter')handleAuth()">
+
+    <!-- Create Account panel -->
+    <div id="panelSignUp" style="display:none">
+      <p class="auth-sub">Already purchased? Create your account using the same email you paid with.</p>
+      <div class="form-group">
+        <input type="email" id="suEmail" class="form-control" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <input type="password" id="suPassword" class="form-control" placeholder="Choose a password (min 6 chars)">
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="signUp()">Create Account</button>
     </div>
-    <button id="authBtn" class="btn btn-primary" style="width:100%" onclick="handleAuth()">Sign In</button>
+
     <div id="authMsg" class="auth-msg"></div>
-    <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--text-2)">
-      <span id="authToggleText">Don't have an account?</span><a onclick="toggleAuthMode()" style="color:var(--accent);cursor:pointer;font-weight:600;margin-left:4px" id="authToggleLink">Sign up</a>
-    </div>
-    <div style="text-align:center;margin-top:12px">
-      <a onclick="showLanding()" style="font-size:12px;color:var(--text-3);cursor:pointer">← Back</a>
-    </div>
   </div>
 </div>
 
-<!-- ACCESS GATE ─ logged in but not paid -->
+<!-- ═══════════════════════════════════════════════════
+  ACCESS GATE — logged in but no purchase found
+  No Stripe here. Purchase happens on Beehiiv / Stripe Payment Link.
+════════════════════════════════════════════════════ -->
 <div id="accessGate" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
   <div class="access-gate-box">
     <div class="access-gate-icon">🥗</div>
-    <h2 class="access-gate-title">Get Full Access</h2>
-    <p class="access-gate-sub">You're signed in! Unlock Meal Planning OS to start building your weekly plan, grocery list, and freezer inventory.</p>
+    <h2 class="access-gate-title">Purchase Required</h2>
+    <p class="access-gate-sub">No active purchase was found for <strong><span id="gateEmail"></span></strong>.<br>Make sure you're signing in with the same email you used to purchase.</p>
     <div class="access-gate-price">$29</div>
     <div class="access-gate-price-sub">one-time payment · lifetime access</div>
-    <button id="checkoutBtn" class="btn-get-access" onclick="startCheckout()">Get Access — $29 one-time</button>
-    <div class="access-gate-signout">Signed in as <span id="userEmail"></span> · <a onclick="signOut()">Sign out</a></div>
+    <button class="btn-get-access" onclick="window.location.href='https://mealplanningos.com'">Get Access — $29 one-time</button>
+    <div class="access-gate-signout">Wrong account? <a onclick="signOut()" style="cursor:pointer">Sign out</a></div>
   </div>
 </div>
 
-<!-- APP ROOT ─ shown when logged in + paid -->
+<!-- ═══════════════════════════════════════════════════
+  APP ROOT — only shown when logged in AND has access
+════════════════════════════════════════════════════ -->
 <div id="appRoot" style="display:none">
 
 <!-- HEADER -->
 <div class="header">
   <div class="header-inner">
     <div class="logo">
-      <!-- Logo SVG -->
       <svg class="logo-svg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="34" height="34" rx="8" fill="#FFFFFF" stroke="#DDE4F0"/>
         <g stroke="#0D1829" stroke-width="1.6" stroke-linecap="round">
@@ -145,7 +145,7 @@
     <div class="meal-sections" id="mealSections"></div>
     <div class="starter-note">
       <span>💾</span>
-      <span>Everything saves automatically to your browser. Your recipes will be here every time you come back. Add your own or browse the Recipe Library to get started.</span>
+      <span>Everything saves automatically to your account. Your data is synced to the cloud — it'll be here on any device, any time.</span>
     </div>
   </div>
 
@@ -348,7 +348,6 @@
     </div>
   </div>
 </div>
-
 
 <!-- FOOTER -->
 <div style="text-align:center;padding:28px 20px 40px;margin-top:24px;border-top:1px solid var(--border)">

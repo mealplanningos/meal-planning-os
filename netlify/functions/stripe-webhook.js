@@ -1,20 +1,28 @@
 // netlify/functions/stripe-webhook.js
-// Receives verified Stripe events and creates entitlement records.
-// This is the ONLY place access is granted — never trust the frontend.
+// Receives Stripe webhook events and grants/revokes access.
+// ONLY this function can grant access — never the frontend.
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
 
-// Service role key bypasses RLS — safe here because this is server-side only
+// Service role key bypasses RLS so we can write to user_access freely
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 exports.handler = async (event) => {
-  const sig = event.headers['stripe-signature'];
+  // Only accept POST
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
 
-  // ── Verify the request came from Stripe ──────────────────────
+  const sig = event.headers['stripe-signature'];
+  if (!sig) {
+    return { statusCode: 400, body: 'Missing stripe-signature header' };
+  }
+
+  // Verify the request actually came from Stripe
   let stripeEvent;
   try {
     stripeEvent = stripe.webhooks.constructEvent(
@@ -27,64 +35,68 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: `Webhook Error: ${err.message}` };
   }
 
-  // ── Successful one-time payment ───────────────────────────────
+  // ── Payment completed: grant access ──────────────────────────────────────
   if (stripeEvent.type === 'checkout.session.completed') {
     const session = stripeEvent.data.object;
-    const email   = session.customer_details?.email?.toLowerCase().trim();
+
+    // Stripe always captures email at checkout — this is our access key
+    const email = session.customer_details?.email;
 
     if (!email) {
-      console.error('No customer email in session:', session.id);
-      return { statusCode: 400, body: 'Missing customer email' };
+      console.error('No email found in checkout.session.completed');
+      return { statusCode: 400, body: 'No customer email in session' };
     }
 
-    // Upsert is idempotent — safe if Stripe retries this event
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log(`Granting access to: ${normalizedEmail}`);
+
     const { error } = await supabase
-      .from('payment_entitlements')
+      .from('user_access')
       .upsert(
         {
-          email,
-          stripe_customer_id:       session.customer,
-          stripe_session_id:        session.id,           // UNIQUE — conflict key
-          stripe_payment_intent_id: session.payment_intent,
-          stripe_price_id:          process.env.STRIPE_PRICE_ID,
-          plan:                     'lifetime',
-          product:                  'meal_planning_os',
-          payment_status:           'paid',
-          access_status:            'unclaimed',
-          purchased_at:             new Date().toISOString(),
-          updated_at:               new Date().toISOString(),
+          email:      normalizedEmail,
+          has_access: true,
+          created_at: new Date().toISOString(),
         },
-        { onConflict: 'stripe_session_id' }
+        { onConflict: 'email' }
       );
 
     if (error) {
-      console.error('Failed to create entitlement:', error.message);
-      return { statusCode: 500, body: 'Database error' };
+      console.error('Failed to grant access in Supabase:', error.message);
+      return { statusCode: 500, body: 'Database error granting access' };
     }
 
-    console.log(`Entitlement created — email: ${email}, session: ${session.id}`);
+    console.log(`Access granted successfully for ${normalizedEmail}`);
   }
 
-  // ── Refund: revoke access ─────────────────────────────────────
+  // ── Refund issued: revoke access ──────────────────────────────────────────
   if (stripeEvent.type === 'charge.refunded') {
     const charge = stripeEvent.data.object;
+    const email  = charge.billing_details?.email || charge.receipt_email;
 
-    const { error } = await supabase
-      .from('payment_entitlements')
-      .update({
-        payment_status: 'refunded',
-        access_status:  'revoked',
-        updated_at:     new Date().toISOString(),
-      })
-      .eq('stripe_payment_intent_id', charge.payment_intent);
+    if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
+      console.log(`Revoking access for: ${normalizedEmail}`);
 
-    if (error) {
-      console.error('Failed to revoke on refund:', error.message);
+      const { error } = await supabase
+        .from('user_access')
+        .update({ has_access: false })
+        .eq('email', normalizedEmail);
+
+      if (error) {
+        console.error('Failed to revoke access in Supabase:', error.message);
+        return { statusCode: 500, body: 'Database error revoking access' };
+      }
+
+      console.log(`Access revoked for ${normalizedEmail}`);
     } else {
-      console.log(`Access revoked for payment_intent: ${charge.payment_intent}`);
+      console.warn('charge.refunded event had no email — cannot revoke access');
     }
   }
 
-  // Always return 200 — prevents Stripe from retrying unnecessarily
-  return { statusCode: 200, body: JSON.stringify({ received: true }) };
+  // Always return 200 so Stripe doesn't retry unnecessarily
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ received: true }),
+  };
 };
