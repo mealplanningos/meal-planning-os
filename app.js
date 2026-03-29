@@ -10,7 +10,7 @@ const K = {
 const DAYS = ['monday','tuesday','wednesday','thursday','friday'];
 const DAY_FULL = {monday:'Monday',tuesday:'Tuesday',wednesday:'Wednesday',thursday:'Thursday',friday:'Friday'};
 const MEALS = ['breakfast','lunch','dinner'];
-const MEAL_ICON = {breakfast:'🌅',lunch:'☀️',dinner:'🌙'};
+const MEAL_ICON = {breakfast:'☀️',lunch:'☀️',dinner:'🌙'};
 const CATS = ['Produce','Protein','Grains & Breads','Dairy / Dairy-Free','Pantry & Seasonings','Freezer / Flex','Snacks / Extras'];
 const CAT_ICON = {'Produce':'🥬','Protein':'🍗','Grains & Breads':'🌾','Dairy / Dairy-Free':'🥛','Pantry & Seasonings':'🧂','Freezer / Flex':'❄️','Snacks / Extras':'🥜'};
 
@@ -90,135 +90,16 @@ const STARTER_RECIPES = [
 // their own Go-To Meals. libraryId is preserved on the copy so we can detect
 // "already added" without a name match.
 const LIBRARY_RECIPES = [
-
-  // ── BREAKFAST ──────────────────────────────────────────────────────────
-  {id:'lb1', type:'breakfast', name:'PB Banana Smoothie', servings:1,
-   tags:['Under 5 Min','High Protein'],
-   notes:'Blend and go. Under 3 minutes. Double the batch if you\'re making for two.',
-   ingredients:[
-     {name:'Banana',          qty:'1',       category:'Produce'},
-     {name:'Peanut Butter',   qty:'2 tbsp',  category:'Pantry & Seasonings'},
-     {name:'Milk',            qty:'1 cup',   category:'Dairy / Dairy-Free'},
-     {name:'Protein Powder',  qty:'1 scoop', category:'Pantry & Seasonings'},
-   ]},
-
-  {id:'lb2', type:'breakfast', name:'Egg & Avocado Toast', servings:1,
-   tags:['Quick & Easy','High Protein'],
-   notes:'Toast the bread, mash the avo, fry the egg. On the table in 8 minutes.',
-   ingredients:[
-     {name:'Bread',        qty:'2 slices', category:'Grains & Breads'},
-     {name:'Avocado',      qty:'½',        category:'Produce'},
-     {name:'Eggs',         qty:'2',        category:'Protein'},
-     {name:'Salt & Pepper',qty:'to taste', category:'Pantry & Seasonings'},
-   ]},
-
-  {id:'lb3', type:'breakfast', name:'Meal Prep Hard-Boiled Eggs', servings:6,
-   tags:['Meal Prep','Batch Cook','High Protein'],
-   notes:'Boil a batch on Sunday. Grab 2 every morning with fruit or toast. The easiest no-decision breakfast there is.',
-   ingredients:[
-     {name:'Eggs', qty:'6',       category:'Protein'},
-     {name:'Salt', qty:'to taste',category:'Pantry & Seasonings'},
-   ]},
-
-  {id:'lb4', type:'breakfast', name:'2-Ingredient Banana Oat Pancakes', servings:2,
-   tags:['Quick & Easy','Budget Friendly'],
-   notes:'Mash ripe bananas into oats, pan-fry 2 min per side. Top with honey or berries. Surprisingly filling for how simple they are.',
-   ingredients:[
-     {name:'Bananas', qty:'2',     category:'Produce'},
-     {name:'Oats',    qty:'1 cup', category:'Grains & Breads'},
-     {name:'Honey',   qty:'1 tbsp',category:'Pantry & Seasonings'},
-     {name:'Berries', qty:'½ cup', category:'Produce'},
-   ]},
-
-  // ── LUNCH ──────────────────────────────────────────────────────────────
-  {id:'lb5', type:'lunch', name:'Rotisserie Chicken Rice Bowl', servings:2,
-   tags:['Easy Lunch','High Protein'],
-   notes:'Grab a rotisserie chicken from the store. Shred it over rice and greens — done in 5 minutes once the rice is cooked.',
-   ingredients:[
-     {name:'Rotisserie Chicken', qty:'½ chicken', category:'Protein'},
-     {name:'Rice',               qty:'1 cup',     category:'Grains & Breads'},
-     {name:'Mixed Greens',       qty:'2 cups',    category:'Produce'},
-     {name:'Olive Oil',          qty:'1 tbsp',    category:'Pantry & Seasonings'},
-   ]},
-
-  {id:'lb6', type:'lunch', name:'Turkey & Avocado Wrap', servings:1,
-   tags:['Easy Lunch','Meal Prep'],
-   notes:'Roll it up the night before and it\'s ready to grab on the way out. Add a handful of chips or a piece of fruit and you\'re set.',
-   ingredients:[
-     {name:'Large Tortilla', qty:'1',     category:'Grains & Breads'},
-     {name:'Turkey',         qty:'4 oz',  category:'Protein'},
-     {name:'Avocado',        qty:'½',     category:'Produce'},
-     {name:'Spinach',        qty:'1 cup', category:'Produce'},
-     {name:'Mustard',        qty:'1 tbsp',category:'Pantry & Seasonings'},
-   ]},
-
-  {id:'lb7', type:'lunch', name:'Greek Chickpea Salad', servings:2,
-   tags:['No Cook','Meal Prep','Budget Friendly'],
-   notes:'No cooking required. Make a big batch and it holds in the fridge for 3 days. Great for back-to-back lunches.',
-   ingredients:[
-     {name:'Chickpeas',       qty:'1 can',  category:'Protein'},
-     {name:'Cucumber',        qty:'1',      category:'Produce'},
-     {name:'Cherry Tomatoes', qty:'1 cup',  category:'Produce'},
-     {name:'Feta',            qty:'¼ cup',  category:'Dairy / Dairy-Free'},
-     {name:'Olive Oil',       qty:'2 tbsp', category:'Pantry & Seasonings'},
-     {name:'Lemon Juice',     qty:'1 tbsp', category:'Pantry & Seasonings'},
-   ]},
-
-  {id:'lb8', type:'lunch', name:'Simple Egg Salad', servings:2,
-   tags:['Meal Prep','High Protein','Easy Lunch'],
-   notes:'Make it Sunday, eat it on toast all week. One of the easiest high-protein lunches you can prep ahead.',
-   ingredients:[
-     {name:'Eggs',    qty:'4',       category:'Protein'},
-     {name:'Mayo',    qty:'2 tbsp',  category:'Pantry & Seasonings'},
-     {name:'Mustard', qty:'1 tsp',   category:'Pantry & Seasonings'},
-     {name:'Bread',   qty:'4 slices',category:'Grains & Breads'},
-   ]},
-
-  // ── DINNER ─────────────────────────────────────────────────────────────
-  {id:'lb9', type:'dinner', name:'White Chicken Chili', servings:6,
-   tags:['Freezer Friendly','Batch Cook','High Protein'],
-   notes:'Make a big batch and freeze half. On a busy night, just pull it from the freezer. One of the best weapons in your meal planning arsenal.',
-   ingredients:[
-     {name:'Ground Chicken',    qty:'1 lb',  category:'Protein'},
-     {name:'White Beans',       qty:'1 can', category:'Protein'},
-     {name:'Chicken Broth',     qty:'2 cups',category:'Pantry & Seasonings'},
-     {name:'Diced Green Chiles',qty:'1 can', category:'Pantry & Seasonings'},
-     {name:'Cumin',             qty:'1 tsp', category:'Pantry & Seasonings'},
-     {name:'Cream Cheese',      qty:'2 oz',  category:'Dairy / Dairy-Free'},
-   ]},
-
-  {id:'lb10', type:'dinner', name:'Baked Salmon & Roasted Broccoli', servings:2,
-   tags:['Quick & Easy','High Protein'],
-   notes:'400°F for 20 minutes. One pan, minimal cleanup. The go-to when you want something healthy without the effort.',
-   ingredients:[
-     {name:'Salmon Fillets', qty:'2',       category:'Protein'},
-     {name:'Broccoli',       qty:'2 cups',  category:'Produce'},
-     {name:'Olive Oil',      qty:'2 tbsp',  category:'Pantry & Seasonings'},
-     {name:'Lemon',          qty:'1',       category:'Produce'},
-     {name:'Garlic',         qty:'2 cloves',category:'Produce'},
-   ]},
-
-  {id:'lb11', type:'dinner', name:'Turkey Meatballs & Marinara', servings:4,
-   tags:['Freezer Friendly','Batch Cook'],
-   notes:'Double the batch and freeze half. Serve over pasta, with crusty bread, or alongside a salad. The freezer version saves countless weeknights.',
-   ingredients:[
-     {name:'Ground Turkey',  qty:'1 lb',    category:'Protein'},
-     {name:'Egg',            qty:'1',       category:'Protein'},
-     {name:'Breadcrumbs',    qty:'¼ cup',   category:'Grains & Breads'},
-     {name:'Garlic',         qty:'2 cloves',category:'Produce'},
-     {name:'Marinara Sauce', qty:'1 jar',   category:'Pantry & Seasonings'},
-   ]},
-
-  {id:'lb12', type:'dinner', name:'Black Bean Tacos', servings:2,
-   tags:['Under 15 Min','Budget Friendly'],
-   notes:'10-minute dinner. Keep canned black beans stocked and this is always on the table. Add leftover chicken or ground beef if you want protein.',
-   ingredients:[
-     {name:'Small Tortillas', qty:'4',     category:'Grains & Breads'},
-     {name:'Black Beans',     qty:'1 can', category:'Protein'},
-     {name:'Salsa',           qty:'½ cup', category:'Pantry & Seasonings'},
-     {name:'Shredded Cheese', qty:'¼ cup', category:'Dairy / Dairy-Free'},
-     {name:'Lime',            qty:'1',     category:'Produce'},
-   ]},
+  {id:"lb1",name:"Tacos",type:"dinner",servings:2,tags:["Under 30 Min"],notes:"\"Taco Tuesday\" makes dinner run on autopilot \u2014 and extra fun!",ingredients:[{name:"Onion, diced",qty:"1/2",category:"Produce"},{name:"Cilantro, chopped",qty:"1 bunch",category:"Produce"},{name:"Garlic cloves, minced",qty:"2",category:"Produce"},{name:"Lime",qty:"1",category:"Produce"},{name:"Shredded Cheese (optional)",qty:"to taste",category:"Dairy / Dairy-Free"},{name:"Protein of Choice (chicken, beef, tofu, etc.)",qty:"10-12 oz",category:"Protein"},{name:"Mexican Seasoning Blend",qty:"to taste",category:"Pantry & Seasonings"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Pepper",qty:"to taste",category:"Pantry & Seasonings"},{name:"Olive Oil",qty:"1 TBSP",category:"Pantry & Seasonings"},{name:"Tortilla Chips (optional)",qty:"to taste",category:"Pantry & Seasonings"},{name:"Salsa (optional)",qty:"to taste",category:"Pantry & Seasonings"},{name:"Corn or Flour Tortillas",qty:"6",category:"Grains & Breads"}]},
+  {id:"lb2",name:"Spaghetti Marinara",type:"dinner",servings:2,tags:["Under 15 Min", "Under 30 Min"],notes:"\"Marinara Monday\" makes for an easy start to your week \u2014 no decisions needed.",ingredients:[{name:"Spaghetti (dry)",qty:"4 oz",category:"Grains & Breads"},{name:"Marinara Sauce",qty:"1 cup",category:"Pantry & Seasonings"}]},
+  {id:"lb3",name:"One Pot Jambalaya",type:"dinner",servings:5,tags:["Batch Cook", "Freezer Friendly", "One Pan", "Make Ahead", "Fun / Experimental"],notes:"Fun meal for a weeknight you want to decompress and listen to music.",ingredients:[{name:"Onion, diced",qty:"1",category:"Produce"},{name:"Garlic cloves, chopped",qty:"2",category:"Produce"},{name:"Celery stalk, diced",qty:"1",category:"Produce"},{name:"Red bell pepper, diced",qty:"1",category:"Produce"},{name:"Fresh parsley (garnish)",qty:"4 TBSP",category:"Produce"},{name:"Andouille sausage, sliced",qty:"7 oz",category:"Protein"},{name:"Boneless chicken thighs, cubed",qty:"4",category:"Protein"},{name:"Oil",qty:"2 TBSP",category:"Pantry & Seasonings"},{name:"Cajun Seasoning",qty:"3 TBSP",category:"Pantry & Seasonings"},{name:"Tomato paste",qty:"1/4 cup",category:"Pantry & Seasonings"},{name:"White rice (dry)",qty:"1 cup",category:"Grains & Breads"},{name:"Black beans, rinsed and drained",qty:"1 can (15 oz)",category:"Pantry & Seasonings"},{name:"Vegetable stock",qty:"3 cups",category:"Pantry & Seasonings"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Pepper",qty:"to taste",category:"Pantry & Seasonings"}]},
+  {id:"lb4",name:"Crustless Egg Quiche",type:"breakfast",servings:6,tags:["Batch Cook", "One Pan", "Make Ahead"],notes:"Easy one pan breakfast \u2014 cook once and enjoy all week.",ingredients:[{name:"Red bell pepper, chopped",qty:"1",category:"Produce"},{name:"Onion, chopped",qty:"1/2",category:"Produce"},{name:"Milk",qty:"1 cup",category:"Dairy / Dairy-Free"},{name:"Eggs",qty:"12",category:"Dairy / Dairy-Free"},{name:"Butter",qty:"as needed",category:"Dairy / Dairy-Free"},{name:"Salt & Pepper",qty:"to taste",category:"Pantry & Seasonings"}]},
+  {id:"lb5",name:"Overnight Oatmeal",type:"breakfast",servings:1,tags:["Under 5 Min", "Batch Cook", "No Cook", "Make Ahead"],notes:"Prep a few containers ahead of time to boost your morning's mental energy.",ingredients:[{name:"Berries",qty:"1/2 cup",category:"Produce"},{name:"Milk",qty:"1 cup",category:"Dairy / Dairy-Free"},{name:"Oatmeal",qty:"1 cup",category:"Grains & Breads"}]},
+  {id:"lb6",name:"Green Detox Smoothie",type:"breakfast",servings:3,tags:["Under 5 Min", "Under 15 Min", "No Cook"],notes:"Healthy smoothie \u2014 done in under 5 minutes.",ingredients:[{name:"Banana",qty:"3",category:"Produce"},{name:"Spinach",qty:"3 cups",category:"Produce"},{name:"Green apple",qty:"3",category:"Produce"},{name:"Coconut water",qty:"1 cup",category:"Pantry & Seasonings"},{name:"Protein powder (optional)",qty:"3 servings",category:"Pantry & Seasonings"},{name:"Water",qty:"as needed",category:"Pantry & Seasonings"}]},
+  {id:"lb7",name:"Egg White Breakfast Burrito",type:"breakfast",servings:2,tags:["Under 30 Min", "Batch Cook", "Make Ahead", "Freezer Friendly"],notes:"Easy grab-n-go option, perfect to make a batch and freeze.",ingredients:[{name:"Sweet potato",qty:"1",category:"Produce"},{name:"Yellow onion",qty:"1/2",category:"Produce"},{name:"Avocado",qty:"1",category:"Produce"},{name:"Egg whites (Egg Beaters)",qty:"1 cup",category:"Dairy / Dairy-Free"},{name:"Black beans",qty:"1/2 cup",category:"Pantry & Seasonings"},{name:"Smoked paprika",qty:"to taste",category:"Pantry & Seasonings"},{name:"Garlic powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Onion powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Pepper",qty:"to taste",category:"Pantry & Seasonings"},{name:"Cooking spray",qty:"as needed",category:"Pantry & Seasonings"},{name:"Large tortilla",qty:"1",category:"Grains & Breads"}]},
+  {id:"lb8",name:"Chicken & Bean Burrito",type:"lunch",servings:5,tags:["Under 30 Min", "Batch Cook", "Freezer Friendly", "Make Ahead"],notes:"Make 5 at once and your lunches or dinners are done for the week.",ingredients:[{name:"Boneless chicken thighs",qty:"1.5 lbs",category:"Protein"},{name:"Avocado",qty:"1/2",category:"Produce"},{name:"Yellow onion",qty:"1/2",category:"Produce"},{name:"Roasted red peppers",qty:"8 tbsp",category:"Produce"},{name:"Black beans, low sodium",qty:"1 can",category:"Pantry & Seasonings"},{name:"Olive oil",qty:"1 tbsp",category:"Pantry & Seasonings"},{name:"Garlic powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Onion powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Chili powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Thyme",qty:"to taste",category:"Pantry & Seasonings"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Pepper",qty:"to taste",category:"Pantry & Seasonings"},{name:"Large tortillas",qty:"5",category:"Grains & Breads"}]},
+  {id:"lb9",name:"Red Lentil Soup",type:"lunch",servings:2,tags:["Under 30 Min", "Batch Cook", "Freezer Friendly", "One Pan", "Make Ahead"],notes:"A one-pot, 30-minute soup \u2014 batch it on Sunday or a weeknight you have some free time.",ingredients:[{name:"Onion",qty:"1/2",category:"Produce"},{name:"Celery stalk",qty:"1",category:"Produce"},{name:"Carrot",qty:"1",category:"Produce"},{name:"Sweet potato",qty:"1",category:"Produce"},{name:"Garlic cloves",qty:"2",category:"Produce"},{name:"Lemon",qty:"1/2",category:"Produce"},{name:"Olive oil",qty:"1 tbsp",category:"Pantry & Seasonings"},{name:"Dry red lentils",qty:"1/2 cup",category:"Pantry & Seasonings"},{name:"Veggie stock",qty:"2-3 cups",category:"Pantry & Seasonings"},{name:"Water",qty:"1/2 cup",category:"Pantry & Seasonings"},{name:"Tomato paste",qty:"1 tbsp",category:"Pantry & Seasonings"},{name:"Chili powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Smoked paprika",qty:"to taste",category:"Pantry & Seasonings"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Pepper",qty:"to taste",category:"Pantry & Seasonings"}]},
+  {id:"lb10",name:"Beef & Broccoli",type:"dinner",servings:3,tags:["Under 15 Min", "One Pan", "Make Ahead"],notes:"Quick one pan meal for your busy weeknight.",ingredients:[{name:"Sirloin steak",qty:"12 oz",category:"Protein"},{name:"Garlic cloves",qty:"3",category:"Produce"},{name:"Green onions",qty:"1 stalk",category:"Produce"},{name:"Broccoli, chopped",qty:"3 cups",category:"Produce"},{name:"Olive oil",qty:"1.5 tbsp",category:"Pantry & Seasonings"},{name:"Honey",qty:"3 tbsp",category:"Pantry & Seasonings"},{name:"Apple cider vinegar",qty:"3 tbsp",category:"Pantry & Seasonings"},{name:"Sesame seeds (optional)",qty:"to taste",category:"Pantry & Seasonings"},{name:"White rice (dry)",qty:"1.5 cups",category:"Grains & Breads"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Soy sauce",qty:"3/4 cup",category:"Pantry & Seasonings"},{name:"Cornstarch",qty:"3 tbsp",category:"Pantry & Seasonings"}]}
 ];
 
 const DEFAULT_STAPLES = [
@@ -273,7 +154,7 @@ function renderLibrary(){
   const filterEl=document.getElementById('libFilters');
   const filters=[
     {id:'all',       label:'All'},
-    {id:'breakfast', label:'🌅 Breakfast'},
+    {id:'breakfast', label:'☀️ Breakfast'},
     {id:'lunch',     label:'☀️ Lunch'},
     {id:'dinner',    label:'🌙 Dinner'},
   ];
@@ -400,7 +281,7 @@ function renderWeek(){
       <div class="day-header"><div class="day-name">${DAY_FULL[day]}</div></div>
       <div class="day-slots">
         <div class="day-slot">
-          <div class="slot-label"><span>🌅</span> AM</div>
+          <div class="slot-label"><span>☀️</span> AM</div>
           <textarea data-day="${day}" data-slot="am" placeholder="Morning meeting, workout, early drop-off…">${notes.am||''}</textarea>
         </div>
         <div class="day-slot">
@@ -466,7 +347,7 @@ function renderMealSections(){
       card.innerHTML=`
         <div class="recipe-card-name">${r.name}</div>
         <div class="recipe-card-servings">${r.servings} serving${r.servings!==1?'s':''} per batch</div>
-        ${r.notes?`<div class="recipe-card-note">${r.notes}</div>`:''}
+        ${renderSteps(r.notes)}
         <div class="recipe-card-ings">${ingPreview||'No ingredients yet'}</div>
         <div class="recipe-card-actions">
           <button class="btn btn-secondary btn-sm" onclick="openRecipeModal('${r.id}')">Edit</button>
@@ -569,7 +450,7 @@ function renderMealPlan(){
   DAYS.forEach(d=>{
     const n=weekNotes[d]||{};
     let coms='';
-    if(n.am) coms+=`<div class="th-commitment"><span class="th-commitment-icon">🌅</span><span class="th-commitment-text">${n.am}</span></div>`;
+    if(n.am) coms+=`<div class="th-commitment"><span class="th-commitment-icon">☀️</span><span class="th-commitment-text">${n.am}</span></div>`;
     if(n.pm) coms+=`<div class="th-commitment"><span class="th-commitment-icon">🌙</span><span class="th-commitment-text">${n.pm}</span></div>`;
     h+=`<th><div class="th-inner"><div class="th-day">${DAY_FULL[d]}</div>${coms}</div></th>`;
   });
@@ -656,7 +537,7 @@ function openAssignModal(day,meal){
   html+='</div>';
   // Meal name (optional)
   html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;margin-top:4px">Meal Name <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>`;
-  html+=`<div class="form-group" style="margin-bottom:10px"><input type="text" id="a_mealName" placeholder="Leave blank to use the type label, or type a specific meal…" value="${existing?existing.name:''}"></div>`;
+  html+=`<div class="form-group" style="margin-bottom:10px"><input type="text" id="a_mealName" onkeydown="event.stopPropagation();if(event.key==='Enter'){event.preventDefault();confirmAssign();}"  placeholder="Leave blank to use the type label, or type a specific meal…" value="${existing?existing.name:''}"></div>`;
   // Freezer picker — shown when freezer type selected
   const isFreezerType=_aC.mealType==='freezer';
   html+=`<div id="freezerPickerSection" style="display:${isFreezerType?'block':'none'}">`;
@@ -1156,7 +1037,7 @@ async function signIn() {
       ? 'Incorrect email or password. Try again, or use "Create Account" if you\'re new.'
       : error.message, true);
   }
-  // On success, onAuthStateChange fires → handleSession
+  if (data?.session) await handleSession(data.session);
 }
 
 // ── Sign Up (new users who already paid) ─────────────────────
@@ -1173,7 +1054,7 @@ async function signUp() {
     return;
   }
   setAuthMsg('Account created! Signing you in…', false);
-  // signUp auto-signs in → onAuthStateChange fires → handleSession
+  if (data?.session) await handleSession(data.session);
 }
 
 // ── Sign Out ──────────────────────────────────────────────────
@@ -1185,12 +1066,14 @@ async function signOut() {
 
 // ── UI State ──────────────────────────────────────────────────
 function showAuth() {
+  hideLoading();
   document.getElementById('authScreen').style.display  = 'flex';
   document.getElementById('accessGate').style.display  = 'none';
   document.getElementById('appRoot').style.display     = 'none';
 }
 
 function showAccessGate(user) {
+  hideLoading();
   _currentUser = user;
   document.getElementById('authScreen').style.display  = 'none';
   document.getElementById('accessGate').style.display  = 'flex';
@@ -1199,6 +1082,7 @@ function showAccessGate(user) {
 }
 
 function showApp(user) {
+  hideLoading();
   _currentUser = user;
   document.getElementById('authScreen').style.display  = 'none';
   document.getElementById('accessGate').style.display  = 'none';
@@ -1253,7 +1137,25 @@ async function syncToSupabase() {
   const { error } = await _sb
     .from('user_data')
     .upsert(payload, { onConflict: 'user_id' });
-  if (error) console.error('Sync error:', error.message);
+  if (error) {
+    console.error('Sync error:', error.message);
+    showSaveToast(false);
+  } else {
+    showSaveToast(true);
+  }
+}
+
+function showSaveToast(success) {
+  let toast = document.getElementById('_saveToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = '_saveToast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = success ? '✓ Saved' : '⚠ Save failed';
+  toast.className = '_toast-visible ' + (success ? '_toast-ok' : '_toast-err');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.className = ''; }, 2200);
 }
 
 function scheduleSyncToSupabase() {
@@ -1274,6 +1176,18 @@ function applyCloudData(data) {
     if (data.groceries.checks)    { checks    = data.groceries.checks;    save(K.checks,    checks); }
   }
 }
+
+
+// -- Render instructions as numbered list ------------------------------------
+function renderSteps(notes) {
+  if (!notes || !notes.trim()) return '';
+  var steps = notes.split('\n').filter(function(s){ return s.trim(); });
+  if (!steps.length) return '';
+  var items = steps.map(function(s){ return '<li>' + s.trim() + '</li>'; }).join('');
+  return '<div class="recipe-card-note"><ol class="recipe-steps">' + items + '</ol></div>';
+}
+
+
 
 function renderAll() {
   renderWeek(); renderMealSections(); renderMealPlan();
@@ -1306,6 +1220,7 @@ async function handleSession(session) {
 
 // ── Bootstrap ─────────────────────────────────────────────────
 async function initAuth() {
+  showLoading();
   const { data: { session } } = await _sb.auth.getSession();
   if (session) {
     await handleSession(session);
@@ -1319,4 +1234,34 @@ async function initAuth() {
   });
 }
 
+
+// ── Onboarding / loading helpers ──────────────────────────────────────────
+function showLoading() {
+  const el = document.getElementById('loadingScreen');
+  if (el) el.style.display = 'flex';
+}
+function hideLoading() {
+  const el = document.getElementById('loadingScreen');
+  if (el) el.style.display = 'none';
+}
+function showOnboarding() {
+  if (localStorage.getItem('_onboardingSeen')) return;
+  const el = document.getElementById('onboardingOverlay');
+  if (el) el.style.display = 'flex';
+}
+function dismissOnboarding() {
+  localStorage.setItem('_onboardingSeen', '1');
+  const el = document.getElementById('onboardingOverlay');
+  if (el) { el.style.opacity = '0'; setTimeout(() => { el.style.display = 'none'; el.style.opacity = ''; }, 300); }
+}
+
 initAuth();
+
+// Flush any pending cloud save immediately if user closes the tab
+window.addEventListener('beforeunload', () => {
+  if (_saveTimer) {
+    clearTimeout(_saveTimer);
+    _saveTimer = null;
+    syncToSupabase();
+  }
+});

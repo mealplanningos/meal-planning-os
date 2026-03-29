@@ -18,10 +18,7 @@
 <div id="authScreen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
   <div class="auth-box">
     <div class="auth-logo">
-      <svg class="logo-svg" viewBox="0 0 40 40" fill="none">
-        <rect width="40" height="40" rx="10" fill="#1E5EFF"/>
-        <path d="M10 20h5l4-8 4 16 4-12 3 4h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <svg class="logo-svg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="30" height="30" rx="7" stroke="currentColor" stroke-width="2.5"/><line x1="12" y1="2" x2="12" y2="32" stroke="currentColor" stroke-width="2.5"/><line x1="22" y1="2" x2="22" y2="32" stroke="currentColor" stroke-width="2.5"/><line x1="2" y1="12" x2="32" y2="12" stroke="currentColor" stroke-width="2.5"/><line x1="2" y1="22" x2="32" y2="22" stroke="currentColor" stroke-width="2.5"/></svg>
       <span style="font-size:17px;font-weight:800;letter-spacing:-0.4px">Meal Planning <span style="color:var(--accent)">OS</span></span>
     </div>
 
@@ -31,6 +28,9 @@
       <button class="auth-tab" id="tabSignUp" onclick="switchAuthTab('signup')">Create Account</button>
     </div>
 
+        <div class="auth-notice">
+      <span>⚠️</span> Use the same email address you used when you purchased access.
+    </div>
     <!-- Sign In panel -->
     <div id="panelSignIn">
       <p class="auth-sub">Welcome back — sign in to your account.</p>
@@ -67,7 +67,8 @@
   <div class="access-gate-box">
     <div class="access-gate-icon">🥗</div>
     <h2 class="access-gate-title">Purchase Required</h2>
-    <p class="access-gate-sub">No active purchase was found for <strong><span id="gateEmail"></span></strong>.<br>Make sure you're signing in with the same email you used to purchase.</p>
+    <p class="access-gate-sub">No active purchase found for <strong><span id="gateEmail"></span></strong>.<br>Make sure you're using the <strong>same email</strong> you purchased with.</p>
+        <p class="access-gate-support">Questions? Email <a href="mailto:support@mealplanningos.com">support@mealplanningos.com</a></p>
     <div class="access-gate-price">$29</div>
     <div class="access-gate-price-sub">one-time payment · lifetime access</div>
     <button class="btn-get-access" onclick="window.location.href='https://mealplanningos.com'">Get Access — $29 one-time</button>
@@ -84,17 +85,7 @@
 <div class="header">
   <div class="header-inner">
     <div class="logo">
-      <svg class="logo-svg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="34" height="34" rx="8" fill="#FFFFFF" stroke="#DDE4F0"/>
-        <g stroke="#0D1829" stroke-width="1.6" stroke-linecap="round">
-          <line x1="10" y1="10" x2="10" y2="24"/>
-          <line x1="17" y1="10" x2="17" y2="24"/>
-          <line x1="24" y1="10" x2="24" y2="24"/>
-          <line x1="10" y1="10" x2="24" y2="10"/>
-          <line x1="10" y1="17" x2="24" y2="17"/>
-          <line x1="10" y1="24" x2="24" y2="24"/>
-        </g>
-      </svg>
+      <svg class="logo-svg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="30" height="30" rx="7" stroke="currentColor" stroke-width="2.5"/><line x1="12" y1="2" x2="12" y2="32" stroke="currentColor" stroke-width="2.5"/><line x1="22" y1="2" x2="22" y2="32" stroke="currentColor" stroke-width="2.5"/><line x1="2" y1="12" x2="32" y2="12" stroke="currentColor" stroke-width="2.5"/><line x1="2" y1="22" x2="32" y2="22" stroke="currentColor" stroke-width="2.5"/></svg>
       <div class="logo-text">Meal Planning <span>OS</span></div>
     </div>
     <div class="user-menu">
@@ -156,7 +147,7 @@
       <div class="section-subtitle">Curated recipes from the Meal Planning OS kitchen. Browse, pick what fits your life, and add up to 5 per meal category to your Go-To Meals.</div>
     </div>
     <div class="lib-intro">
-      <div class="lib-intro-icon">👨‍🍳</div>
+      
       <div class="lib-intro-text"><strong>How this works:</strong> Find a recipe you like, hit "Add to My Go-Tos," and it'll appear in Step 2 with all the ingredients already loaded — ready to use in your meal plan and grocery list. You can edit any recipe after adding it.</div>
     </div>
     <div class="lib-filters" id="libFilters"></div>
@@ -250,8 +241,8 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Prep Notes (optional)</label>
-        <textarea id="r_notes" placeholder="Quick tip or prep reminder…" style="min-height:52px"></textarea>
+        <label>Instructions (optional)</label>
+        <textarea id="r_notes" placeholder="Enter each step on a new line…" style="min-height:52px"></textarea>
       </div>
       <div class="divider"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -360,5 +351,22 @@
 </div><!-- /appRoot -->
 
 <script src="app.js"></script>
+
+  <div id="loadingScreen">
+    <div class="loading-spinner"></div>
+  </div>
+  <div id="onboardingOverlay" style="display:none">
+    <div class="onboarding-card">
+      <div class="onboarding-icon">🥗</div>
+      <h2>Welcome to Meal Planning OS!</h2>
+      <p>Your all-in-one planner for recipes, groceries, and weekly meals.</p>
+      <ul class="onboarding-tips">
+        <li>📅 <strong>Week Planner</strong> — drag meals into any day</li>
+        <li>🛒 <strong>Grocery List</strong> — auto-generated from your plan</li>
+        <li>📖 <strong>Recipe Library</strong> — save your favourite recipes</li>
+      </ul>
+      <button class="btn-primary onboarding-dismiss" onclick="dismissOnboarding()">Let's get started →</button>
+    </div>
+  </div>
 </body>
 </html>
