@@ -10,107 +10,198 @@ const K = {
 const DAYS = ['monday','tuesday','wednesday','thursday','friday'];
 const DAY_FULL = {monday:'Monday',tuesday:'Tuesday',wednesday:'Wednesday',thursday:'Thursday',friday:'Friday'};
 const MEALS = ['breakfast','lunch','dinner'];
-const MEAL_ICON = {breakfast:'☀️',lunch:'☀️',dinner:'🌙'};
+const MEAL_ICON = {breakfast:'🌅',lunch:'☀️',dinner:'🌙'};
 const CATS = ['Produce','Protein','Grains & Breads','Dairy / Dairy-Free','Pantry & Seasonings','Freezer / Flex','Snacks / Extras'];
 const CAT_ICON = {'Produce':'🥬','Protein':'🍗','Grains & Breads':'🌾','Dairy / Dairy-Free':'🥛','Pantry & Seasonings':'🧂','Freezer / Flex':'❄️','Snacks / Extras':'🥜'};
 
-const BREAKFAST_TYPES = [
-  {id:'easy',    icon:'⚡', name:'Easy Go-To',   sub:'Your no-decision breakfast'},
-  {id:'prep',    icon:'🥣', name:'Meal Prep',     sub:'Made ahead of time'},
-  {id:'quick',   icon:'⏱️', name:'Quick & Simple',sub:'Under 5 minutes'},
-  {id:'out',     icon:'☕', name:'Out / On the Go',sub:'Coffee shop, grab & go'},
+const MEAL_CATEGORIES = [
+  {id:'goto',        icon:'⚡', name:'Go-To Meal',       sub:'Your reliable, no-decision choice'},
+  {id:'experimental',icon:'✨', name:'Experimental Meal', sub:'Trying something new'},
+  {id:'freezer',     icon:'❄️', name:'Freezer Meal',      sub:'Pull from your freezer'},
+  {id:'leftovers',   icon:'🍱', name:'Leftovers',         sub:'Based on another meal this week'},
+  {id:'eatingout',   icon:'🥡', name:'Eating Out',        sub:'Takeout, delivery, or dining out'},
 ];
-const LUNCH_TYPES = [
-  {id:'easy',     icon:'⚡', name:'Easy Lunch',      sub:'Quick and reliable'},
-  {id:'leftovers',icon:'🍱', name:'Leftovers',        sub:'From yesterday\'s dinner'},
-  {id:'freezer',  icon:'❄️', name:'Freezer Meal',     sub:'Pull from your freezer'},
-  {id:'lunchout', icon:'🥡', name:'Lunch Out',         sub:'Takeout, delivery, or dining out'},
-];
-const DINNER_TYPES = [
-  {id:'goto',    icon:'⚡', name:'Easy Go-To',                  sub:'A reliable weeknight staple'},
-  {id:'freezer', icon:'❄️', name:'Freezer Meal',               sub:'Pull from your freezer'},
-  {id:'takeout', icon:'🥡', name:'Takeout / Delivery / Dining Out', sub:'Planned — not last minute'},
-  {id:'fun',     icon:'✨', name:'Fun Night',                   sub:'Something new or special'},
-];
-const TYPE_MAP = {breakfast:BREAKFAST_TYPES, lunch:LUNCH_TYPES, dinner:DINNER_TYPES};
 
-// Starter recipes — only loaded on first visit
+// Starter recipes — seeded into new users' No-Decision Menu on first visit.
+// Uses libraryId so "already added" detection works correctly in the library.
 const STARTER_RECIPES = [
-  {id:'sr1',type:'breakfast',name:'Overnight Oatmeal',servings:5,
-   notes:'Make 5 jars in under 10 minutes. Base: oats + milk 1:1 ratio.',
+  {id:'sr1', libraryId:'lb13', type:'goto', name:'Overnight Oatmeal', servings:5,
+   notes:'Make 5 jars in under 10 minutes. Base: oats + milk 1:1 ratio. Refrigerate overnight — grab and go all week.',
    ingredients:[
-     {name:'Oats',qty:'1 cup',category:'Grains & Breads'},
-     {name:'Milk',qty:'1 cup',category:'Dairy / Dairy-Free'},
-     {name:'Mixed Berries',qty:'½ cup',category:'Produce'},
-     {name:'Greek Yogurt',qty:'¼ cup',category:'Dairy / Dairy-Free'},
+     {name:'Oats',          qty:'1 cup',  category:'Grains & Breads'},
+     {name:'Milk',          qty:'1 cup',  category:'Dairy / Dairy-Free'},
+     {name:'Mixed Berries', qty:'½ cup',  category:'Produce'},
+     {name:'Greek Yogurt',  qty:'¼ cup',  category:'Dairy / Dairy-Free'},
+     {name:'Honey',         qty:'1 tbsp', category:'Pantry & Seasonings'},
    ]},
-  {id:'sr2',type:'breakfast',name:'Yogurt Parfait',servings:2,
-   notes:'Layer and go. Great for rushed mornings.',
+  {id:'sr2', libraryId:'lb15', type:'goto', name:'Spaghetti', servings:4,
+   notes:'The ultimate reliable weeknight meal. Double the sauce and freeze half for a future no-effort dinner.',
    ingredients:[
-     {name:'Greek Yogurt',qty:'1 cup',category:'Dairy / Dairy-Free'},
-     {name:'Granola',qty:'½ cup',category:'Grains & Breads'},
-     {name:'Berries',qty:'½ cup',category:'Produce'},
+     {name:'Spaghetti',      qty:'12 oz',    category:'Grains & Breads'},
+     {name:'Marinara Sauce', qty:'1 jar',    category:'Pantry & Seasonings'},
+     {name:'Ground Beef',    qty:'1 lb',     category:'Protein'},
+     {name:'Garlic',         qty:'3 cloves', category:'Produce'},
+     {name:'Olive Oil',      qty:'2 tbsp',   category:'Pantry & Seasonings'},
+     {name:'Parmesan',       qty:'¼ cup',    category:'Dairy / Dairy-Free'},
    ]},
-  {id:'sr3',type:'lunch',name:'Tuna Sandwich + Apple',servings:2,
-   notes:'Prep in under 10 min, or make the night before.',
+  {id:'sr3', libraryId:'lb22', type:'experimental', name:'Beef & Broccoli', servings:4,
+   notes:'Better than takeout and ready in 25 minutes. Serve over rice. A crowd-pleaser worth adding to your regular rotation.',
    ingredients:[
-     {name:'Canned Tuna',qty:'1 can',category:'Protein'},
-     {name:'Mayo',qty:'2 tbsp',category:'Pantry & Seasonings'},
-     {name:'Bread',qty:'2 slices',category:'Grains & Breads'},
-     {name:'Apple',qty:'1',category:'Produce'},
-   ]},
-  {id:'sr4',type:'lunch',name:'Lentil Soup',servings:6,
-   notes:'Batch cook Sunday. Lasts all week in the fridge.',
-   ingredients:[
-     {name:'Lentils',qty:'1 cup',category:'Pantry & Seasonings'},
-     {name:'Veggie Stock',qty:'4 cups',category:'Pantry & Seasonings'},
-     {name:'Carrots',qty:'2',category:'Produce'},
-     {name:'Onion',qty:'1',category:'Produce'},
-     {name:'Garlic',qty:'3 cloves',category:'Produce'},
-   ]},
-  {id:'sr5',type:'dinner',name:'Sheet Pan Chicken & Veggies',servings:4,
-   notes:'350°F for 30-45 min. Easy weeknight meal — make extra for leftover lunch.',
-   ingredients:[
-     {name:'Chicken',qty:'1 lb',category:'Protein'},
-     {name:'Red Potatoes',qty:'4',category:'Produce'},
-     {name:'Mixed Vegetables',qty:'2 cups',category:'Produce'},
-     {name:'Olive Oil',qty:'2 tbsp',category:'Pantry & Seasonings'},
-   ]},
-  {id:'sr6',type:'dinner',name:'Pasta Marinara',servings:4,
-   notes:'Simple and fast. Add protein if you want.',
-   ingredients:[
-     {name:'Pasta',qty:'8 oz',category:'Grains & Breads'},
-     {name:'Marinara Sauce',qty:'1 jar',category:'Pantry & Seasonings'},
-     {name:'Parmesan',qty:'¼ cup',category:'Dairy / Dairy-Free'},
+     {name:'Flank Steak',   qty:'1 lb',    category:'Protein'},
+     {name:'Broccoli',      qty:'3 cups',  category:'Produce'},
+     {name:'Soy Sauce',     qty:'¼ cup',   category:'Pantry & Seasonings'},
+     {name:'Brown Sugar',   qty:'2 tbsp',  category:'Pantry & Seasonings'},
+     {name:'Garlic',        qty:'3 cloves',category:'Produce'},
+     {name:'Ginger',        qty:'1 tsp',   category:'Pantry & Seasonings'},
+     {name:'Sesame Oil',    qty:'1 tbsp',  category:'Pantry & Seasonings'},
+     {name:'Rice',          qty:'2 cups',  category:'Grains & Breads'},
    ]},
 ];
 
 // ── RECIPE LIBRARY ─────────────────────────────────────────────────────────
 // Curated by Meal Planning OS. These are read-only — users copy them into
-// their own Go-To Meals. libraryId is preserved on the copy so we can detect
+// their own No-Decision Menu. libraryId is preserved on the copy so we can detect
 // "already added" without a name match.
 const LIBRARY_RECIPES = [
-  {id:"lb1",name:"Tacos",type:"dinner",servings:2,tags:["Under 30 Min"],notes:"\"Taco Tuesday\" makes dinner run on autopilot \u2014 and extra fun!",ingredients:[{name:"Onion, diced",qty:"1/2",category:"Produce"},{name:"Cilantro, chopped",qty:"1 bunch",category:"Produce"},{name:"Garlic cloves, minced",qty:"2",category:"Produce"},{name:"Lime",qty:"1",category:"Produce"},{name:"Shredded Cheese (optional)",qty:"to taste",category:"Dairy / Dairy-Free"},{name:"Protein of Choice (chicken, beef, tofu, etc.)",qty:"10-12 oz",category:"Protein"},{name:"Mexican Seasoning Blend",qty:"to taste",category:"Pantry & Seasonings"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Pepper",qty:"to taste",category:"Pantry & Seasonings"},{name:"Olive Oil",qty:"1 TBSP",category:"Pantry & Seasonings"},{name:"Tortilla Chips (optional)",qty:"to taste",category:"Pantry & Seasonings"},{name:"Salsa (optional)",qty:"to taste",category:"Pantry & Seasonings"},{name:"Corn or Flour Tortillas",qty:"6",category:"Grains & Breads"}]},
-  {id:"lb2",name:"Spaghetti Marinara",type:"dinner",servings:2,tags:["Under 15 Min", "Under 30 Min"],notes:"\"Marinara Monday\" makes for an easy start to your week \u2014 no decisions needed.",ingredients:[{name:"Spaghetti (dry)",qty:"4 oz",category:"Grains & Breads"},{name:"Marinara Sauce",qty:"1 cup",category:"Pantry & Seasonings"}]},
-  {id:"lb3",name:"One Pot Jambalaya",type:"dinner",servings:5,tags:["Batch Cook", "Freezer Friendly", "One Pan", "Make Ahead", "Fun / Experimental"],notes:"Fun meal for a weeknight you want to decompress and listen to music.",ingredients:[{name:"Onion, diced",qty:"1",category:"Produce"},{name:"Garlic cloves, chopped",qty:"2",category:"Produce"},{name:"Celery stalk, diced",qty:"1",category:"Produce"},{name:"Red bell pepper, diced",qty:"1",category:"Produce"},{name:"Fresh parsley (garnish)",qty:"4 TBSP",category:"Produce"},{name:"Andouille sausage, sliced",qty:"7 oz",category:"Protein"},{name:"Boneless chicken thighs, cubed",qty:"4",category:"Protein"},{name:"Oil",qty:"2 TBSP",category:"Pantry & Seasonings"},{name:"Cajun Seasoning",qty:"3 TBSP",category:"Pantry & Seasonings"},{name:"Tomato paste",qty:"1/4 cup",category:"Pantry & Seasonings"},{name:"White rice (dry)",qty:"1 cup",category:"Grains & Breads"},{name:"Black beans, rinsed and drained",qty:"1 can (15 oz)",category:"Pantry & Seasonings"},{name:"Vegetable stock",qty:"3 cups",category:"Pantry & Seasonings"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Pepper",qty:"to taste",category:"Pantry & Seasonings"}]},
-  {id:"lb4",name:"Crustless Egg Quiche",type:"breakfast",servings:6,tags:["Batch Cook", "One Pan", "Make Ahead"],notes:"Easy one pan breakfast \u2014 cook once and enjoy all week.",ingredients:[{name:"Red bell pepper, chopped",qty:"1",category:"Produce"},{name:"Onion, chopped",qty:"1/2",category:"Produce"},{name:"Milk",qty:"1 cup",category:"Dairy / Dairy-Free"},{name:"Eggs",qty:"12",category:"Dairy / Dairy-Free"},{name:"Butter",qty:"as needed",category:"Dairy / Dairy-Free"},{name:"Salt & Pepper",qty:"to taste",category:"Pantry & Seasonings"}]},
-  {id:"lb5",name:"Overnight Oatmeal",type:"breakfast",servings:1,tags:["Under 5 Min", "Batch Cook", "No Cook", "Make Ahead"],notes:"Prep a few containers ahead of time to boost your morning's mental energy.",ingredients:[{name:"Berries",qty:"1/2 cup",category:"Produce"},{name:"Milk",qty:"1 cup",category:"Dairy / Dairy-Free"},{name:"Oatmeal",qty:"1 cup",category:"Grains & Breads"}]},
-  {id:"lb6",name:"Green Detox Smoothie",type:"breakfast",servings:3,tags:["Under 5 Min", "Under 15 Min", "No Cook"],notes:"Healthy smoothie \u2014 done in under 5 minutes.",ingredients:[{name:"Banana",qty:"3",category:"Produce"},{name:"Spinach",qty:"3 cups",category:"Produce"},{name:"Green apple",qty:"3",category:"Produce"},{name:"Coconut water",qty:"1 cup",category:"Pantry & Seasonings"},{name:"Protein powder (optional)",qty:"3 servings",category:"Pantry & Seasonings"},{name:"Water",qty:"as needed",category:"Pantry & Seasonings"}]},
-  {id:"lb7",name:"Egg White Breakfast Burrito",type:"breakfast",servings:2,tags:["Under 30 Min", "Batch Cook", "Make Ahead", "Freezer Friendly"],notes:"Easy grab-n-go option, perfect to make a batch and freeze.",ingredients:[{name:"Sweet potato",qty:"1",category:"Produce"},{name:"Yellow onion",qty:"1/2",category:"Produce"},{name:"Avocado",qty:"1",category:"Produce"},{name:"Egg whites (Egg Beaters)",qty:"1 cup",category:"Dairy / Dairy-Free"},{name:"Black beans",qty:"1/2 cup",category:"Pantry & Seasonings"},{name:"Smoked paprika",qty:"to taste",category:"Pantry & Seasonings"},{name:"Garlic powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Onion powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Pepper",qty:"to taste",category:"Pantry & Seasonings"},{name:"Cooking spray",qty:"as needed",category:"Pantry & Seasonings"},{name:"Large tortilla",qty:"1",category:"Grains & Breads"}]},
-  {id:"lb8",name:"Chicken & Bean Burrito",type:"lunch",servings:5,tags:["Under 30 Min", "Batch Cook", "Freezer Friendly", "Make Ahead"],notes:"Make 5 at once and your lunches or dinners are done for the week.",ingredients:[{name:"Boneless chicken thighs",qty:"1.5 lbs",category:"Protein"},{name:"Avocado",qty:"1/2",category:"Produce"},{name:"Yellow onion",qty:"1/2",category:"Produce"},{name:"Roasted red peppers",qty:"8 tbsp",category:"Produce"},{name:"Black beans, low sodium",qty:"1 can",category:"Pantry & Seasonings"},{name:"Olive oil",qty:"1 tbsp",category:"Pantry & Seasonings"},{name:"Garlic powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Onion powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Chili powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Thyme",qty:"to taste",category:"Pantry & Seasonings"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Pepper",qty:"to taste",category:"Pantry & Seasonings"},{name:"Large tortillas",qty:"5",category:"Grains & Breads"}]},
-  {id:"lb9",name:"Red Lentil Soup",type:"lunch",servings:2,tags:["Under 30 Min", "Batch Cook", "Freezer Friendly", "One Pan", "Make Ahead"],notes:"A one-pot, 30-minute soup \u2014 batch it on Sunday or a weeknight you have some free time.",ingredients:[{name:"Onion",qty:"1/2",category:"Produce"},{name:"Celery stalk",qty:"1",category:"Produce"},{name:"Carrot",qty:"1",category:"Produce"},{name:"Sweet potato",qty:"1",category:"Produce"},{name:"Garlic cloves",qty:"2",category:"Produce"},{name:"Lemon",qty:"1/2",category:"Produce"},{name:"Olive oil",qty:"1 tbsp",category:"Pantry & Seasonings"},{name:"Dry red lentils",qty:"1/2 cup",category:"Pantry & Seasonings"},{name:"Veggie stock",qty:"2-3 cups",category:"Pantry & Seasonings"},{name:"Water",qty:"1/2 cup",category:"Pantry & Seasonings"},{name:"Tomato paste",qty:"1 tbsp",category:"Pantry & Seasonings"},{name:"Chili powder",qty:"to taste",category:"Pantry & Seasonings"},{name:"Smoked paprika",qty:"to taste",category:"Pantry & Seasonings"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Pepper",qty:"to taste",category:"Pantry & Seasonings"}]},
-  {id:"lb10",name:"Beef & Broccoli",type:"dinner",servings:3,tags:["Under 15 Min", "One Pan", "Make Ahead"],notes:"Quick one pan meal for your busy weeknight.",ingredients:[{name:"Sirloin steak",qty:"12 oz",category:"Protein"},{name:"Garlic cloves",qty:"3",category:"Produce"},{name:"Green onions",qty:"1 stalk",category:"Produce"},{name:"Broccoli, chopped",qty:"3 cups",category:"Produce"},{name:"Olive oil",qty:"1.5 tbsp",category:"Pantry & Seasonings"},{name:"Honey",qty:"3 tbsp",category:"Pantry & Seasonings"},{name:"Apple cider vinegar",qty:"3 tbsp",category:"Pantry & Seasonings"},{name:"Sesame seeds (optional)",qty:"to taste",category:"Pantry & Seasonings"},{name:"White rice (dry)",qty:"1.5 cups",category:"Grains & Breads"},{name:"Salt",qty:"to taste",category:"Pantry & Seasonings"},{name:"Soy sauce",qty:"3/4 cup",category:"Pantry & Seasonings"},{name:"Cornstarch",qty:"3 tbsp",category:"Pantry & Seasonings"}]}
+
+  // ── GO-TO MEALS ────────────────────────────────────────────────────────
+  {id:'lb13', type:'goto', name:'Overnight Oatmeal', servings:5,
+   tags:['Under 15 Min','Under 30 Min','Make Ahead','Batch Cook'],
+   notes:'Make 5 jars in under 10 minutes. Base: oats + milk 1:1 ratio. Refrigerate overnight — grab and go all week.',
+   ingredients:[
+     {name:'Oats',          qty:'1 cup',  category:'Grains & Breads'},
+     {name:'Milk',          qty:'1 cup',  category:'Dairy / Dairy-Free'},
+     {name:'Mixed Berries', qty:'½ cup',  category:'Produce'},
+     {name:'Greek Yogurt',  qty:'¼ cup',  category:'Dairy / Dairy-Free'},
+   ]},
+
+  {id:'lb14', type:'goto', name:'Tacos', servings:4,
+   tags:['Under 15 Min','Under 30 Min'],
+   notes:'Keep tortillas, protein, and toppings stocked. Done in under 15 minutes on any weeknight.',
+   ingredients:[
+     {name:'Small Tortillas',  qty:'8',      category:'Grains & Breads'},
+     {name:'Ground Beef',      qty:'1 lb',   category:'Protein'},
+     {name:'Taco Seasoning',   qty:'1 packet',category:'Pantry & Seasonings'},
+     {name:'Shredded Cheese',  qty:'½ cup',  category:'Dairy / Dairy-Free'},
+     {name:'Salsa',            qty:'½ cup',  category:'Pantry & Seasonings'},
+     {name:'Lime',             qty:'1',      category:'Produce'},
+   ]},
+
+  {id:'lb15', type:'goto', name:'Spaghetti', servings:4,
+   tags:['Under 30 Min','Batch Cook'],
+   notes:'The ultimate reliable weeknight meal. Double the sauce and freeze half for a future no-effort dinner.',
+   ingredients:[
+     {name:'Spaghetti',       qty:'12 oz',  category:'Grains & Breads'},
+     {name:'Marinara Sauce',  qty:'1 jar',  category:'Pantry & Seasonings'},
+     {name:'Ground Beef',     qty:'1 lb',   category:'Protein'},
+     {name:'Garlic',          qty:'3 cloves',category:'Produce'},
+     {name:'Olive Oil',       qty:'2 tbsp', category:'Pantry & Seasonings'},
+     {name:'Parmesan',        qty:'¼ cup',  category:'Dairy / Dairy-Free'},
+   ]},
+
+  {id:'lb16', type:'goto', name:'Green Detox Smoothie', servings:1,
+   tags:[],
+   notes:'Blend everything together. Under 3 minutes. Clean, energizing, and requires zero cooking.',
+   ingredients:[
+     {name:'Spinach',       qty:'2 cups',  category:'Produce'},
+     {name:'Banana',        qty:'1',       category:'Produce'},
+     {name:'Apple',         qty:'½',       category:'Produce'},
+     {name:'Ginger',        qty:'½ tsp',   category:'Pantry & Seasonings'},
+     {name:'Lemon Juice',   qty:'1 tbsp',  category:'Pantry & Seasonings'},
+     {name:'Water',         qty:'1 cup',   category:'Pantry & Seasonings'},
+   ]},
+
+  {id:'lb17', type:'goto', name:'Red Lentil Soup', servings:6,
+   tags:['Batch Cook','Freezer Friendly','Make Ahead'],
+   notes:'Batch cook Sunday. Freezes beautifully. One of the best meal-prep investments you can make.',
+   ingredients:[
+     {name:'Red Lentils',   qty:'1½ cups', category:'Protein'},
+     {name:'Veggie Broth',  qty:'6 cups',  category:'Pantry & Seasonings'},
+     {name:'Onion',         qty:'1',       category:'Produce'},
+     {name:'Garlic',        qty:'4 cloves',category:'Produce'},
+     {name:'Carrots',       qty:'2',       category:'Produce'},
+     {name:'Cumin',         qty:'1 tsp',   category:'Pantry & Seasonings'},
+     {name:'Olive Oil',     qty:'2 tbsp',  category:'Pantry & Seasonings'},
+   ]},
+
+  // ── EXPERIMENTAL MEALS ─────────────────────────────────────────────────
+  {id:'lb18', type:'experimental', name:'One Pot Jambalaya', servings:6,
+   tags:['One Pan','Batch Cook','Freezer Friendly'],
+   notes:'Everything goes in one pot. Big flavor, big batch. Freezes well — make it once and eat it twice.',
+   ingredients:[
+     {name:'Andouille Sausage', qty:'12 oz', category:'Protein'},
+     {name:'Chicken Thighs',    qty:'1 lb',  category:'Protein'},
+     {name:'Rice',              qty:'1½ cups',category:'Grains & Breads'},
+     {name:'Diced Tomatoes',    qty:'1 can', category:'Pantry & Seasonings'},
+     {name:'Bell Pepper',       qty:'1',     category:'Produce'},
+     {name:'Celery',            qty:'2 stalks',category:'Produce'},
+     {name:'Onion',             qty:'1',     category:'Produce'},
+     {name:'Cajun Seasoning',   qty:'2 tsp', category:'Pantry & Seasonings'},
+     {name:'Chicken Broth',     qty:'2 cups',category:'Pantry & Seasonings'},
+   ]},
+
+  {id:'lb19', type:'experimental', name:'Crustless Egg Quiche', servings:6,
+   tags:['Make Ahead','Batch Cook','One Pan'],
+   notes:'Bake once, eat all week. High protein, low effort. Great for batch prep on Sunday — stores in the fridge for 5 days.',
+   ingredients:[
+     {name:'Eggs',           qty:'8',      category:'Protein'},
+     {name:'Milk',           qty:'½ cup',  category:'Dairy / Dairy-Free'},
+     {name:'Spinach',        qty:'2 cups', category:'Produce'},
+     {name:'Feta Cheese',    qty:'½ cup',  category:'Dairy / Dairy-Free'},
+     {name:'Cherry Tomatoes',qty:'½ cup',  category:'Produce'},
+     {name:'Onion',          qty:'½',      category:'Produce'},
+     {name:'Salt & Pepper',  qty:'to taste',category:'Pantry & Seasonings'},
+   ]},
+
+  {id:'lb20', type:'experimental', name:'Egg White Breakfast Burrito', servings:2,
+   tags:['Under 15 Min','Under 30 Min'],
+   notes:'High protein, customizable, and faster than stopping for one. Prep the fillings Sunday for a grab-and-go option all week.',
+   ingredients:[
+     {name:'Large Tortillas',   qty:'2',      category:'Grains & Breads'},
+     {name:'Egg Whites',        qty:'6',      category:'Protein'},
+     {name:'Black Beans',       qty:'½ cup',  category:'Protein'},
+     {name:'Shredded Cheese',   qty:'¼ cup',  category:'Dairy / Dairy-Free'},
+     {name:'Salsa',             qty:'¼ cup',  category:'Pantry & Seasonings'},
+     {name:'Avocado',           qty:'½',      category:'Produce'},
+   ]},
+
+  {id:'lb21', type:'experimental', name:'Chicken & Bean Burrito', servings:3,
+   tags:['Batch Cook','Under 30 Min','Freezer Friendly'],
+   notes:'Double the batch and wrap extras in foil — they freeze perfectly. A week\'s worth of grab-and-go in one cook session.',
+   ingredients:[
+     {name:'Large Tortillas',  qty:'3',      category:'Grains & Breads'},
+     {name:'Chicken Breast',   qty:'1 lb',   category:'Protein'},
+     {name:'Black Beans',      qty:'1 can',  category:'Protein'},
+     {name:'Rice',             qty:'1 cup',  category:'Grains & Breads'},
+     {name:'Shredded Cheese',  qty:'½ cup',  category:'Dairy / Dairy-Free'},
+     {name:'Salsa',            qty:'½ cup',  category:'Pantry & Seasonings'},
+     {name:'Cumin',            qty:'1 tsp',  category:'Pantry & Seasonings'},
+   ]},
+
+  {id:'lb22', type:'experimental', name:'Beef & Broccoli', servings:4,
+   tags:['Under 30 Min','One Pan'],
+   notes:'Better than takeout and ready in 25 minutes. Serve over rice. A crowd-pleaser worth adding to your regular rotation.',
+   ingredients:[
+     {name:'Flank Steak',    qty:'1 lb',   category:'Protein'},
+     {name:'Broccoli',       qty:'3 cups', category:'Produce'},
+     {name:'Soy Sauce',      qty:'¼ cup',  category:'Pantry & Seasonings'},
+     {name:'Garlic',         qty:'3 cloves',category:'Produce'},
+     {name:'Ginger',         qty:'1 tsp',  category:'Pantry & Seasonings'},
+     {name:'Sesame Oil',     qty:'1 tbsp', category:'Pantry & Seasonings'},
+     {name:'Cornstarch',     qty:'2 tbsp', category:'Pantry & Seasonings'},
+     {name:'Rice',           qty:'2 cups', category:'Grains & Breads'},
+   ]},
 ];
 
 const DEFAULT_STAPLES = [
-  {id:'st1',name:'Eggs'},{id:'st2',name:'Milk'},{id:'st3',name:'Bread'},
-  {id:'st4',name:'Fruit'},{id:'st5',name:'Coffee'},{id:'st6',name:'Olive Oil'},
-  {id:'st7',name:'Salt & Pepper'},
+  {id:'st1',name:'Eggs'},
+  {id:'st2',name:'Bread'},
+  {id:'st3',name:'Olive Oil'},
 ];
 const DEFAULT_FLEX = [
-  {id:'fl1',name:'Frozen broccoli'},{id:'fl2',name:'Canned soup'},
-  {id:'fl3',name:'Rotisserie chicken'},{id:'fl4',name:'Trail mix / nuts'},
-  {id:'fl5',name:'Frozen pizza (emergency)'},
+  {id:'fl1',name:'Rotisserie chicken'},
+  {id:'fl2',name:'Canned soup'},
+  {id:'fl3',name:'Frozen pizza'},
 ];
 
 function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
@@ -125,8 +216,8 @@ let flexItems = load(K.flexItems, DEFAULT_FLEX);
 let freezer   = load(K.freezer, []);
 let checks    = load(K.checks, {});
 
-// First visit — blank slate, let users build their own menu
-if (recipes === null) { recipes = []; save(K.recipes, recipes); }
+// First visit — seed with 3 starter meals so the app feels alive immediately
+if (recipes === null) { recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))})); save(K.recipes, recipes); }
 
 // ╔═══════════════════════════════════════╗
 //   NAV
@@ -135,12 +226,13 @@ function switchTab(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const idx={step1:0,step2:1,step3:2,step4:3,freezer:4,library:5}[id];
+  const idx={step1:0,step3:1,step4:2,step2:3,freezer:4,library:5}[id];
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   if(id==='library') renderLibrary();
   if(id==='step3') renderMealPlan();
   if(id==='step4') renderGrocery();
   if(id==='freezer') renderFreezer();
+  localStorage.setItem('mpos_active_tab', id);
 }
 
 // ╔═══════════════════════════════════════╗
@@ -153,10 +245,9 @@ function renderLibrary(){
   // ── Meal type filter ─────────────────────────────────────────────────────
   const filterEl=document.getElementById('libFilters');
   const filters=[
-    {id:'all',       label:'All'},
-    {id:'breakfast', label:'☀️ Breakfast'},
-    {id:'lunch',     label:'☀️ Lunch'},
-    {id:'dinner',    label:'🌙 Dinner'},
+    {id:'all',          label:'All'},
+    {id:'goto',         label:'⚡ Go-To Meal'},
+    {id:'experimental', label:'✨ Experimental'},
   ];
   // ── Tag filter (derived from all recipes) ────────────────────────────────
   const allTags=[...new Set(LIBRARY_RECIPES.flatMap(r=>r.tags||[]))];
@@ -179,7 +270,7 @@ function renderLibrary(){
     // State checks
     const alreadyAdded=recipes.some(r=>r.libraryId===lr.id);
     const typeCount=recipes.filter(r=>r.type===lr.type).length;
-    const catFull=!alreadyAdded && typeCount>=5;
+    const catFull=!alreadyAdded && typeCount>=3;
 
     // Ingredient preview (first 4)
     const ingList=lr.ingredients.slice(0,4).map(i=>i.name).join(', ')
@@ -189,25 +280,25 @@ function renderLibrary(){
     const srvLabel=lr.servings===1?'1 serving':''+lr.servings+' servings per batch';
 
     // Type badge
-    const typeName=lr.type.charAt(0).toUpperCase()+lr.type.slice(1);
-    const typeClass='lib-type-'+lr.type;
+    const typeLabels={goto:'⚡ Go-To Meal',experimental:'✨ Experimental'};
+    const typeName=typeLabels[lr.type]||(lr.type.charAt(0).toUpperCase()+lr.type.slice(1));
+    const typeClass='lib-type-'+(lr.type==='goto'?'goto':'experimental');
 
     // Footer action
     let footerAction='';
     if(alreadyAdded){
-      footerAction=`<span class="lib-badge-added">✓ In Your Go-Tos</span>`;
+      footerAction=`<span class="lib-badge-added">✓ In Your Menu</span>`;
     } else if(catFull){
-      footerAction=`<span class="lib-badge-full">Category full (5/5)</span>`;
+      footerAction=`<span class="lib-badge-full">Category full (3/3)</span>`;
     } else {
-      footerAction=`<button class="btn btn-primary lib-add-btn" onclick="addFromLibrary('${lr.id}')">+ Add to My Go-Tos</button>`;
+      footerAction=`<button class="btn btn-primary lib-add-btn" onclick="addFromLibrary('${lr.id}')">+ Add to My Menu</button>`;
     }
 
     // Tag pills — colour-coded by category
     const tagColorMap={
-      'Freezer Friendly':'freezer','Batch Cook':'batch','Meal Prep':'mealprep',
-      'Under 5 Min':'quick','Under 15 Min':'quick','Quick & Easy':'quick',
-      'High Protein':'protein','No Cook':'nocook',
-      'Easy Lunch':'easy','Budget Friendly':'budget',
+      'Under 15 Min':'quick','Under 30 Min':'quick',
+      'Batch Cook':'batch','Freezer Friendly':'freezer',
+      'One Pan':'onepan','Make Ahead':'makeahead',
     };
     const tagPills=(lr.tags||[]).map(t=>{
       const cls=tagColorMap[t]||'easy';
@@ -240,8 +331,9 @@ function addFromLibrary(id){
   if(!lr) return;
   // Double-check limits
   if(recipes.some(r=>r.libraryId===id)) return;
-  if(recipes.filter(r=>r.type===lr.type).length>=5){
-    alert('Your '+lr.type+' category is full — remove one recipe to make room, then try again.');
+  if(recipes.filter(r=>r.type===lr.type).length>=3){
+    const catLabel=lr.type==='goto'?'Go-To Meal':'Experimental';
+    alert('Your '+catLabel+' category is full (3/3) — remove one recipe to make room, then try again.');
     return;
   }
   // Copy recipe into user's list
@@ -281,7 +373,7 @@ function renderWeek(){
       <div class="day-header"><div class="day-name">${DAY_FULL[day]}</div></div>
       <div class="day-slots">
         <div class="day-slot">
-          <div class="slot-label"><span>☀️</span> AM</div>
+          <div class="slot-label"><span>🌅</span> AM</div>
           <textarea data-day="${day}" data-slot="am" placeholder="Morning meeting, workout, early drop-off…">${notes.am||''}</textarea>
         </div>
         <div class="day-slot">
@@ -298,9 +390,23 @@ function renderWeek(){
         save(K.weekNotes,weekNotes);
         const anyNote=weekNotes[day].am||weekNotes[day].pm;
         document.getElementById('daycard-'+day).classList.toggle('has-note',!!anyNote);
+        // Hide starter note as soon as the user fills in anything
+        const sn=document.getElementById('weekStarterNote');
+        if(sn) sn.innerHTML='';
       });
     });
   });
+
+  // Show starter note only when every slot is empty
+  const anyFilled=DAYS.some(d=>weekNotes[d]&&(weekNotes[d].am||weekNotes[d].pm));
+  const starterNote=document.getElementById('weekStarterNote');
+  if(starterNote){
+    starterNote.innerHTML=anyFilled?'':`
+      <div class="starter-note" style="margin-top:12px">
+        <span>👆</span>
+        <span>Tap any day to add a morning or evening commitment — early meeting, gym, late night, travel, whatever shapes that day. Takes 60 seconds. Do this first, then build your meal plan.</span>
+      </div>`;
+  }
 }
 
 // ╔═══════════════════════════════════════╗
@@ -314,25 +420,29 @@ function renderMealSections(){
     el.innerHTML=`<div style="text-align:center;padding:40px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)">
       <div style="font-size:36px;margin-bottom:12px">🍽️</div>
       <div style="font-size:15px;font-weight:800;margin-bottom:6px">Your menu is empty</div>
-      <div style="font-size:13px;color:var(--text-2);max-width:320px;margin:0 auto 18px;line-height:1.55">Add your go-to meals here — recipes you already know and trust. Or browse the library to get started fast.</div>
+      <div style="font-size:13px;color:var(--text-2);max-width:320px;margin:0 auto 18px;line-height:1.55">Add your go-to and experimental meals here — recipes you already know and trust. Or browse the library to get started fast.</div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="openRecipeModal(null,'breakfast')">+ Add a Recipe</button>
+        <button class="btn btn-primary" onclick="openRecipeModal(null,'goto')">+ Add a Recipe</button>
         <button class="btn btn-secondary" onclick="switchTab('library')">📚 Browse Library</button>
       </div>
     </div>`;
     return;
   }
-  MEALS.forEach(type=>{
+  const MENU_GROUPS=[
+    {type:'goto',       icon:'⚡', label:'Go-To Meals',       desc:'Your locked-in, no-decision recipes'},
+    {type:'experimental',icon:'✨',label:'Experimental Meals', desc:'New things you\'re trying out'},
+  ];
+  MENU_GROUPS.forEach(({type,icon,label,desc})=>{
     const list=recipes.filter(r=>r.type===type);
-    const rem=5-list.length;
+    const rem=3-list.length;
     const wrap=document.createElement('div');
     wrap.innerHTML=`
       <div class="meal-section-header">
         <div class="meal-type-label">
-          <div class="meal-type-icon ${type}">${MEAL_ICON[type]}</div>
+          <div class="meal-type-icon">${icon}</div>
           <div>
-            <div class="meal-type-title">${type.charAt(0).toUpperCase()+type.slice(1)}</div>
-            <div class="meal-slots-count">${list.length}/5 — ${rem>0?rem+' slot'+(rem>1?'s':'')+' left':'No-Decision Menu locked in ✓'}</div>
+            <div class="meal-type-title">${label}</div>
+            <div class="meal-slots-count">${list.length}/3 — ${rem>0?rem+' slot'+(rem>1?'s':'')+' left':'Menu locked in ✓'}</div>
           </div>
         </div>
         ${rem>0?`<button class="btn btn-secondary btn-sm" onclick="openRecipeModal(null,'${type}')">+ Add Recipe</button>`:''}
@@ -359,22 +469,22 @@ function renderMealSections(){
       const slot=document.createElement('div');
       slot.className='add-recipe-slot';
       slot.onclick=()=>openRecipeModal(null,type);
-      slot.innerHTML=`<div class="plus">+</div><div class="slot-text">Add a ${type} recipe</div>`;
+      slot.innerHTML=`<div class="plus">+</div><div class="slot-text">Add a ${label.toLowerCase().replace(' meals','')} recipe</div>`;
       grid.appendChild(slot);
     } else {
       const max=document.createElement('div');
       max.className='max-reached';
-      max.innerHTML=`<strong>5/5 ✓</strong><span>Menu locked in — no decisions needed.</span>`;
+      max.innerHTML=`<strong>3/3 ✓</strong><span>Locked in — no decisions needed.</span>`;
       grid.appendChild(max);
     }
   });
 }
 
-let _editId=null, _editType='breakfast';
+let _editId=null, _editType='goto';
 function openRecipeModal(id,type){
   _editId=id;
   const r=id?recipes.find(x=>x.id===id):null;
-  _editType=type||(r?r.type:'breakfast');
+  _editType=type||(r?r.type:'goto');
   document.getElementById('recipeModalTitle').textContent=id?'Edit Recipe':'Add Recipe';
   document.getElementById('r_name').value=r?r.name:'';
   document.getElementById('r_servings').value=r?r.servings:4;
@@ -450,7 +560,7 @@ function renderMealPlan(){
   DAYS.forEach(d=>{
     const n=weekNotes[d]||{};
     let coms='';
-    if(n.am) coms+=`<div class="th-commitment"><span class="th-commitment-icon">☀️</span><span class="th-commitment-text">${n.am}</span></div>`;
+    if(n.am) coms+=`<div class="th-commitment"><span class="th-commitment-icon">🌅</span><span class="th-commitment-text">${n.am}</span></div>`;
     if(n.pm) coms+=`<div class="th-commitment"><span class="th-commitment-icon">🌙</span><span class="th-commitment-text">${n.pm}</span></div>`;
     h+=`<th><div class="th-inner"><div class="th-day">${DAY_FULL[d]}</div>${coms}</div></th>`;
   });
@@ -489,24 +599,37 @@ function renderMealPlan(){
   tbl.appendChild(tbody);
 }
 function getCellClass(meal,a){
-  if(meal==='breakfast') return 'type-breakfast';
-  if(meal==='lunch') return a.mealType==='freezer'?'type-dinner-freezer':a.mealType==='lunchout'?'type-dinner-takeout':'type-lunch';
-  return 'type-dinner-'+(a.mealType||'goto');
+  const t=a.mealType||'goto';
+  const classMap={
+    goto:'type-goto',
+    experimental:'type-experimental',
+    freezer:'type-freezer',
+    leftovers:'type-leftovers',
+    eatingout:'type-eatingout',
+    // legacy values
+    easy:'type-goto', prep:'type-goto', quick:'type-goto',
+    out:'type-eatingout', lunchout:'type-eatingout', takeout:'type-eatingout',
+    fun:'type-experimental',
+  };
+  return classMap[t]||'type-goto';
 }
 function getCellTag(meal,a){
   const t=a.mealType;
   if(!t) return '';
   const map={
-    easy:'<span class="cell-tag tag-goto">⚡ Easy Go-To</span>',
-    prep:'<span class="cell-tag tag-goto">🥣 Meal Prep</span>',
-    quick:'<span class="cell-tag tag-goto">⏱️ Quick</span>',
-    out:'<span class="cell-tag tag-takeout">☕ Out</span>',
-    leftovers:'<span class="cell-tag tag-leftovers">🍱 Leftovers</span>',
+    goto:'<span class="cell-tag tag-goto">⚡ Go-To</span>',
+    experimental:'<span class="cell-tag tag-experimental">✨ Experimental</span>',
     freezer:'<span class="cell-tag tag-freezer">❄️ Freezer</span>',
-    lunchout:'<span class="cell-tag tag-lunchout">🥡 Lunch Out</span>',
-    goto:'<span class="cell-tag tag-goto">⚡ Easy Go-To</span>',
-    takeout:'<span class="cell-tag tag-takeout">🥡 Takeout / Dining Out</span>',
-    fun:'<span class="cell-tag tag-fun">✨ Fun Night</span>',
+    leftovers:'<span class="cell-tag tag-leftovers">🍱 Leftovers</span>',
+    eatingout:'<span class="cell-tag tag-eatingout">🥡 Eating Out</span>',
+    // legacy values — map gracefully
+    easy:'<span class="cell-tag tag-goto">⚡ Go-To</span>',
+    prep:'<span class="cell-tag tag-goto">⚡ Go-To</span>',
+    quick:'<span class="cell-tag tag-goto">⚡ Go-To</span>',
+    out:'<span class="cell-tag tag-eatingout">🥡 Eating Out</span>',
+    lunchout:'<span class="cell-tag tag-eatingout">🥡 Eating Out</span>',
+    takeout:'<span class="cell-tag tag-eatingout">🥡 Eating Out</span>',
+    fun:'<span class="cell-tag tag-experimental">✨ Experimental</span>',
   };
   return map[t]||'';
 }
@@ -515,18 +638,16 @@ function removeCell(d,m){if(mealPlan[d])delete mealPlan[d][m];save(K.mealPlan,me
 // Assign modal
 let _aC={};
 function openAssignModal(day,meal){
-  _aC={day,meal,name:'',servings:2,mealType:null,recipeId:null};
-  _lastAutoFill=''; // reset on every open so previous modal state doesn't bleed through
+  _aC={day,meal,name:'',servings:2,mealType:null,recipeId:null,freezerId:null,freezerItem:false};
   const existing=mealPlan[day]&&mealPlan[day][meal];
-  if(existing){_aC={..._aC,...existing};}
-  document.getElementById('assignModalTitle').textContent=MEAL_ICON[meal]+' '+DAY_FULL[day]+' '+meal.charAt(0).toUpperCase()+meal.slice(1);
-  const types=TYPE_MAP[meal];
-  const typeRecipes=recipes.filter(r=>r.type===meal);
+  if(existing){ _aC={..._aC,...existing}; }
+  document.getElementById('assignModalTitle').textContent=MEAL_ICON[meal]+' '+DAY_FULL[day]+' — '+meal.charAt(0).toUpperCase()+meal.slice(1);
+
   let html='';
-  // Type grid
+  // ── Category selector ─────────────────────────────────────────────────
   html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">What's the plan?</div>`;
   html+=`<div class="assign-type-grid">`;
-  types.forEach(t=>{
+  MEAL_CATEGORIES.forEach(t=>{
     const sel=_aC.mealType===t.id?'sel':'';
     html+=`<div class="assign-type-btn ${sel}" data-tid="${t.id}" onclick="selectAType('${t.id}')">
       <div class="atype-icon">${t.icon}</div>
@@ -535,12 +656,10 @@ function openAssignModal(day,meal){
     </div>`;
   });
   html+='</div>';
-  // Meal name (optional)
-  html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;margin-top:4px">Meal Name <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>`;
-  html+=`<div class="form-group" style="margin-bottom:10px"><input type="text" id="a_mealName" onkeydown="event.stopPropagation();if(event.key==='Enter'){event.preventDefault();confirmAssign();}"  placeholder="Leave blank to use the type label, or type a specific meal…" value="${existing?existing.name:''}"></div>`;
-  // Freezer picker — shown when freezer type selected
-  const isFreezerType=_aC.mealType==='freezer';
-  html+=`<div id="freezerPickerSection" style="display:${isFreezerType?'block':'none'}">`;
+
+  // ── Freezer picker ────────────────────────────────────────────────────
+  const isFreezer=_aC.mealType==='freezer';
+  html+=`<div id="freezerPickerSection" style="display:${isFreezer?'block':'none'};margin-top:12px">`;
   html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Pick from your Freezer</div>`;
   if(freezer.length>0){
     freezer.forEach(f=>{
@@ -554,75 +673,121 @@ function openAssignModal(day,meal){
     html+=`<div style="font-size:13px;color:var(--text-3);padding:12px 0">No meals in your freezer yet. Log some in the Freezer tab.</div>`;
   }
   html+='</div>';
-  // Recipe picker — hidden when freezer type selected
-  if(typeRecipes.length>0){
-    html+=`<div id="recipePickerSection" style="display:${isFreezerType?'none':'block'}">`;
-    html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Pick from your Go-To Meals <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>`;
-    html+=`<div class="recipe-picker" id="recipePicker">`;
-    typeRecipes.forEach(r=>{
+
+  // ── Recipe picker (goto / experimental) ──────────────────────────────
+  const isRecipeCat=_aC.mealType==='goto'||_aC.mealType==='experimental';
+  const catRecipes=isRecipeCat?recipes.filter(r=>r.type===_aC.mealType):[];
+  html+=`<div id="recipePickerSection" style="display:${isRecipeCat?'block':'none'};margin-top:12px">`;
+  html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Pick from your menu <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>`;
+  html+=`<div class="recipe-picker" id="recipePicker">`;
+  if(catRecipes.length>0){
+    catRecipes.forEach(r=>{
       const sel=_aC.recipeId===r.id?'sel':'';
       html+=`<div class="recipe-pick-opt ${sel}" data-rid="${r.id}" onclick="pickRecipe('${r.id}','${r.name.replace(/'/g,"\\'")}',${r.servings})">
-        <span class="rpo-name">${r.name}</span>
-        <span class="rpo-sub">${r.servings} srv</span>
+        <span class="rpo-name">${r.name}</span><span class="rpo-sub">${r.servings} srv</span>
       </div>`;
     });
-    html+='</div></div>';
+  } else {
+    html+=`<div style="font-size:13px;color:var(--text-3);padding:8px 0">No recipes yet — <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('step2')">build your menu</a> or <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('library')">browse the library</a> first.</div>`;
   }
-  // Servings
+  html+='</div></div>';
+
+  // ── Leftovers text ────────────────────────────────────────────────────
+  const isLeftovers=_aC.mealType==='leftovers';
+  html+=`<div id="leftoverSection" style="display:${isLeftovers?'block':'none'};margin-top:12px">`;
+  html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Which meal?</div>`;
+  html+=`<input type="text" id="a_mealName_leftovers" placeholder="e.g. Monday's pasta, last night's chili…" value="${existing&&isLeftovers?existing.name:''}" onkeydown="event.stopPropagation();if(event.key==='Enter'){event.preventDefault();confirmAssign();}">`;
+  html+=`<div style="font-size:11px;color:var(--text-3);margin-top:5px">Note any meal from this week — whatever you're finishing up.</div>`;
+  html+='</div>';
+
+  // ── Eating Out text ───────────────────────────────────────────────────
+  const isEatingOut=_aC.mealType==='eatingout';
+  html+=`<div id="eatingOutSection" style="display:${isEatingOut?'block':'none'};margin-top:12px">`;
+  html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Where / What? <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>`;
+  html+=`<input type="text" id="a_mealName_eatingout" placeholder="e.g. Thai takeout, date night, coffee shop…" value="${existing&&isEatingOut?existing.name:''}" onkeydown="event.stopPropagation();if(event.key==='Enter'){event.preventDefault();confirmAssign();}">`;
+  html+='</div>';
+
+  // ── Meal name for goto / experimental / freezer ───────────────────────
+  const showNameField=!isLeftovers&&!isEatingOut;
+  html+=`<div id="mealNameSection" style="display:${showNameField?'block':'none'};margin-top:12px">`;
+  html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Meal Name <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional — auto-fills from recipe)</span></div>`;
+  html+=`<input type="text" id="a_mealName_recipe" placeholder="Leave blank or type a custom name…" value="${existing&&showNameField?existing.name:''}" onkeydown="event.stopPropagation();if(event.key==='Enter'){event.preventDefault();confirmAssign();}">`;
+  html+='</div>';
+
+  // ── Servings ──────────────────────────────────────────────────────────
   html+=`<div style="display:flex;align-items:center;gap:10px;margin-top:14px">
     <label style="margin:0;white-space:nowrap">Servings:</label>
     <input type="number" id="a_servings" min="1" max="50" value="${existing?existing.servings:2}" style="width:80px">
   </div>`;
+
   document.getElementById('assignModalBody').innerHTML=html;
   document.getElementById('assignModal').classList.add('open');
 }
-let _lastAutoFill='';
+
 function selectAType(id){
   _aC.mealType=id;
-  // Clear freezer selection if switching away
   if(id!=='freezer'){ _aC.freezerId=null; _aC.freezerItem=false; }
+  if(id!=='goto'&&id!=='experimental'){ _aC.recipeId=null; }
   document.querySelectorAll('.assign-type-btn').forEach(b=>b.classList.toggle('sel',b.dataset.tid===id));
-  // Show/hide freezer vs recipe pickers
+  const isRecipeCat=id==='goto'||id==='experimental';
   const fzSec=document.getElementById('freezerPickerSection');
   const recSec=document.getElementById('recipePickerSection');
+  const lvSec=document.getElementById('leftoverSection');
+  const eoSec=document.getElementById('eatingOutSection');
+  const nmSec=document.getElementById('mealNameSection');
   if(fzSec) fzSec.style.display=id==='freezer'?'block':'none';
-  if(recSec) recSec.style.display=id==='freezer'?'none':'block';
-  // Auto-fill name: update if field is empty OR still showing a previous auto-fill value
-  const nameEl=document.getElementById('a_mealName');
-  const autoNames={takeout:'Planned Takeout / Delivery / Dining Out',lunchout:'Lunch Out',out:'Out / On the Go'};
-  const currentIsAutoFilled=nameEl.value===_lastAutoFill;
-  if(!nameEl.value||currentIsAutoFilled){
-    const newAuto=autoNames[id]||'';
-    nameEl.value=newAuto;
-    _lastAutoFill=newAuto;
+  if(lvSec) lvSec.style.display=id==='leftovers'?'block':'none';
+  if(eoSec) eoSec.style.display=id==='eatingout'?'block':'none';
+  if(nmSec) nmSec.style.display=(id!=='leftovers'&&id!=='eatingout')?'block':'none';
+  // clear name fields when switching category
+  ['a_mealName_recipe','a_mealName_eatingout','a_mealName_leftovers'].forEach(function(fid){
+    const el=document.getElementById(fid); if(el) el.value='';
+  });
+  _aC.recipeId=null; _aC.freezerId=null; _aC.freezerItem=false;
+  if(recSec){
+    recSec.style.display=isRecipeCat?'block':'none';
+    if(isRecipeCat){
+      const catRecipes=recipes.filter(r=>r.type===id);
+      const picker=document.getElementById('recipePicker');
+      if(picker){
+        picker.innerHTML=catRecipes.length>0
+          ?catRecipes.map(r=>`<div class="recipe-pick-opt${_aC.recipeId===r.id?' sel':''}" data-rid="${r.id}" onclick="pickRecipe('${r.id}','${r.name.replace(/'/g,"\\'")}',${r.servings})"><span class="rpo-name">${r.name}</span><span class="rpo-sub">${r.servings} srv</span></div>`).join('')
+          :`<div style="font-size:13px;color:var(--text-3);padding:8px 0">No recipes yet — <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('step2')">build your menu</a> or <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('library')">browse the library</a> first.</div>`;
+      }
+    }
   }
+}
+function _getNameInput(){
+  const t=_aC.mealType;
+  if(t==='eatingout') return document.getElementById('a_mealName_eatingout');
+  if(t==='leftovers') return document.getElementById('a_mealName_leftovers');
+  return document.getElementById('a_mealName_recipe');
 }
 function pickRecipe(id,name,servings){
   _aC.recipeId=id; _aC.freezerId=null; _aC.freezerItem=false;
   document.querySelectorAll('.recipe-pick-opt[data-rid]').forEach(b=>b.classList.toggle('sel',b.dataset.rid===id));
   document.querySelectorAll('.recipe-pick-opt[data-fid]').forEach(b=>b.classList.remove('sel'));
-  document.getElementById('a_mealName').value=name;
-  document.getElementById('a_servings').value=servings;
+  const nm=_getNameInput(); if(nm) nm.value=name;
+  const sv=document.getElementById('a_servings'); if(sv) sv.value=servings;
 }
 function pickFreezerItem(id,name,servings){
   _aC.freezerId=id; _aC.freezerItem=true; _aC.recipeId=null;
   document.querySelectorAll('.recipe-pick-opt[data-fid]').forEach(b=>b.classList.toggle('sel',b.dataset.fid===id));
   document.querySelectorAll('.recipe-pick-opt[data-rid]').forEach(b=>b.classList.remove('sel'));
-  document.getElementById('a_mealName').value=name;
-  document.getElementById('a_servings').value=servings;
+  const nm=_getNameInput(); if(nm) nm.value=name;
+  const sv=document.getElementById('a_servings'); if(sv) sv.value=servings;
 }
 function confirmAssign(){
-  // Name is optional — fall back to type label or "Meal"
-  let name=(document.getElementById('a_mealName').value||'').trim();
+  let name=(_getNameInput()?.value||'').trim();
   if(!name){
-    const typeLabel=TYPE_MAP[_aC.meal]?.find(t=>t.id===_aC.mealType)?.name;
-    name=typeLabel||(_aC.meal.charAt(0).toUpperCase()+_aC.meal.slice(1)+' Meal');
+    const cat=MEAL_CATEGORIES.find(c=>c.id===_aC.mealType);
+    name=cat?cat.name:(_aC.meal.charAt(0).toUpperCase()+_aC.meal.slice(1)+' Meal');
   }
   const{day,meal}=_aC;
   if(!mealPlan[day]) mealPlan[day]={};
   mealPlan[day][meal]={
     name,
-    servings:parseInt(document.getElementById('a_servings').value)||2,
+    servings:parseInt(document.getElementById('a_servings')?.value)||2,
     mealType:_aC.mealType||null,
     recipeId:_aC.recipeId||null,
     freezerItem:_aC.freezerItem||false,
@@ -855,10 +1020,14 @@ function renderListSection(container,title,subtitle,items,type,refresh,isStaples
   const sec=document.createElement('div');
   sec.className='list-only-section';
   const inputId='new-'+type+'-input';
+  const ckPrefix='__'+type+'__|';
   let rows='';
   items.forEach(item=>{
+    const ck=ckPrefix+item.id;
+    const done=checks[ck]||false;
     rows+=`<div class="list-item-row">
-      <span class="item-name">${item.name}</span>
+      <input type="checkbox" ${done?'checked':''} onchange="toggleCheck('${ckPrefix.slice(0,-1)}','${item.id}',this.checked)">
+      <span class="item-name${done?' done':''}" id="gn-${ckPrefix.slice(0,-1)}-${item.id}">${item.name}</span>
       <button class="item-remove" onclick="${isStaples?'removeStaple':'removeFlexItem'}('${item.id}')">✕</button>
     </div>`;
   });
@@ -991,135 +1160,324 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
 renderWeek();
 renderMealSections();
 
-
 // ============================================================
-// SUPABASE AUTH + SYNC
+// SUPABASE AUTH + SYNC  (Supabase JS SDK loaded in index.html)
 // ============================================================
-// HOW DATA IS STORED:
-//   user_access  — keyed by EMAIL.  Webhook writes here after payment.
-//   user_data    — keyed by USER ID (UUID). App reads/writes here.
-//   localStorage — fast local cache only. Supabase is source of truth.
-// ============================================================
-
 const SUPABASE_URL = 'https://vgtsxthotnnvknrqyhec.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_lq13XvUG9YsoiHrU8p36qg_EXE0vo8f';
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_KEY = 'sb_publishable_lq13XvUG9YsoiHrU8p36qg_EXE0vo8f';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let _currentUser = null;
-let _saveTimer   = null;
+let _currentUser     = null;
+let _saveTimer       = null;
+let _recoveryToken   = null; // access token saved from PASSWORD_RECOVERY event
 
-// ── Auth tab switching ────────────────────────────────────────
-function switchAuthTab(tab) {
-  const isSignIn = tab === 'signin';
-  document.getElementById('tabSignIn').classList.toggle('active', isSignIn);
-  document.getElementById('tabSignUp').classList.toggle('active', !isSignIn);
-  document.getElementById('panelSignIn').style.display = isSignIn ? 'block' : 'none';
-  document.getElementById('panelSignUp').style.display = isSignIn ? 'none' : 'block';
-  document.getElementById('authMsg').textContent = '';
-}
+// ── UI state helpers ─────────────────────────────────────────
+let _authMode = 'signin';
 
-function setAuthMsg(text, isError) {
-  const el = document.getElementById('authMsg');
-  el.textContent = text;
-  el.className = 'auth-msg ' + (isError ? 'error' : 'success');
-}
-
-// ── Sign In (returning users) ─────────────────────────────────
-async function signIn() {
-  const email    = document.getElementById('siEmail').value.trim();
-  const password = document.getElementById('siPassword').value;
-  if (!email || !password) { setAuthMsg('Please enter your email and password.', true); return; }
-
-  setAuthMsg('Signing in…', false);
-  const { data, error } = await _sb.auth.signInWithPassword({ email, password });
-  if (error) {
-    setAuthMsg(error.message === 'Invalid login credentials'
-      ? 'Incorrect email or password. Try again, or use "Create Account" if you\'re new.'
-      : error.message, true);
-  }
-  if (data?.session) await handleSession(data.session);
-}
-
-// ── Sign Up (new users who already paid) ─────────────────────
-async function signUp() {
-  const email    = document.getElementById('suEmail').value.trim();
-  const password = document.getElementById('suPassword').value;
-  if (!email || !password) { setAuthMsg('Please enter your email and password.', true); return; }
-  if (password.length < 6)  { setAuthMsg('Password must be at least 6 characters.', true); return; }
-
-  setAuthMsg('Creating account…', false);
-  const { data, error } = await _sb.auth.signUp({ email, password });
-  if (error) {
-    setAuthMsg(error.message, true);
-    return;
-  }
-  setAuthMsg('Account created! Signing you in…', false);
-  if (data?.session) await handleSession(data.session);
-}
-
-// ── Sign Out ──────────────────────────────────────────────────
-async function signOut() {
-  await _sb.auth.signOut();
+function showLanding() {
   _currentUser = null;
-  showAuth();
+  document.getElementById('landingScreen').style.display = 'flex';
+  document.getElementById('authScreen').style.display    = 'none';
+  document.getElementById('accessGate').style.display    = 'none';
+  document.getElementById('appRoot').style.display       = 'none';
 }
 
-// ── UI State ──────────────────────────────────────────────────
-function showAuth() {
-  hideLoading();
-  document.getElementById('authScreen').style.display  = 'flex';
-  document.getElementById('accessGate').style.display  = 'none';
-  document.getElementById('appRoot').style.display     = 'none';
+// ── Auth state machine ────────────────────────────────────────
+// States: 'signup' | 'signin' | 'forgot' | 'reset'
+function showAuthState(state) {
+  _authMode = state;
+  const $ = id => document.getElementById(id);
+  const show = id => { const el=$(id); if(el) el.style.display=''; };
+  const hide = id => { const el=$(id); if(el) el.style.display='none'; };
+
+  // Clear any previous message
+  const msg=$('authMsg');
+  if(msg){ msg.textContent=''; msg.className='auth-msg'; }
+
+  // Reset all variable sections to default-visible first
+  show('authEmailGroup'); show('authPasswordGroup'); show('authToggleWrap');
+  hide('authForgotWrap'); hide('authNewPasswordGroup');
+  hide('authBackWrap'); hide('authPurchaseNote');
+
+  const btn=$('authBtn'); const title=$('authTitle');
+
+  if(state==='signup'){
+    if(title) title.textContent='Create your account';
+    if(btn){ btn.textContent='Create Account'; btn.disabled=false; }
+    show('authPurchaseNote');
+    if($('authToggleText')) $('authToggleText').textContent='Already have an account?';
+    if($('authToggleLink')) $('authToggleLink').textContent='Sign in';
+  } else if(state==='signin'){
+    if(title) title.textContent='Welcome back';
+    if(btn){ btn.textContent='Sign In'; btn.disabled=false; }
+    show('authForgotWrap');
+    if($('authToggleText')) $('authToggleText').textContent="Don't have an account?";
+    if($('authToggleLink')) $('authToggleLink').textContent='Sign up';
+  } else if(state==='forgot'){
+    if(title) title.textContent='Reset your password';
+    if(btn){ btn.textContent='Send Reset Link'; btn.disabled=false; }
+    hide('authPasswordGroup'); hide('authToggleWrap');
+    show('authBackWrap');
+  } else if(state==='reset'){
+    if(title) title.textContent='Set a new password';
+    if(btn){ btn.textContent='Set New Password'; btn.disabled=false; }
+    hide('authEmailGroup'); hide('authPasswordGroup'); hide('authToggleWrap');
+    show('authNewPasswordGroup');
+  }
+}
+
+// context: optional string shown as a green confirmation banner above the form
+function showAuth(context) {
+  _currentUser = null;
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('authScreen').style.display    = 'flex';
+  document.getElementById('accessGate').style.display    = 'none';
+  document.getElementById('appRoot').style.display       = 'none';
+  const e = document.getElementById('authEmail');
+  const p = document.getElementById('authPassword');
+  if(e) e.value = '';
+  if(p) p.value = '';
+  showAuthState('signup');
+  const ctx = document.getElementById('authContextMsg');
+  if(ctx){
+    if(context){ ctx.textContent=context; ctx.style.display='block'; }
+    else        { ctx.textContent='';     ctx.style.display='none';  }
+  }
 }
 
 function showAccessGate(user) {
-  hideLoading();
   _currentUser = user;
-  document.getElementById('authScreen').style.display  = 'none';
-  document.getElementById('accessGate').style.display  = 'flex';
-  document.getElementById('appRoot').style.display     = 'none';
-  document.getElementById('gateEmail').textContent     = user.email;
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('authScreen').style.display    = 'none';
+  document.getElementById('accessGate').style.display    = 'flex';
+  document.getElementById('appRoot').style.display       = 'none';
+  const ue = document.getElementById('userEmail');
+  if (ue) ue.textContent = user.email;
+}
+
+function normalizeRecipeTypes() {
+  // Silently migrate old type values (breakfast/lunch/dinner) → goto
+  const OLD_TYPES = ['breakfast','lunch','dinner'];
+  let changed = false;
+  recipes = recipes.map(r => {
+    if (OLD_TYPES.includes(r.type)) {
+      changed = true;
+      return {...r, type: 'goto'};
+    }
+    return r;
+  });
+  if (changed) save(K.recipes, recipes);
 }
 
 function showApp(user) {
-  hideLoading();
   _currentUser = user;
-  document.getElementById('authScreen').style.display  = 'none';
-  document.getElementById('accessGate').style.display  = 'none';
-  document.getElementById('appRoot').style.display     = 'block';
-  document.getElementById('userEmail').textContent     = user.email;
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('authScreen').style.display    = 'none';
+  document.getElementById('accessGate').style.display    = 'none';
+  document.getElementById('appRoot').style.display       = 'block';
+  const ue = document.getElementById('userEmail');
+  if (ue) ue.textContent = user.email;
+  // Restore last active tab
+  const savedTab = localStorage.getItem('mpos_active_tab');
+  const validTabs = ['step1','step2','step3','step4','freezer','library'];
+  if (savedTab && validTabs.includes(savedTab)) switchTab(savedTab);
 }
 
-// ── Access Check: query user_access by email ──────────────────
-// The webhook writes the customer's email here after Stripe payment.
-// This is the ONLY source of truth for access.
-async function hasAccess(email) {
-  const normalizedEmail = email.toLowerCase().trim();
-  const { data, error } = await _sb
-    .from('user_access')
-    .select('has_access')
-    .eq('email', normalizedEmail)
-    .maybeSingle();
+// ── Email + Password Auth ─────────────────────────────────────
+function toggleAuthMode() {
+  showAuthState(_authMode === 'signin' ? 'signup' : 'signin');
+}
 
-  if (error) {
-    console.error('Access check error:', error.message);
-    return false;
+// Single dispatcher — routes to correct handler based on current auth state
+function authSubmit() {
+  if(_authMode==='forgot') sendPasswordReset();
+  else if(_authMode==='reset') submitPasswordReset();
+  else handleAuth();
+}
+
+// Send password reset email via Supabase (no Netlify function needed)
+async function sendPasswordReset() {
+  const email = document.getElementById('authEmail').value.trim();
+  const btn   = document.getElementById('authBtn');
+  const msg   = document.getElementById('authMsg');
+  if(!email){
+    msg.textContent='Please enter your email address.';
+    msg.className='auth-msg error'; return;
   }
-  return data?.has_access === true;
+  btn.disabled=true; btn.textContent='Sending…';
+  const { error } = await _sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+  btn.disabled=false; btn.textContent='Send Reset Link';
+  if(error){
+    msg.textContent=error.message||'Could not send reset email. Please try again.';
+    msg.className='auth-msg error';
+  } else {
+    msg.textContent='✓ Check your inbox — reset link sent.';
+    msg.className='auth-msg success';
+  }
 }
 
-// ── Cloud Persistence ─────────────────────────────────────────
-// user_data is keyed by user_id (UUID from Supabase auth).
-// This is stable — it never changes even if email changes.
+// Set new password after user clicks the reset link in their email.
+// Uses the REST API directly with the token saved at PASSWORD_RECOVERY time —
+// avoids the Supabase JS localStorage lock that causes "lock stole" errors
+// when updateUser() and the SDK's internal state run concurrently.
+async function submitPasswordReset() {
+  const password = document.getElementById('authNewPassword').value;
+  const btn      = document.getElementById('authBtn');
+  const msg      = document.getElementById('authMsg');
+  if(!password||password.length<6){
+    msg.textContent='Password must be at least 6 characters.';
+    msg.className='auth-msg error'; return;
+  }
+  if(!_recoveryToken){
+    msg.textContent='Your reset link has expired. Please request a new one.';
+    msg.className='auth-msg error';
+    setTimeout(() => showAuthState('forgot'), 2500);
+    return;
+  }
+  btn.disabled=true; btn.textContent='Saving…';
+  try {
+    const res  = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method : 'PUT',
+      headers: {
+        'Content-Type' : 'application/json',
+        'Authorization': `Bearer ${_recoveryToken}`,
+        'apikey'       : SUPABASE_KEY
+      },
+      body: JSON.stringify({ password })
+    });
+    const data = await res.json();
+    btn.disabled=false; btn.textContent='Set New Password';
+    if(!res.ok){
+      msg.textContent = data.message || data.error_description || 'Could not update password. Try requesting a new reset link.';
+      msg.className='auth-msg error';
+    } else {
+      _recoveryToken = null;
+      msg.textContent='✓ Password updated — signing you in…';
+      msg.className='auth-msg success';
+      // Sign in automatically with the new password
+      const { data: signInData, error: signInErr } = await _sb.auth.signInWithPassword({ email: data.email, password });
+      if(!signInErr && signInData.session) await handleSession(signInData.session);
+    }
+  } catch(e) {
+    btn.disabled=false; btn.textContent='Set New Password';
+    msg.textContent='Error: ' + (e?.message || e?.toString() || 'Unknown error');
+    msg.className='auth-msg error';
+    console.error('submitPasswordReset error:', e);
+  }
+}
 
+async function handleAuth() {
+  const email    = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const msg      = document.getElementById('authMsg');
+  const btn      = document.getElementById('authBtn');
+
+  if (!email || !password) {
+    msg.textContent = 'Please enter your email and password.';
+    msg.className = 'auth-msg error'; return;
+  }
+  if (password.length < 6) {
+    msg.textContent = 'Password must be at least 6 characters.';
+    msg.className = 'auth-msg error'; return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = _authMode === 'signin' ? 'Signing in…' : 'Creating account…';
+
+  if (_authMode === 'signin') {
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+    if (error) {
+      msg.textContent = error.message || 'Sign in failed. Please check your credentials.';
+      msg.className = 'auth-msg error'; btn.disabled = false; btn.textContent = 'Sign In';
+    } else if (data.session) {
+      await handleSession(data.session);
+    }
+  } else {
+    const { data, error } = await _sb.auth.signUp({ email, password });
+    if (error) {
+      msg.textContent = error.message || 'Sign up failed. Please try again.';
+      msg.className = 'auth-msg error'; btn.disabled = false; btn.textContent = 'Create Account'; return;
+    }
+    // Create a profile row for metadata
+    if (data.user) {
+      await _sb.from('profiles').upsert({
+        id: data.user.id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+    }
+    if (data.session) {
+      await handleSession(data.session);
+    } else {
+      msg.textContent = '✓ Account created! Check your email to confirm, then sign in here.';
+      msg.className = 'auth-msg success'; btn.disabled = false; btn.textContent = 'Create Account';
+    }
+  }
+}
+
+// ── Sign out ─────────────────────────────────────────────────
+async function signOut() {
+  await _sb.auth.signOut();
+  // Reload the page for a clean slate — clears all in-memory state
+  window.location.reload();
+}
+
+// ── Check and claim payment entitlement ──────────────────────
+// Source of truth for access. Never trusts the URL — always queries the DB.
+async function checkAndClaimAccess(userId) {
+  // 1. Already claimed and active for this user?
+  const { data: active } = await _sb
+    .from('payment_entitlements')
+    .select('id')
+    .eq('claimed_by_user_id', userId)
+    .eq('access_status', 'active')
+    .eq('payment_status', 'paid')
+    .maybeSingle();
+  if (active) return true;
+
+  // 2. Unclaimed paid entitlement matching this user's email? (RLS enforces email match)
+  const { data: unclaimed } = await _sb
+    .from('payment_entitlements')
+    .select('id')
+    .eq('payment_status', 'paid')
+    .eq('access_status', 'unclaimed')
+    .maybeSingle();
+  if (!unclaimed) return false;
+
+  // 3. Claim it — link this user_id to the entitlement
+  const { error } = await _sb
+    .from('payment_entitlements')
+    .update({
+      claimed_by_user_id: userId,
+      claimed_at:         new Date().toISOString(),
+      access_status:      'active',
+      granted_at:         new Date().toISOString(),
+      updated_at:         new Date().toISOString(),
+    })
+    .eq('id', unclaimed.id)
+    .eq('access_status', 'unclaimed'); // Guard against race conditions
+
+  if (error) { console.error('Failed to claim entitlement:', error.message); return false; }
+  return true;
+}
+
+// ── Stripe: start checkout via Payment Link ───────────────────
+function startCheckout() {
+  window.location.href = 'https://buy.stripe.com/dRmbJ1ewoaCH4cI7Uk3sI00';
+}
+
+// ── Cloud load / save ─────────────────────────────────────────
 async function loadFromSupabase(userId) {
   const { data, error } = await _sb
-    .from('user_data')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (error) { console.error('Load error:', error.message); return null; }
+    .from('user_data').select('*').eq('user_id', userId).single();
+  if (error || !data) return null;
   return data;
+}
+
+function scheduleSyncToSupabase() {
+  if (!_currentUser) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(syncToSupabase, 2000);
 }
 
 async function syncToSupabase() {
@@ -1132,36 +1490,18 @@ async function syncToSupabase() {
     week_start:  localStorage.getItem('mpos_weekstart') || '',
     freezer:     freezer,
     groceries:   { staples, flexItems, checks },
-    updated_at:  new Date().toISOString(),
+    updated_at:  new Date().toISOString()
   };
-  const { error } = await _sb
-    .from('user_data')
-    .upsert(payload, { onConflict: 'user_id' });
-  if (error) {
-    console.error('Sync error:', error.message);
-    showSaveToast(false);
-  } else {
-    showSaveToast(true);
-  }
+  await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
 }
 
-function showSaveToast(success) {
-  let toast = document.getElementById('_saveToast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = '_saveToast';
-    document.body.appendChild(toast);
-  }
-  toast.textContent = success ? '✓ Saved' : '⚠ Save failed';
-  toast.className = '_toast-visible ' + (success ? '_toast-ok' : '_toast-err');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => { toast.className = ''; }, 2200);
-}
-
-function scheduleSyncToSupabase() {
-  if (!_currentUser) return;
-  clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(syncToSupabase, 2000);
+async function migrateIfNeeded(userId) {
+  const cloud = await loadFromSupabase(userId);
+  if (cloud) return cloud;
+  const localRecipes = localStorage.getItem('mpos_recipes_v2');
+  if (!localRecipes) return null;
+  await syncToSupabase();
+  return null;
 }
 
 function applyCloudData(data) {
@@ -1177,8 +1517,6 @@ function applyCloudData(data) {
   }
 }
 
-
-// -- Render instructions as numbered list ------------------------------------
 function renderSteps(notes) {
   if (!notes || !notes.trim()) return '';
   var steps = notes.split('\n').filter(function(s){ return s.trim(); });
@@ -1187,81 +1525,110 @@ function renderSteps(notes) {
   return '<div class="recipe-card-note"><ol class="recipe-steps">' + items + '</ol></div>';
 }
 
-
-
 function renderAll() {
   renderWeek(); renderMealSections(); renderMealPlan();
   renderGrocery(); renderFreezer(); renderLibrary(); updateWeekBadge();
 }
 
-// ── Patch save() to also schedule a cloud sync ────────────────
+// ── Patch save() to also trigger cloud sync ───────────────────
 const _origSave = save;
 window.save = function(k, v) { _origSave(k, v); scheduleSyncToSupabase(); };
 
-// ── Session Handler ───────────────────────────────────────────
-async function handleSession(session) {
-  const user = session.user;
+// ── Bootstrap ────────────────────────────────────────────────
+let _isRecoveryFlow = false;    // guard: prevents SIGNED_IN from overriding the reset form
+let _initialRouteDone = false;  // prevents double-routing between getSession and onAuthStateChange
 
-  const paid = await hasAccess(user.email);
-  if (!paid) {
+async function initAuth() {
+  // CRITICAL ORDER: register onAuthStateChange BEFORE calling getSession().
+  // With Supabase PKCE flow, the ?code= token in the URL is exchanged during
+  // getSession(). If the listener isn't registered yet, we miss PASSWORD_RECOVERY
+  // and fall through to SIGNED_IN, which loads the app instead of the reset form.
+  _sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      _isRecoveryFlow = true;
+      _initialRouteDone = true;
+      _recoveryToken = session?.access_token || null; // save for REST call — avoids SDK lock
+      document.getElementById('authScreen').style.display = 'flex';
+      document.getElementById('appRoot').style.display    = 'none';
+      showAuthState('reset');
+      return;
+    }
+    if (event === 'USER_UPDATED') {
+      _isRecoveryFlow = false;
+      if (session) await handleSession(session);
+      return;
+    }
+    // Block any event (SIGNED_IN etc) while mid-reset
+    if (_isRecoveryFlow) return;
+    // On first load, getSession() handles routing below — don't double-fire
+    if (!_initialRouteDone) return;
+    if (session) await handleSession(session);
+    else showAuth();
+  });
+
+  // Implicit flow: older Supabase email links put #type=recovery in the hash
+  if (window.location.hash.includes('type=recovery')) {
+    _isRecoveryFlow = true;
+    _initialRouteDone = true;
+    document.getElementById('authScreen').style.display = 'flex';
+    showAuthState('reset');
+    return;
+  }
+
+  // Normal page load — check for an existing session and route
+  const { data: { session } } = await _sb.auth.getSession();
+  const params        = new URLSearchParams(window.location.search);
+  const isPostPayment = params.get('payment') === 'success';
+
+  // onAuthStateChange may have already caught a PASSWORD_RECOVERY above — don't override it
+  if (_isRecoveryFlow) return;
+
+  _initialRouteDone = true;
+
+  if (session) {
+    await handleSession(session);
+  } else if (isPostPayment) {
+    window.history.replaceState({}, '', window.location.pathname);
+    showAuth('🎉 Payment confirmed! Create an account (or sign in) with the same email you used at checkout to get instant access.');
+  } else {
+    showAuth();
+  }
+}
+
+async function handleSession(session) {
+  const user   = session.user;
+  const params = new URLSearchParams(window.location.search);
+
+  // Clean up URL immediately so refreshing doesn't re-trigger polling
+  if (params.get('payment') === 'success') {
+    window.history.replaceState({}, '', window.location.pathname);
+    // Webhook may not have fired yet — poll up to 6s
+    let tries = 0;
+    while (tries < 6) {
+      const access = await checkAndClaimAccess(user.id);
+      if (access) { showApp(user); await loadAndRender(user.id); return; }
+      await new Promise(r => setTimeout(r, 1000));
+      tries++;
+    }
+    // Webhook took too long — show access gate; user can refresh to retry
     showAccessGate(user);
     return;
   }
 
+  const access = await checkAndClaimAccess(user.id);
+  if (!access) { showAccessGate(user); return; }
+
   showApp(user);
-  const cloud = await loadFromSupabase(user.id);
+  await loadAndRender(user.id);
+}
+
+async function loadAndRender(userId) {
+  await migrateIfNeeded(userId);
+  const cloud = await loadFromSupabase(userId);
   applyCloudData(cloud);
-
-  // If no cloud data yet, migrate anything in localStorage
-  if (!cloud) await syncToSupabase();
-
+  normalizeRecipeTypes();
   renderAll();
 }
 
-// ── Bootstrap ─────────────────────────────────────────────────
-async function initAuth() {
-  showLoading();
-  const { data: { session } } = await _sb.auth.getSession();
-  if (session) {
-    await handleSession(session);
-  } else {
-    showAuth();
-  }
-
-  _sb.auth.onAuthStateChange(async (_event, session) => {
-    if (session) await handleSession(session);
-    else showAuth();
-  });
-}
-
-
-// ── Onboarding / loading helpers ──────────────────────────────────────────
-function showLoading() {
-  const el = document.getElementById('loadingScreen');
-  if (el) el.style.display = 'flex';
-}
-function hideLoading() {
-  const el = document.getElementById('loadingScreen');
-  if (el) el.style.display = 'none';
-}
-function showOnboarding() {
-  if (localStorage.getItem('_onboardingSeen')) return;
-  const el = document.getElementById('onboardingOverlay');
-  if (el) el.style.display = 'flex';
-}
-function dismissOnboarding() {
-  localStorage.setItem('_onboardingSeen', '1');
-  const el = document.getElementById('onboardingOverlay');
-  if (el) { el.style.opacity = '0'; setTimeout(() => { el.style.display = 'none'; el.style.opacity = ''; }, 300); }
-}
-
+// ── Start ────────────────────────────────────────────────────
 initAuth();
-
-// Flush any pending cloud save immediately if user closes the tab
-window.addEventListener('beforeunload', () => {
-  if (_saveTimer) {
-    clearTimeout(_saveTimer);
-    _saveTimer = null;
-    syncToSupabase();
-  }
-});
