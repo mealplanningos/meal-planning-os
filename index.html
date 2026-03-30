@@ -147,7 +147,7 @@
   <div id="step1" class="section active">
     <div class="section-header">
       <div class="section-title">Plan Your Week</div>
-      <div class="section-subtitle">Map your week before you think about food. A packed morning means grab-and-go. A late night means quick dinner or takeout. Schedule first, meals second.</div>
+      <div class="section-subtitle">Know your week before you plan your food. A hectic Tuesday means quick dinner or leftovers — not a new recipe. Fill this in once and stop making last-minute decisions.</div>
     </div>
     <div class="week-grid" id="weekGrid"></div>
     <div class="week-tip" style="margin-top:18px">
@@ -161,7 +161,7 @@
     <div class="section-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div>
         <div class="section-title">No-Decision Menu</div>
-        <div class="section-subtitle">Your locked-in recipes — no thinking needed. Max 3 per category keeps choices tight. Build it once, use it every week.</div>
+        <div class="section-subtitle">The meals your family actually eats. Six recipes, no debate, no scrolling. Build it once and run on autopilot every single week.</div>
       </div>
       <button class="btn btn-secondary" style="flex-shrink:0;margin-top:4px;font-size:12px" onclick="switchTab('library')">📚 Browse Library</button>
     </div>
@@ -175,7 +175,7 @@
   <div id="library" class="section">
     <div class="section-header">
       <div class="section-title">Recipe Library</div>
-      <div class="section-subtitle">Curated recipes from the Meal Planning OS kitchen. Browse, pick what fits your life, and add them to your No-Decision Menu.</div>
+      <div class="section-subtitle">Stuck staring at a blank menu? Start here. Tested, realistic recipes — not fancy, just reliable. Find what fits your life and hit Add.</div>
     </div>
     <div class="lib-intro">
       <div class="lib-intro-text"><strong>How this works:</strong> Find a recipe you like, hit "Add to My Menu," and it'll appear in your No-Decision Menu with all the ingredients already loaded — ready to use in your meal plan and grocery list. You can edit any recipe after adding it.</div>
@@ -189,7 +189,6 @@
       <div class="section-title">Your Meal Plan</div>
       <div class="section-subtitle">Tap any slot to assign a meal. Your week's commitments show above each day so you can plan around them. Pick from your menu, name it yourself, or choose a category — whatever's fastest.</div>
     </div>
-    <div class="mobile-scroll-hint" id="mealPlanScrollHint">← Swipe to see all days</div>
     <div class="meal-plan-wrap">
       <table class="meal-plan-table" id="mealPlanTable"></table>
     </div>
@@ -198,7 +197,7 @@
   <div id="step4" class="section">
     <div class="section-header">
       <div class="section-title">Grocery List</div>
-      <div class="section-subtitle">Auto-built from your meal plan. Sorted by store section. Check off as you shop. Your staples and backup items are always at the bottom.</div>
+      <div class="section-subtitle">Your list builds itself. Plan your meals, grab your list, get out of the store faster. Staples and backup items are always at the bottom so you never forget the basics.</div>
     </div>
     <div class="grocery-toolbar">
       <div style="font-size:13px;color:var(--text-2)" id="groceryMeta"></div>
@@ -213,7 +212,7 @@
   <div id="freezer" class="section">
     <div class="section-header">
       <div class="section-title">❄️ Freezer Inventory</div>
-      <div class="section-subtitle">Your freezer is a productivity tool. Log extra portions when you batch cook, pull them into your plan on busy nights. Oldest meals show first so nothing gets forgotten in the back.</div>
+      <div class="section-subtitle">Your freezer is your secret weapon. Log extra portions when you batch cook, pull them out on your worst nights. We surface the oldest stuff first so nothing gets buried and forgotten.</div>
     </div>
     <div class="freezer-layout">
       <div>
@@ -268,7 +267,7 @@
       </div>
       <div class="form-group">
         <label>Instructions (optional)</label>
-        <textarea id="r_notes" placeholder="Enter each step on a new line…" style="min-height:52px"></textarea>
+        <textarea id="r_notes" placeholder="e.g. Double the garlic, sauce goes on last, great cold the next day…" style="min-height:52px"></textarea>
       </div>
       <div class="divider"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
