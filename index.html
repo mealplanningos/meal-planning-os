@@ -6,86 +6,113 @@
   <title>Meal Planning OS</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <!-- Supabase SDK (anon/public client only — no secrets here) -->
+  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════
-  AUTH SCREEN — shown when logged out
-  Two tabs: Sign In (returning users) and Create Account (new users who already purchased)
-════════════════════════════════════════════════════ -->
+<!-- LANDING ─ default view for logged-out visitors -->
+<div id="landingScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <svg class="logo-svg" viewBox="0 0 40 40" fill="none">
+        <rect width="40" height="40" rx="10" fill="#1E5EFF"/>
+        <path d="M10 20h5l4-8 4 16 4-12 3 4h4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span style="font-size:17px;font-weight:800;letter-spacing:-0.4px">Meal Planning <span style="color:var(--accent)">OS</span></span>
+    </div>
+    <h1 class="auth-title">Stop stressing about dinner.</h1>
+    <p class="auth-sub">Plan your week in minutes, generate your grocery list automatically, and never think "what's for dinner?" again.</p>
+    <div class="access-gate-price">$29</div>
+    <div class="access-gate-price-sub">one-time payment · lifetime access</div>
+    <button id="landingCheckoutBtn" class="btn-get-access" onclick="startCheckout()" style="width:100%;margin-top:8px">Get Access — $29 one-time</button>
+    <div id="landingMsg" class="auth-msg"></div>
+    <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-2)">
+      Already have an account? <a onclick="showAuth()" style="color:var(--accent);cursor:pointer;font-weight:600">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH SCREEN ─ default view for all visitors -->
 <div id="authScreen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
   <div class="auth-box">
     <div class="auth-logo">
-      <svg class="logo-svg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="30" height="30" rx="7" stroke="currentColor" stroke-width="2.5"/><line x1="12" y1="2" x2="12" y2="32" stroke="currentColor" stroke-width="2.5"/><line x1="22" y1="2" x2="22" y2="32" stroke="currentColor" stroke-width="2.5"/><line x1="2" y1="12" x2="32" y2="12" stroke="currentColor" stroke-width="2.5"/><line x1="2" y1="22" x2="32" y2="22" stroke="currentColor" stroke-width="2.5"/></svg>
+      <svg class="logo-svg" viewBox="0 0 40 40" fill="none">
+        <defs>
+          <clipPath id="authLogoClip">
+            <rect x="2" y="2" width="36" height="36" rx="8"/>
+          </clipPath>
+        </defs>
+        <rect x="2" y="2" width="36" height="36" rx="8" fill="#fff" stroke="#0D1829" stroke-width="2.5"/>
+        <g stroke="#0D1829" stroke-width="2" clip-path="url(#authLogoClip)">
+          <line x1="14" y1="2" x2="14" y2="38"/>
+          <line x1="26" y1="2" x2="26" y2="38"/>
+          <line x1="2" y1="14" x2="38" y2="14"/>
+          <line x1="2" y1="26" x2="38" y2="26"/>
+        </g>
+      </svg>
       <span style="font-size:17px;font-weight:800;letter-spacing:-0.4px">Meal Planning <span style="color:var(--accent)">OS</span></span>
     </div>
-
-    <!-- Tab toggle -->
-    <div class="auth-tabs">
-      <button class="auth-tab active" id="tabSignIn" onclick="switchAuthTab('signin')">Sign In</button>
-      <button class="auth-tab" id="tabSignUp" onclick="switchAuthTab('signup')">Create Account</button>
+    <div id="authContextMsg" style="display:none;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;margin-bottom:14px;text-align:center;line-height:1.5"></div>
+    <h1 class="auth-title" id="authTitle">Create your account</h1>
+    <div id="authEmailGroup" class="form-group">
+      <input type="email" id="authEmail" class="form-control" placeholder="you@example.com" onkeydown="if(event.key==='Enter')authSubmit()">
     </div>
-
-        <div class="auth-notice">
-      <span>⚠️</span> Use the same email address you used when you purchased access.
+    <div id="authPasswordGroup" class="form-group">
+      <input type="password" id="authPassword" class="form-control" placeholder="Password (min. 6 characters)" autocomplete="current-password" onkeydown="if(event.key==='Enter')authSubmit()">
     </div>
-    <!-- Sign In panel -->
-    <div id="panelSignIn">
-      <p class="auth-sub">Welcome back — sign in to your account.</p>
-      <div class="form-group">
-        <input type="email" id="siEmail" class="form-control" placeholder="you@example.com">
-      </div>
-      <div class="form-group">
-        <input type="password" id="siPassword" class="form-control" placeholder="Password">
-      </div>
-      <button class="btn btn-primary" style="width:100%" onclick="signIn()">Sign In</button>
+    <div id="authForgotWrap" style="display:none;text-align:right;margin-top:-6px;margin-bottom:14px">
+      <a onclick="showAuthState('forgot')" style="font-size:12px;color:var(--text-3);cursor:pointer;text-decoration:none">Forgot password?</a>
     </div>
-
-    <!-- Create Account panel -->
-    <div id="panelSignUp" style="display:none">
-      <p class="auth-sub">Already purchased? Create your account using the same email you paid with.</p>
-      <div class="form-group">
-        <input type="email" id="suEmail" class="form-control" placeholder="you@example.com">
-      </div>
-      <div class="form-group">
-        <input type="password" id="suPassword" class="form-control" placeholder="Choose a password (min 6 chars)">
-      </div>
-      <button class="btn btn-primary" style="width:100%" onclick="signUp()">Create Account</button>
+    <div id="authNewPasswordGroup" class="form-group" style="display:none">
+      <input type="password" id="authNewPassword" class="form-control" placeholder="New password (min. 6 characters)" autocomplete="new-password" onkeydown="if(event.key==='Enter')authSubmit()">
     </div>
-
+    <button id="authBtn" class="btn btn-primary" style="width:100%" onclick="authSubmit()">Create Account</button>
+    <p id="authPurchaseNote" style="text-align:center;font-size:11px;color:var(--text-3);margin:10px 0 0">Use the same email you used to purchase.</p>
     <div id="authMsg" class="auth-msg"></div>
+    <div id="authBackWrap" style="display:none;text-align:center;margin-top:12px">
+      <a onclick="showAuthState('signin')" style="font-size:13px;color:var(--text-3);cursor:pointer;text-decoration:none">← Back to sign in</a>
+    </div>
+    <div id="authToggleWrap" style="text-align:center;margin-top:14px;font-size:13px;color:var(--text-2)">
+      <span id="authToggleText">Already have an account?</span><a onclick="toggleAuthMode()" style="color:var(--accent);cursor:pointer;font-weight:600;margin-left:4px" id="authToggleLink">Sign in</a>
+    </div>
+    <div style="text-align:center;margin-top:14px">
+      <a href="privacy.html" target="_blank" style="font-size:11px;color:var(--text-3);text-decoration:none;opacity:0.7">Privacy Policy</a>
+    </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-  ACCESS GATE — logged in but no purchase found
-  No Stripe here. Purchase happens on Beehiiv / Stripe Payment Link.
-════════════════════════════════════════════════════ -->
+<!-- ACCESS GATE ─ logged in but not paid -->
 <div id="accessGate" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
   <div class="access-gate-box">
     <div class="access-gate-icon">🥗</div>
-    <h2 class="access-gate-title">Purchase Required</h2>
-    <p class="access-gate-sub">No active purchase found for <strong><span id="gateEmail"></span></strong>.<br>Make sure you're using the <strong>same email</strong> you purchased with.</p>
-        <p class="access-gate-support">Questions? Email <a href="mailto:support@mealplanningos.com">support@mealplanningos.com</a></p>
+    <h2 class="access-gate-title">Get Full Access</h2>
+    <p class="access-gate-sub">You're in — just one step left. Unlock Meal Planning OS and start planning your week in minutes.</p>
     <div class="access-gate-price">$29</div>
     <div class="access-gate-price-sub">one-time payment · lifetime access</div>
-    <button class="btn-get-access" onclick="window.location.href='https://mealplanningos.com'">Get Access — $29 one-time</button>
-    <div class="access-gate-signout">Wrong account? <a onclick="signOut()" style="cursor:pointer">Sign out</a></div>
+    <button id="checkoutBtn" class="btn-get-access" onclick="startCheckout()">Get Access — $29 one-time</button>
+    <div class="access-gate-signout">Signed in as <span id="userEmail"></span> · <a onclick="signOut()">Sign out</a></div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-  APP ROOT — only shown when logged in AND has access
-════════════════════════════════════════════════════ -->
+<!-- APP ROOT ─ shown when logged in + paid -->
 <div id="appRoot" style="display:none">
 
 <!-- HEADER -->
 <div class="header">
   <div class="header-inner">
     <div class="logo">
-      <svg class="logo-svg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="30" height="30" rx="7" stroke="currentColor" stroke-width="2.5"/><line x1="12" y1="2" x2="12" y2="32" stroke="currentColor" stroke-width="2.5"/><line x1="22" y1="2" x2="22" y2="32" stroke="currentColor" stroke-width="2.5"/><line x1="2" y1="12" x2="32" y2="12" stroke="currentColor" stroke-width="2.5"/><line x1="2" y1="22" x2="32" y2="22" stroke="currentColor" stroke-width="2.5"/></svg>
+      <svg class="logo-svg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="34" height="34" rx="8" fill="#FFFFFF" stroke="#DDE4F0"/>
+        <g stroke="#0D1829" stroke-width="1.6" stroke-linecap="round">
+          <line x1="10" y1="10" x2="10" y2="24"/>
+          <line x1="17" y1="10" x2="17" y2="24"/>
+          <line x1="24" y1="10" x2="24" y2="24"/>
+          <line x1="10" y1="10" x2="24" y2="10"/>
+          <line x1="10" y1="17" x2="24" y2="17"/>
+          <line x1="10" y1="24" x2="24" y2="24"/>
+        </g>
+      </svg>
       <div class="logo-text">Meal Planning <span>OS</span></div>
     </div>
     <div class="user-menu">
@@ -100,9 +127,9 @@
 <div class="nav">
   <div class="nav-inner">
     <div class="nav-tab active" onclick="switchTab('step1')"><div class="step-num">1</div> Plan Your Week</div>
-    <div class="nav-tab" onclick="switchTab('step2')"><div class="step-num">2</div> Go-To Meals</div>
-    <div class="nav-tab" onclick="switchTab('step3')"><div class="step-num">3</div> Meal Plan</div>
-    <div class="nav-tab" onclick="switchTab('step4')"><div class="step-num">4</div> Grocery List</div>
+    <div class="nav-tab" onclick="switchTab('step3')"><div class="step-num">2</div> Meal Plan</div>
+    <div class="nav-tab" onclick="switchTab('step4')"><div class="step-num">3</div> Grocery List</div>
+    <div class="nav-tab" onclick="switchTab('step2')">⚡ No-Decision Menu</div>
     <div class="nav-tab" onclick="switchTab('freezer')">❄️ Freezer</div>
     <div class="nav-tab" onclick="switchTab('library')">📚 Recipe Library</div>
   </div>
@@ -110,61 +137,57 @@
 
 <!-- MAIN -->
 <div class="main">
-
   <!-- STEP 1 -->
   <div id="step1" class="section active">
     <div class="section-header">
       <div class="section-title">Plan Your Week</div>
-      <div class="section-subtitle">Start here — before you think about food. A packed AM means breakfast needs to be ready to go. A busy PM means an easy dinner or planned takeout. Your schedule shapes your meals, not the other way around.</div>
+      <div class="section-subtitle">Map your week before you think about food. A packed morning means grab-and-go. A late night means quick dinner or takeout. Schedule first, meals second.</div>
     </div>
     <div class="week-grid" id="weekGrid"></div>
     <div class="week-tip" style="margin-top:18px">
       <span style="font-size:16px;flex-shrink:0">⚡</span>
-      <span><strong>The rule:</strong> Map your week before deciding what to eat. Your schedule drives your meal choices — not the other way around. Commitments you add here will appear in your meal plan as a reminder.</span>
+      <span>Anything you add here shows up in your meal plan as a reminder — so your schedule is always visible when you're deciding what to eat.</span>
     </div>
+    <div id="weekStarterNote"></div>
   </div>
-
   <!-- STEP 2 -->
   <div id="step2" class="section">
     <div class="section-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div>
-        <div class="section-title">Your Go-To Meals</div>
-        <div class="section-subtitle">Build your No-Decision Menu. Max 5 per meal category — that's intentional. Fewer choices, less decision fatigue. These save automatically so you only build this once.</div>
+        <div class="section-title">No-Decision Menu</div>
+        <div class="section-subtitle">Your locked-in recipes — no thinking needed. Max 3 per category keeps choices tight. Build it once, use it every week.</div>
       </div>
       <button class="btn btn-secondary" style="flex-shrink:0;margin-top:4px;font-size:12px" onclick="switchTab('library')">📚 Browse Library</button>
     </div>
     <div class="meal-sections" id="mealSections"></div>
     <div class="starter-note">
       <span>💾</span>
-      <span>Everything saves automatically to your account. Your data is synced to the cloud — it'll be here on any device, any time.</span>
+      <span>Everything automatically saves. Your recipes will be here every time you come back. Add your own or browse the Recipe Library to get started.</span>
     </div>
   </div>
-
   <!-- LIBRARY -->
   <div id="library" class="section">
     <div class="section-header">
       <div class="section-title">Recipe Library</div>
-      <div class="section-subtitle">Curated recipes from the Meal Planning OS kitchen. Browse, pick what fits your life, and add up to 5 per meal category to your Go-To Meals.</div>
+      <div class="section-subtitle">Curated recipes from the Meal Planning OS kitchen. Browse, pick what fits your life, and add them to your No-Decision Menu.</div>
     </div>
     <div class="lib-intro">
-      
-      <div class="lib-intro-text"><strong>How this works:</strong> Find a recipe you like, hit "Add to My Go-Tos," and it'll appear in Step 2 with all the ingredients already loaded — ready to use in your meal plan and grocery list. You can edit any recipe after adding it.</div>
+      <div class="lib-intro-text"><strong>How this works:</strong> Find a recipe you like, hit "Add to My Menu," and it'll appear in your No-Decision Menu with all the ingredients already loaded — ready to use in your meal plan and grocery list. You can edit any recipe after adding it.</div>
     </div>
     <div class="lib-filters" id="libFilters"></div>
     <div class="lib-grid" id="libGrid"></div>
   </div>
-
   <!-- STEP 3 -->
   <div id="step3" class="section">
     <div class="section-header">
       <div class="section-title">Your Meal Plan</div>
-      <div class="section-subtitle">Click any slot to assign a meal. Your week's commitments show above each day so you can plan around them. Type any meal name, choose a category, or pick from your go-to recipes — whatever's fastest.</div>
+      <div class="section-subtitle">Tap any slot to assign a meal. Your week's commitments show above each day so you can plan around them. Pick from your menu, name it yourself, or choose a category — whatever's fastest.</div>
     </div>
+    <div class="mobile-scroll-hint" id="mealPlanScrollHint">← Swipe to see all days</div>
     <div class="meal-plan-wrap">
       <table class="meal-plan-table" id="mealPlanTable"></table>
     </div>
   </div>
-
   <!-- STEP 4 -->
   <div id="step4" class="section">
     <div class="section-header">
@@ -180,12 +203,11 @@
     </div>
     <div class="grocery-main" id="groceryMain"></div>
   </div>
-
   <!-- FREEZER -->
   <div id="freezer" class="section">
     <div class="section-header">
       <div class="section-title">❄️ Freezer Inventory</div>
-      <div class="section-subtitle">Your freezer is a productivity tool. Log extra portions when you batch cook. Pull frozen meals into your plan on busy nights. Oldest meals show first — that's FIFO.</div>
+      <div class="section-subtitle">Your freezer is a productivity tool. Log extra portions when you batch cook, pull them into your plan on busy nights. Oldest meals show first so nothing gets forgotten in the back.</div>
     </div>
     <div class="freezer-layout">
       <div>
@@ -211,10 +233,9 @@
       </div>
     </div>
   </div>
+</div>
 
-</div><!-- /main -->
-
-<!-- ═══ MODAL: Recipe ═══ -->
+<!-- MODAL: Recipe -->
 <div class="modal-overlay" id="recipeModal">
   <div class="modal">
     <div class="modal-header">
@@ -234,9 +255,8 @@
         <div class="form-group">
           <label>Meal Type</label>
           <select id="r_type">
-            <option value="breakfast">🌅 Breakfast</option>
-            <option value="lunch">☀️ Lunch</option>
-            <option value="dinner">🌙 Dinner</option>
+            <option value="goto">⚡ Go-To Meal</option>
+            <option value="experimental">✨ Experimental Meal</option>
           </select>
         </div>
       </div>
@@ -262,7 +282,7 @@
   </div>
 </div>
 
-<!-- ═══ MODAL: Assign Meal ═══ -->
+<!-- MODAL: Assign Meal -->
 <div class="modal-overlay" id="assignModal">
   <div class="modal">
     <div class="modal-header">
@@ -277,7 +297,7 @@
   </div>
 </div>
 
-<!-- ═══ MODAL: Freezer ═══ -->
+<!-- MODAL: Freezer -->
 <div class="modal-overlay" id="freezerModal">
   <div class="modal">
     <div class="modal-header">
@@ -305,7 +325,7 @@
   </div>
 </div>
 
-<!-- ═══ MODAL: Freezer → Plan ═══ -->
+<!-- MODAL: Freezer to Plan -->
 <div class="modal-overlay" id="fzPlanModal">
   <div class="modal">
     <div class="modal-header">
@@ -351,22 +371,5 @@
 </div><!-- /appRoot -->
 
 <script src="app.js"></script>
-
-  <div id="loadingScreen">
-    <div class="loading-spinner"></div>
-  </div>
-  <div id="onboardingOverlay" style="display:none">
-    <div class="onboarding-card">
-      <div class="onboarding-icon">🥗</div>
-      <h2>Welcome to Meal Planning OS!</h2>
-      <p>Your all-in-one planner for recipes, groceries, and weekly meals.</p>
-      <ul class="onboarding-tips">
-        <li>📅 <strong>Week Planner</strong> — drag meals into any day</li>
-        <li>🛒 <strong>Grocery List</strong> — auto-generated from your plan</li>
-        <li>📖 <strong>Recipe Library</strong> — save your favourite recipes</li>
-      </ul>
-      <button class="btn-primary onboarding-dismiss" onclick="dismissOnboarding()">Let's get started →</button>
-    </div>
-  </div>
 </body>
 </html>
