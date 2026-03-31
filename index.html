@@ -61,7 +61,7 @@
       <input type="email" id="authEmail" class="form-control" placeholder="you@example.com" onkeydown="if(event.key==='Enter')authSubmit()">
     </div>
     <div id="authPasswordGroup" class="form-group">
-      <input type="password" id="authPassword" class="form-control" placeholder="Password (min. 6 characters)" autocomplete="current-password" onkeydown="if(event.key==='Enter')authSubmit()">
+      <input type="password" id="authPassword" class="form-control" placeholder="Password (min. 6 characters)" autocomplete="new-password" onkeydown="if(event.key==='Enter')authSubmit()">
     </div>
     <!-- Forgot password link — visible in sign-in mode only -->
     <div id="authForgotWrap" style="display:none;text-align:right;margin-top:-6px;margin-bottom:14px">
@@ -164,7 +164,7 @@
     <div class="section-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
       <div>
         <div class="section-title">No-Decision Menu</div>
-        <div class="section-subtitle">The meals your family actually eats. Six recipes, no debate, no scrolling. Build it once and run on autopilot every single week.</div>
+        <div class="section-subtitle">Pick up to 3 Go-To and 3 Experimental recipes — that's it. The limit is intentional: fewer options means fewer decisions every week. Build it once, run on autopilot.</div>
       </div>
       <button class="btn btn-secondary" style="flex-shrink:0;margin-top:4px;font-size:12px" onclick="switchTab('library')">📚 Browse Library</button>
     </div>
@@ -371,6 +371,20 @@
   </div>
 </div>
 
+
+<!-- MODAL: Cooking View -->
+<div class="modal-overlay" id="cookingModal">
+  <div class="modal cooking-modal">
+    <div class="modal-header">
+      <div class="modal-title" id="cookingModalTitle" style="font-size:18px"></div>
+      <button class="modal-close" onclick="closeModal('cookingModal')">✕</button>
+    </div>
+    <div class="modal-body" id="cookingModalBody"></div>
+    <div class="modal-footer" style="justify-content:center">
+      <button class="btn btn-primary" style="min-width:120px" onclick="closeModal('cookingModal')">Done Cooking</button>
+    </div>
+  </div>
+</div>
 
 <!-- FOOTER -->
 <div style="text-align:center;padding:28px 20px 40px;margin-top:24px;border-top:1px solid var(--border)">

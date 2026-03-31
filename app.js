@@ -639,9 +639,12 @@ function renderMealPlan(){
       if(asgn){
         const cls=getCellClass(meal,asgn);
         const tag=getCellTag(meal,asgn);
+        const nameEl=asgn.recipeId
+          ?`<div class="cell-meal-name cell-meal-link" onclick="event.stopPropagation();openCookingView('${asgn.recipeId}')">${asgn.name}</div>`
+          :`<div class="cell-meal-name">${asgn.name}</div>`;
         row+=`<div class="cell-filled ${cls}" onclick="openAssignModal('${d}','${meal}')">
           <button class="cell-remove" onclick="event.stopPropagation();removeCell('${d}','${meal}')">✕</button>
-          <div class="cell-meal-name">${asgn.name}</div>
+          ${nameEl}
           <div class="cell-servings">${asgn.servings} serving${asgn.servings!==1?'s':''}</div>
           ${tag}
         </div>`;
@@ -690,6 +693,35 @@ function getCellTag(meal,a){
   return map[t]||'';
 }
 function removeCell(d,m){if(mealPlan[d])delete mealPlan[d][m];save(K.mealPlan,mealPlan);renderMealPlan();}
+
+// ── Cooking View ──────────────────────────────────────────────
+function openCookingView(recipeId){
+  const r=recipes.find(x=>x.id===recipeId);
+  if(!r) return;
+  document.getElementById('cookingModalTitle').textContent=r.name;
+  // Group ingredients by category
+  const grouped={};
+  r.ingredients.forEach(ing=>{
+    const cat=ing.category||'Pantry & Seasonings';
+    if(!grouped[cat]) grouped[cat]=[];
+    grouped[cat].push(ing);
+  });
+  let ingHtml='';
+  CATS.forEach(cat=>{
+    if(!grouped[cat]||grouped[cat].length===0) return;
+    ingHtml+=`<div class="cook-ing-group">
+      <div class="cook-ing-cat">${CAT_ICON[cat]||'📦'} ${cat}</div>
+      ${grouped[cat].map(ing=>`<div class="cook-ing-row"><span class="cook-ing-qty">${ing.qty||''}</span><span class="cook-ing-name">${ing.name}</span></div>`).join('')}
+    </div>`;
+  });
+  const steps=r.notes?r.notes.split('\n').filter(s=>s.trim()):[];
+  const stepsHtml=steps.length>0?`<div class="cook-section-title">Steps</div><ol class="cook-steps">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>`:'';
+  document.getElementById('cookingModalBody').innerHTML=`
+    <div class="cook-meta">${r.servings} serving${r.servings!==1?'s':''} per batch</div>
+    ${r.ingredients.length>0?`<div class="cook-section-title">Ingredients</div>${ingHtml}`:''}
+    ${stepsHtml}`;
+  document.getElementById('cookingModal').classList.add('open');
+}
 
 // Assign modal
 let _aC={};
@@ -771,9 +803,9 @@ function openAssignModal(day,meal){
   html+='</div>';
 
   // ── Servings ──────────────────────────────────────────────────────────
-  html+=`<div style="display:flex;align-items:center;gap:10px;margin-top:14px">
-    <label style="margin:0;white-space:nowrap">Servings:</label>
-    <input type="number" id="a_servings" min="1" max="50" value="${existing?existing.servings:2}" style="width:80px">
+  html+=`<div style="margin-top:14px">
+    <label style="display:block;margin-bottom:6px;font-weight:700">Servings <span style="font-size:11px;font-weight:400;color:var(--text-3)">— update per meal, this affects your grocery list</span></label>
+    <input type="number" id="a_servings" inputmode="numeric" min="1" max="50" value="${existing?existing.servings:2}" style="width:80px">
   </div>`;
 
   document.getElementById('assignModalBody').innerHTML=html;
@@ -841,6 +873,19 @@ function confirmAssign(){
   }
   const{day,meal}=_aC;
   if(!mealPlan[day]) mealPlan[day]={};
+  // If assigning a different recipe than what was there before, reset its grocery checks
+  const prevRecipeId=mealPlan[day][meal]?.recipeId;
+  if(_aC.recipeId && _aC.recipeId!==prevRecipeId){
+    const r=recipes.find(x=>x.id===_aC.recipeId);
+    if(r){
+      r.ingredients.forEach(ing=>{
+        const cat=ing.category||'Pantry & Seasonings';
+        const k=ing.name.toLowerCase().trim();
+        delete checks[cat+'|'+k];
+      });
+      save(K.checks,checks);
+    }
+  }
   mealPlan[day][meal]={
     name,
     servings:parseInt(document.getElementById('a_servings')?.value)||2,
@@ -1233,6 +1278,7 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let _currentUser     = null;
 let _saveTimer       = null;
 let _recoveryToken   = null; // access token saved from PASSWORD_RECOVERY event
+let _accessToken     = null; // current session access token — used for keepalive sync on unload
 
 // ── UI state helpers ─────────────────────────────────────────
 let _authMode = 'signin';
@@ -1270,12 +1316,14 @@ function showAuthState(state) {
     show('authPurchaseNote');
     if($('authToggleText')) $('authToggleText').textContent='Already have an account?';
     if($('authToggleLink')) $('authToggleLink').textContent='Sign in';
+    const pwField=$('authPassword'); if(pwField) pwField.setAttribute('autocomplete','new-password');
   } else if(state==='signin'){
     if(title) title.textContent='Welcome back';
     if(btn){ btn.textContent='Sign In'; btn.disabled=false; }
     show('authForgotWrap');
     if($('authToggleText')) $('authToggleText').textContent="Don't have an account?";
     if($('authToggleLink')) $('authToggleLink').textContent='Sign up';
+    const pwField=$('authPassword'); if(pwField) pwField.setAttribute('autocomplete','current-password');
   } else if(state==='forgot'){
     if(title) title.textContent='Reset your password';
     if(btn){ btn.textContent='Send Reset Link'; btn.disabled=false; }
@@ -1540,7 +1588,7 @@ async function loadFromSupabase(userId) {
 function scheduleSyncToSupabase() {
   if (!_currentUser) return;
   clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(syncToSupabase, 2000);
+  _saveTimer = setTimeout(syncToSupabase, 800);
 }
 
 async function syncToSupabase() {
@@ -1570,10 +1618,11 @@ async function migrateIfNeeded(userId) {
 
 function applyCloudData(data) {
   if (!data) return;
-  if (Array.isArray(data.recipes))  { recipes   = data.recipes;    save(K.recipes,   recipes); }
-  if (data.assignments)             { mealPlan  = data.assignments; save(K.mealPlan,  mealPlan); }
-  if (data.week_notes !== undefined) { weekNotes = data.week_notes;  save(K.weekNotes, weekNotes); }
-  if (data.freezer)                 { freezer   = data.freezer;     save(K.freezer,   freezer); }
+  if (Array.isArray(data.recipes))              { recipes   = data.recipes;    save(K.recipes,   recipes); }
+  if (data.assignments !== null &&
+      typeof data.assignments === 'object')     { mealPlan  = data.assignments; save(K.mealPlan,  mealPlan); }
+  if (data.week_notes !== undefined)            { weekNotes = data.week_notes;  save(K.weekNotes, weekNotes); }
+  if (Array.isArray(data.freezer))              { freezer   = data.freezer;     save(K.freezer,   freezer); }
   if (data.groceries) {
     if (data.groceries.staples)    { staples     = data.groceries.staples;     save(K.staples,     staples); }
     if (data.groceries.flexItems)  { flexItems   = data.groceries.flexItems;   save(K.flexItems,   flexItems); }
@@ -1662,6 +1711,7 @@ async function initAuth() {
 
 async function handleSession(session) {
   const user   = session.user;
+  _accessToken = session.access_token || null; // store for keepalive sync on unload
   const params = new URLSearchParams(window.location.search);
 
   // Clean up URL immediately so refreshing doesn't re-trigger polling
@@ -1692,12 +1742,45 @@ async function loadAndRender(userId) {
   const cloud = await loadFromSupabase(userId);
   applyCloudData(cloud);
   normalizeRecipeTypes();
+  // Defensive: new user with no recipes yet — seed starters and sync
+  if (recipes.length === 0) {
+    recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))}));
+    save(K.recipes, recipes);
+  }
   renderAll();
 }
 
 // ── Flush pending cloud save on tab close ────────────────────
+// Uses fetch with keepalive:true so the request survives page unload.
+// The Supabase SDK uses async/await internally — those requests get
+// cancelled by the browser on unload. keepalive fetch does not.
 window.addEventListener('beforeunload', () => {
-  if (_saveTimer) { clearTimeout(_saveTimer); syncToSupabase(); }
+  clearTimeout(_saveTimer);
+  _saveTimer = null;
+  if (!_currentUser || !_accessToken) return;
+  try {
+    const payload = JSON.stringify({
+      user_id:     _currentUser.id,
+      recipes:     recipes,
+      assignments: mealPlan,
+      week_notes:  weekNotes,
+      week_start:  localStorage.getItem('mpos_weekstart') || '',
+      freezer:     freezer,
+      groceries:   { staples, flexItems, checks, adhocItems },
+      updated_at:  new Date().toISOString()
+    });
+    fetch(`${SUPABASE_URL}/rest/v1/user_data`, {
+      method:    'POST',
+      keepalive: true,
+      headers: {
+        'Content-Type':  'application/json',
+        'apikey':        SUPABASE_KEY,
+        'Authorization': `Bearer ${_accessToken}`,
+        'Prefer':        'resolution=merge-duplicates,return=minimal'
+      },
+      body: payload
+    });
+  } catch(e) { /* best-effort — regular debounced sync handles normal saves */ }
 });
 
 // ── Start ────────────────────────────────────────────────────
