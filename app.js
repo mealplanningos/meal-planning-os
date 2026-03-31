@@ -4,7 +4,7 @@ const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
   mealPlan:'mpos_plan_v2', staples:'mpos_staples_v2',
   flexItems:'mpos_flex_v2', freezer:'mpos_freezer_v2',
-  checks:'mpos_checks_v2',
+  checks:'mpos_checks_v2', adhocItems:'mpos_adhoc_v2',
 };
 
 const DAYS = ['monday','tuesday','wednesday','thursday','friday'];
@@ -26,35 +26,34 @@ const MEAL_CATEGORIES = [
 // Uses libraryId so "already added" detection works correctly in the library.
 const STARTER_RECIPES = [
   {id:'sr1', libraryId:'lb13', type:'goto', name:'Overnight Oatmeal', servings:5,
-   notes:'Make 5 jars in under 10 minutes. Base: oats + milk 1:1 ratio. Refrigerate overnight — grab and go all week.',
+   notes:'Add 1 cup oats and 1 cup milk to each jar. Stir well.\nAdd mixed berries.\nSeal jars.\nRefrigerate overnight. Grab and go — no reheating needed.\n(Optional) Add other ingredients like banana, protein powder, or chia seeds.',
    ingredients:[
-     {name:'Oats',          qty:'1 cup',  category:'Grains & Breads'},
-     {name:'Milk',          qty:'1 cup',  category:'Dairy / Dairy-Free'},
-     {name:'Mixed Berries', qty:'½ cup',  category:'Produce'},
-     {name:'Greek Yogurt',  qty:'¼ cup',  category:'Dairy / Dairy-Free'},
-     {name:'Honey',         qty:'1 tbsp', category:'Pantry & Seasonings'},
+     {name:'Oats',         qty:'1 cup', category:'Grains & Breads'},
+     {name:'Milk',         qty:'1 cup', category:'Dairy / Dairy-Free'},
+     {name:'Mixed Berries',qty:'½ cup', category:'Produce'},
    ]},
   {id:'sr2', libraryId:'lb15', type:'goto', name:'Spaghetti', servings:4,
-   notes:'The ultimate reliable weeknight meal. Double the sauce and freeze half for a future no-effort dinner.',
+   notes:'Boil salted water and cook spaghetti until al dente. Drain and set aside.\nPour marinara sauce into a separate pot. Simmer for 5 minutes.\nToss with pasta.\nOptional – Top with parmesan and serve with warm bread.\nTip – Freeze leftover sauce for a future no-effort dinner. Use the "Freezer" tab to log it.',
    ingredients:[
-     {name:'Spaghetti',      qty:'12 oz',    category:'Grains & Breads'},
-     {name:'Marinara Sauce', qty:'1 jar',    category:'Pantry & Seasonings'},
-     {name:'Ground Beef',    qty:'1 lb',     category:'Protein'},
-     {name:'Garlic',         qty:'3 cloves', category:'Produce'},
-     {name:'Olive Oil',      qty:'2 tbsp',   category:'Pantry & Seasonings'},
-     {name:'Parmesan',       qty:'¼ cup',    category:'Dairy / Dairy-Free'},
+     {name:'Spaghetti',      qty:'12 oz', category:'Grains & Breads'},
+     {name:'Marinara Sauce', qty:'1 jar', category:'Pantry & Seasonings'},
+     {name:'(Optional) Parmesan',     qty:'¼ cup', category:'Dairy / Dairy-Free'},
+     {name:'(Optional) Italian Bread',qty:'1 Loaf',category:'Grains & Breads'},
    ]},
-  {id:'sr3', libraryId:'lb22', type:'experimental', name:'Beef & Broccoli', servings:4,
-   notes:'Better than takeout and ready in 25 minutes. Serve over rice. A crowd-pleaser worth adding to your regular rotation.',
+  {id:'sr3', libraryId:'lb21', type:'experimental', name:'Chicken & Bean Burrito', servings:3,
+   notes:'Cook rice according to package instructions.\nSeason chicken with seasonings. Cook in a pan with oil until done, then shred or chop.\nWarm drained black beans in a small pot with a pinch of seasonings.\nWarm tortillas in a pan or microwave. Layer rice, chicken, beans, cheese, and salsa.\nFold and wrap tightly. Heat all sides in the same pan with oil or butter – until browned.\nEat immediately or wrap in foil for later.\nTips – Increase serving size to batch cook, and freeze for your busiest weeknights.',
    ingredients:[
-     {name:'Flank Steak',   qty:'1 lb',    category:'Protein'},
-     {name:'Broccoli',      qty:'3 cups',  category:'Produce'},
-     {name:'Soy Sauce',     qty:'¼ cup',   category:'Pantry & Seasonings'},
-     {name:'Brown Sugar',   qty:'2 tbsp',  category:'Pantry & Seasonings'},
-     {name:'Garlic',        qty:'3 cloves',category:'Produce'},
-     {name:'Ginger',        qty:'1 tsp',   category:'Pantry & Seasonings'},
-     {name:'Sesame Oil',    qty:'1 tbsp',  category:'Pantry & Seasonings'},
-     {name:'Rice',          qty:'2 cups',  category:'Grains & Breads'},
+     {name:'Large Tortillas', qty:'3',      category:'Grains & Breads'},
+     {name:'Chicken Breast',  qty:'1 lb',   category:'Protein'},
+     {name:'Black Beans',     qty:'1 can',  category:'Protein'},
+     {name:'Rice',            qty:'1 cup',  category:'Grains & Breads'},
+     {name:'Shredded Cheese', qty:'½ cup',  category:'Dairy / Dairy-Free'},
+     {name:'Salsa',           qty:'½ cup',  category:'Pantry & Seasonings'},
+     {name:'Cumin',           qty:'1 tsp',  category:'Pantry & Seasonings'},
+     {name:'Paprika',         qty:'1 tsp',  category:'Pantry & Seasonings'},
+     {name:'Garlic Powder',   qty:'1 tsp',  category:'Pantry & Seasonings'},
+     {name:'Salt & Pepper',   qty:'to taste',category:'Pantry & Seasonings'},
+     {name:'Oil',             qty:'1 TBSP', category:'Pantry & Seasonings'},
    ]},
 ];
 
@@ -66,131 +65,158 @@ const LIBRARY_RECIPES = [
 
   // ── GO-TO MEALS ────────────────────────────────────────────────────────
   {id:'lb13', type:'goto', name:'Overnight Oatmeal', servings:5,
-   tags:['Under 15 Min','Under 30 Min','Make Ahead','Batch Cook'],
-   notes:'Make 5 jars in under 10 minutes. Base: oats + milk 1:1 ratio. Refrigerate overnight — grab and go all week.',
+   tags:['Under 15 Min','Under 30 Min','Batch Cook'],
+   notes:'Make 5 jars in under 10 minutes.',
    ingredients:[
-     {name:'Oats',          qty:'1 cup',  category:'Grains & Breads'},
-     {name:'Milk',          qty:'1 cup',  category:'Dairy / Dairy-Free'},
-     {name:'Mixed Berries', qty:'½ cup',  category:'Produce'},
-     {name:'Greek Yogurt',  qty:'¼ cup',  category:'Dairy / Dairy-Free'},
-   ]},
+     {name:'Oats',         qty:'1 cup', category:'Grains & Breads'},
+     {name:'Milk',         qty:'1 cup', category:'Dairy / Dairy-Free'},
+     {name:'Mixed Berries',qty:'½ cup', category:'Produce'},
+   ],
+   steps:'Add 1 cup oats and 1 cup milk to each jar. Stir well.\nAdd mixed berries.\nSeal jars.\nRefrigerate overnight. Grab and go — no reheating needed.\n(Optional) Add other ingredients like banana, protein powder, or chia seeds.'},
 
   {id:'lb14', type:'goto', name:'Tacos', servings:4,
    tags:['Under 15 Min','Under 30 Min'],
    notes:'Keep tortillas, protein, and toppings stocked. Done in under 15 minutes on any weeknight.',
    ingredients:[
-     {name:'Small Tortillas',  qty:'8',      category:'Grains & Breads'},
-     {name:'Ground Beef',      qty:'1 lb',   category:'Protein'},
-     {name:'Taco Seasoning',   qty:'1 packet',category:'Pantry & Seasonings'},
-     {name:'Shredded Cheese',  qty:'½ cup',  category:'Dairy / Dairy-Free'},
-     {name:'Salsa',            qty:'½ cup',  category:'Pantry & Seasonings'},
-     {name:'Lime',             qty:'1',      category:'Produce'},
-   ]},
+     {name:'Small Tortillas',              qty:'8',       category:'Grains & Breads'},
+     {name:'Protein of Choice (for tacos)',qty:'16 oz',   category:'Protein'},
+     {name:'Taco Seasoning',               qty:'1 packet',category:'Pantry & Seasonings'},
+     {name:'Salt & Pepper',                qty:'to taste',category:'Pantry & Seasonings'},
+     {name:'Shredded Cheese',              qty:'½ cup',   category:'Dairy / Dairy-Free'},
+     {name:'Onion',                        qty:'½',       category:'Produce'},
+     {name:'Salsa',                        qty:'1 Jar',   category:'Pantry & Seasonings'},
+     {name:'Limes',                        qty:'2',       category:'Produce'},
+     {name:'(Optional) Tortilla Chips',    qty:'1 Bag',   category:'Pantry & Seasonings'},
+     {name:'Oil',                          qty:'1 TBSP',  category:'Pantry & Seasonings'},
+   ],
+   steps:'Saute diced onions and brown protein in a skillet over medium-high heat. Drain fat – if needed.\nAdd taco seasoning. Stir and simmer for 2 minutes.\nWarm tortillas in a dry pan or microwave for 30 seconds.\nAssemble — protein, cheese, salsa, squeeze of lime.\nTip – You can switch up your protein: ground beef, sliced steak, chicken, tofu, seitan, etc.'},
 
   {id:'lb15', type:'goto', name:'Spaghetti', servings:4,
-   tags:['Under 30 Min','Batch Cook'],
-   notes:'The ultimate reliable weeknight meal. Double the sauce and freeze half for a future no-effort dinner.',
+   tags:['Under 15 Min','Under 30 Min'],
+   notes:'The ultimate reliable weeknight meal.',
    ingredients:[
-     {name:'Spaghetti',       qty:'12 oz',  category:'Grains & Breads'},
-     {name:'Marinara Sauce',  qty:'1 jar',  category:'Pantry & Seasonings'},
-     {name:'Ground Beef',     qty:'1 lb',   category:'Protein'},
-     {name:'Garlic',          qty:'3 cloves',category:'Produce'},
-     {name:'Olive Oil',       qty:'2 tbsp', category:'Pantry & Seasonings'},
-     {name:'Parmesan',        qty:'¼ cup',  category:'Dairy / Dairy-Free'},
-   ]},
+     {name:'Spaghetti',               qty:'12 oz', category:'Grains & Breads'},
+     {name:'Marinara Sauce',          qty:'1 jar',  category:'Pantry & Seasonings'},
+     {name:'(Optional) Parmesan',     qty:'¼ cup',  category:'Dairy / Dairy-Free'},
+     {name:'(Optional) Italian Bread',qty:'1 Loaf', category:'Grains & Breads'},
+   ],
+   steps:'Boil salted water and cook spaghetti until al dente. Drain and set aside.\nPour marinara sauce into a separate pot. Simmer for 5 minutes.\nToss with pasta.\nOptional – Top with parmesan and serve with warm bread.\nTip – Freeze leftover sauce for a future no-effort dinner. Use the "Freezer" tab to log it.'},
 
   {id:'lb16', type:'goto', name:'Green Detox Smoothie', servings:1,
-   tags:[],
-   notes:'Blend everything together. Under 3 minutes. Clean, energizing, and requires zero cooking.',
+   tags:['Under 15 Min','Under 30 Min'],
+   notes:'Clean, energizing, and zero cooking required.',
    ingredients:[
-     {name:'Spinach',       qty:'2 cups',  category:'Produce'},
-     {name:'Banana',        qty:'1',       category:'Produce'},
-     {name:'Apple',         qty:'½',       category:'Produce'},
-     {name:'Ginger',        qty:'½ tsp',   category:'Pantry & Seasonings'},
-     {name:'Lemon Juice',   qty:'1 tbsp',  category:'Pantry & Seasonings'},
-     {name:'Water',         qty:'1 cup',   category:'Pantry & Seasonings'},
-   ]},
+     {name:'Spinach',    qty:'2 cups', category:'Produce'},
+     {name:'Banana',     qty:'1',      category:'Produce'},
+     {name:'Apple',      qty:'½',      category:'Produce'},
+     {name:'Ginger',     qty:'½ tsp',  category:'Pantry & Seasonings'},
+     {name:'Lemon Juice',qty:'1 tbsp', category:'Pantry & Seasonings'},
+     {name:'Water',      qty:'1 cup',  category:'Pantry & Seasonings'},
+   ],
+   steps:'Add all ingredients to a blender.\nBlend on high 30–45 seconds until smooth.\nTaste and adjust — more lemon for tang, more banana for sweetness.'},
 
-  {id:'lb17', type:'goto', name:'Red Lentil Soup', servings:6,
-   tags:['Batch Cook','Freezer Friendly','Make Ahead'],
-   notes:'Batch cook Sunday. Freezes beautifully. One of the best meal-prep investments you can make.',
+  {id:'lb17', type:'goto', name:'Red Lentil Soup', servings:4,
+   tags:['Batch Cook','Freezer Friendly'],
+   notes:'One of the best meal-prep investments you can make.',
    ingredients:[
-     {name:'Red Lentils',   qty:'1½ cups', category:'Protein'},
-     {name:'Veggie Broth',  qty:'6 cups',  category:'Pantry & Seasonings'},
-     {name:'Onion',         qty:'1',       category:'Produce'},
-     {name:'Garlic',        qty:'4 cloves',category:'Produce'},
-     {name:'Carrots',       qty:'2',       category:'Produce'},
-     {name:'Cumin',         qty:'1 tsp',   category:'Pantry & Seasonings'},
-     {name:'Olive Oil',     qty:'2 tbsp',  category:'Pantry & Seasonings'},
-   ]},
+     {name:'Red Lentils',  qty:'1 cup',   category:'Protein'},
+     {name:'Veggie Broth', qty:'4 cups',  category:'Pantry & Seasonings'},
+     {name:'Water',        qty:'1.5 Cups',category:'Pantry & Seasonings'},
+     {name:'Onion',        qty:'1',       category:'Produce'},
+     {name:'Garlic',       qty:'4 cloves',category:'Produce'},
+     {name:'Large Carrots',qty:'2',       category:'Produce'},
+     {name:'Sweet Potatoes',qty:'2',      category:'Produce'},
+     {name:'Celery',       qty:'2',       category:'Produce'},
+     {name:'Lemon',        qty:'1',       category:'Produce'},
+     {name:'Tomato Paste', qty:'1 TBSP',  category:'Pantry & Seasonings'},
+     {name:'Cumin',        qty:'1 tsp',   category:'Pantry & Seasonings'},
+     {name:'Chili Powder', qty:'1 tsp',   category:'Pantry & Seasonings'},
+     {name:'Salt & Pepper',qty:'to taste',category:'Pantry & Seasonings'},
+     {name:'Olive Oil',    qty:'2 tbsp',  category:'Pantry & Seasonings'},
+   ],
+   steps:'Dice onion, carrots, and celery. Cube sweet potatoes, and mince garlic. Sauté in olive oil over medium heat for 3-5 minutes.\nAdd seasonings – and stir for 30 seconds until fragrant.\nAdd lentils and veggie broth. Bring to a boil.\nReduce heat and simmer for 20-25 minutes until lentils are soft, and potatoes are fork tender.\nBlend partially for creamier texture (optional). Season to taste. Freeze extras in portions.\nTip – Add everything into a crock pot or instant pot instead. Just set it, and forget it.'},
 
   // ── EXPERIMENTAL MEALS ─────────────────────────────────────────────────
   {id:'lb18', type:'experimental', name:'One Pot Jambalaya', servings:6,
    tags:['One Pan','Batch Cook','Freezer Friendly'],
-   notes:'Everything goes in one pot. Big flavor, big batch. Freezes well — make it once and eat it twice.',
+   notes:'Everything goes in one pot. Big flavor, big batch.',
    ingredients:[
-     {name:'Andouille Sausage', qty:'12 oz', category:'Protein'},
-     {name:'Chicken Thighs',    qty:'1 lb',  category:'Protein'},
-     {name:'Rice',              qty:'1½ cups',category:'Grains & Breads'},
-     {name:'Diced Tomatoes',    qty:'1 can', category:'Pantry & Seasonings'},
-     {name:'Bell Pepper',       qty:'1',     category:'Produce'},
-     {name:'Celery',            qty:'2 stalks',category:'Produce'},
-     {name:'Onion',             qty:'1',     category:'Produce'},
-     {name:'Cajun Seasoning',   qty:'2 tsp', category:'Pantry & Seasonings'},
-     {name:'Chicken Broth',     qty:'2 cups',category:'Pantry & Seasonings'},
-   ]},
+     {name:'Andouille Sausage',qty:'12 oz',   category:'Protein'},
+     {name:'Chicken Thighs',   qty:'1 lb',    category:'Protein'},
+     {name:'Rice',             qty:'1½ cups', category:'Grains & Breads'},
+     {name:'Diced Tomatoes',   qty:'1 can',   category:'Pantry & Seasonings'},
+     {name:'Bell Pepper',      qty:'1',       category:'Produce'},
+     {name:'Celery',           qty:'2 stalks',category:'Produce'},
+     {name:'Onion',            qty:'1',       category:'Produce'},
+     {name:'Cajun Seasoning',  qty:'2 tsp',   category:'Pantry & Seasonings'},
+     {name:'Chicken Broth',    qty:'2 cups',  category:'Pantry & Seasonings'},
+     {name:'Salt & Pepper',    qty:'to taste',category:'Pantry & Seasonings'},
+   ],
+   steps:'Cut meat into chunks. Brown sausage first – then chicken separately, in a large pot over medium-high heat. Set both aside.\nIn the same pot – sauté diced onion, bell pepper, and celery until softened, about 3-4 minutes.\nReturn meat to pot. Add diced tomatoes, cajun seasoning, and chicken broth. Stir to combine.\nStir in rice. Bring to a boil, cover and simmer for 20-25 minutes.\nFluff with a fork. Freeze extras in individual portions.'},
 
   {id:'lb19', type:'experimental', name:'Crustless Egg Quiche', servings:6,
-   tags:['Make Ahead','Batch Cook','One Pan'],
-   notes:'Bake once, eat all week. High protein, low effort. Great for batch prep on Sunday — stores in the fridge for 5 days.',
+   tags:['Batch Cook','One Pan'],
+   notes:'Bake once, eat all week.',
    ingredients:[
-     {name:'Eggs',           qty:'8',      category:'Protein'},
-     {name:'Milk',           qty:'½ cup',  category:'Dairy / Dairy-Free'},
-     {name:'Spinach',        qty:'2 cups', category:'Produce'},
-     {name:'Feta Cheese',    qty:'½ cup',  category:'Dairy / Dairy-Free'},
-     {name:'Cherry Tomatoes',qty:'½ cup',  category:'Produce'},
-     {name:'Onion',          qty:'½',      category:'Produce'},
+     {name:'Eggs',           qty:'8',       category:'Protein'},
+     {name:'Milk',           qty:'½ cup',   category:'Dairy / Dairy-Free'},
+     {name:'Spinach',        qty:'2 cups',  category:'Produce'},
+     {name:'Shredded Cheese',qty:'½ cup',   category:'Dairy / Dairy-Free'},
+     {name:'Cherry Tomatoes',qty:'½ cup',   category:'Produce'},
+     {name:'Onion',          qty:'½',       category:'Produce'},
      {name:'Salt & Pepper',  qty:'to taste',category:'Pantry & Seasonings'},
-   ]},
+     {name:'Oil',            qty:'2 TBSP',  category:'Pantry & Seasonings'},
+   ],
+   steps:'Preheat the oven to 375°F. Grease a baking dish (use oil or butter).\nWhisk eggs and milk together. Season with salt and pepper.\nFold in spinach, cherry tomatoes, diced onion, and shredded cheese.\nPour into the dish and bake for 30–35 minutes until set in the center.\nSlice into portions. Reheat in the microwave for 60–90 seconds – to serve.'},
 
   {id:'lb20', type:'experimental', name:'Egg White Breakfast Burrito', servings:2,
-   tags:['Under 15 Min','Under 30 Min'],
-   notes:'High protein, customizable, and faster than stopping for one. Prep the fillings Sunday for a grab-and-go option all week.',
+   tags:['Under 15 Min','Under 30 Min','Freezer Friendly','Batch Cook'],
+   notes:'High protein and faster than stopping for one.',
    ingredients:[
-     {name:'Large Tortillas',   qty:'2',      category:'Grains & Breads'},
-     {name:'Egg Whites',        qty:'6',      category:'Protein'},
-     {name:'Black Beans',       qty:'½ cup',  category:'Protein'},
-     {name:'Shredded Cheese',   qty:'¼ cup',  category:'Dairy / Dairy-Free'},
-     {name:'Salsa',             qty:'¼ cup',  category:'Pantry & Seasonings'},
-     {name:'Avocado',           qty:'½',      category:'Produce'},
-   ]},
+     {name:'Large Tortillas',qty:'2',       category:'Grains & Breads'},
+     {name:'Egg Whites',     qty:'6',       category:'Protein'},
+     {name:'Black Beans',    qty:'½ cup',   category:'Protein'},
+     {name:'Shredded Cheese',qty:'¼ cup',   category:'Dairy / Dairy-Free'},
+     {name:'Salsa',          qty:'¼ cup',   category:'Pantry & Seasonings'},
+     {name:'Avocado',        qty:'½',       category:'Produce'},
+     {name:'Butter',         qty:'1 TBSP',  category:'Dairy / Dairy-Free'},
+     {name:'Salt & Pepper',  qty:'to taste',category:'Pantry & Seasonings'},
+   ],
+   steps:'Cook egg whites in a non-stick pan over medium heat with butter. Season with salt & pepper.\nAdd black beans and cheese into eggs.\nWarm tortilla in a dry pan for 30 seconds.\nLayer egg mixture, salsa, and sliced avocado on the tortilla.\nFold and wrap tightly. Heat all sides in the same pan with oil or butter – until browned.\nEat immediately or wrap in foil for later.\nTips – Increase serving size to batch cook, and freeze for your busiest mornings.'},
 
   {id:'lb21', type:'experimental', name:'Chicken & Bean Burrito', servings:3,
    tags:['Batch Cook','Under 30 Min','Freezer Friendly'],
-   notes:'Double the batch and wrap extras in foil — they freeze perfectly. A week\'s worth of grab-and-go in one cook session.',
+   notes:'Double the batch and wrap extras in foil — they freeze perfectly.',
    ingredients:[
-     {name:'Large Tortillas',  qty:'3',      category:'Grains & Breads'},
-     {name:'Chicken Breast',   qty:'1 lb',   category:'Protein'},
-     {name:'Black Beans',      qty:'1 can',  category:'Protein'},
-     {name:'Rice',             qty:'1 cup',  category:'Grains & Breads'},
-     {name:'Shredded Cheese',  qty:'½ cup',  category:'Dairy / Dairy-Free'},
-     {name:'Salsa',            qty:'½ cup',  category:'Pantry & Seasonings'},
-     {name:'Cumin',            qty:'1 tsp',  category:'Pantry & Seasonings'},
-   ]},
+     {name:'Large Tortillas',qty:'3',       category:'Grains & Breads'},
+     {name:'Chicken Breast', qty:'1 lb',    category:'Protein'},
+     {name:'Black Beans',    qty:'1 can',   category:'Protein'},
+     {name:'Rice',           qty:'1 cup',   category:'Grains & Breads'},
+     {name:'Shredded Cheese',qty:'½ cup',   category:'Dairy / Dairy-Free'},
+     {name:'Salsa',          qty:'½ cup',   category:'Pantry & Seasonings'},
+     {name:'Cumin',          qty:'1 tsp',   category:'Pantry & Seasonings'},
+     {name:'Paprika',        qty:'1 tsp',   category:'Pantry & Seasonings'},
+     {name:'Garlic Powder',  qty:'1 tsp',   category:'Pantry & Seasonings'},
+     {name:'Salt & Pepper',  qty:'to taste',category:'Pantry & Seasonings'},
+     {name:'Oil',            qty:'1 TBSP',  category:'Pantry & Seasonings'},
+   ],
+   steps:'Cook rice according to package instructions.\nSeason chicken with seasonings. Cook in a pan with oil until done, then shred or chop.\nWarm drained black beans in a small pot with a pinch of seasonings.\nWarm tortillas in a pan or microwave. Layer rice, chicken, beans, cheese, and salsa.\nFold and wrap tightly. Heat all sides in the same pan with oil or butter – until browned.\nEat immediately or wrap in foil for later.\nTips – Increase serving size to batch cook, and freeze for your busiest weeknights.'},
 
   {id:'lb22', type:'experimental', name:'Beef & Broccoli', servings:4,
    tags:['Under 30 Min','One Pan'],
-   notes:'Better than takeout and ready in 25 minutes. Serve over rice. A crowd-pleaser worth adding to your regular rotation.',
+   notes:'Better than takeout and ready in 25 minutes.',
    ingredients:[
-     {name:'Flank Steak',    qty:'1 lb',   category:'Protein'},
-     {name:'Broccoli',       qty:'3 cups', category:'Produce'},
-     {name:'Soy Sauce',      qty:'¼ cup',  category:'Pantry & Seasonings'},
-     {name:'Garlic',         qty:'3 cloves',category:'Produce'},
-     {name:'Ginger',         qty:'1 tsp',  category:'Pantry & Seasonings'},
-     {name:'Sesame Oil',     qty:'1 tbsp', category:'Pantry & Seasonings'},
-     {name:'Cornstarch',     qty:'2 tbsp', category:'Pantry & Seasonings'},
-     {name:'Rice',           qty:'2 cups', category:'Grains & Breads'},
-   ]},
+     {name:'Flank Steak',  qty:'1 lb',    category:'Protein'},
+     {name:'Broccoli',     qty:'3 cups',  category:'Produce'},
+     {name:'Soy Sauce',    qty:'¼ cup',   category:'Pantry & Seasonings'},
+     {name:'Garlic',       qty:'3 cloves',category:'Produce'},
+     {name:'Ginger',       qty:'1 tsp',   category:'Pantry & Seasonings'},
+     {name:'Sesame Oil',   qty:'1 tbsp',  category:'Pantry & Seasonings'},
+     {name:'Cornstarch',   qty:'2 tbsp',  category:'Pantry & Seasonings'},
+     {name:'Rice',         qty:'2 cups',  category:'Grains & Breads'},
+     {name:'Salt & Pepper',qty:'to taste',category:'Pantry & Seasonings'},
+   ],
+   steps:'Cook rice according to package instructions.\nSlice flank steak thin against the grain. Toss with cornstarch, salt, and pepper.\nSear beef in sesame oil over high heat 2–3 minutes until browned. Set aside.\nStir-fry broccoli in the same pan for 3 minutes.\nReturn beef to the pan. Add soy sauce, minced garlic, and ginger. Toss and cook for 1–2 minutes.\nServe over rice.\nTips – Use alternative proteins in place of steak, or substitute another vegetable as needed.'},
 ];
 
 const DEFAULT_STAPLES = [
@@ -208,13 +234,14 @@ function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
 function uid(){return Math.random().toString(36).substr(2,9);}
 
-let recipes   = load(K.recipes, null);
-let weekNotes = load(K.weekNotes, {});
-let mealPlan  = load(K.mealPlan, {});
-let staples   = load(K.staples, DEFAULT_STAPLES);
-let flexItems = load(K.flexItems, DEFAULT_FLEX);
-let freezer   = load(K.freezer, []);
-let checks    = load(K.checks, {});
+let recipes    = load(K.recipes, null);
+let weekNotes  = load(K.weekNotes, {});
+let mealPlan   = load(K.mealPlan, {});
+let staples    = load(K.staples, DEFAULT_STAPLES);
+let flexItems  = load(K.flexItems, DEFAULT_FLEX);
+let freezer    = load(K.freezer, []);
+let checks     = load(K.checks, {});
+let adhocItems = load(K.adhocItems, []);
 
 // First visit — seed with 3 starter meals so the app feels alive immediately
 if (recipes === null) { recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))})); save(K.recipes, recipes); }
@@ -298,7 +325,7 @@ function renderLibrary(){
     const tagColorMap={
       'Under 15 Min':'quick','Under 30 Min':'quick',
       'Batch Cook':'batch','Freezer Friendly':'freezer',
-      'One Pan':'onepan','Make Ahead':'makeahead',
+      'One Pan':'onepan',
     };
     const tagPills=(lr.tags||[]).map(t=>{
       const cls=tagColorMap[t]||'easy';
@@ -336,14 +363,14 @@ function addFromLibrary(id){
     alert('Your '+catLabel+' category is full (3/3) — remove one recipe to make room, then try again.');
     return;
   }
-  // Copy recipe into user's list
+  // Copy recipe into user's list — use steps field if present, else notes
   const newRecipe={
     id: uid(),
     libraryId: lr.id,
     type: lr.type,
     name: lr.name,
     servings: lr.servings,
-    notes: lr.notes||'',
+    notes: lr.steps||lr.notes||'',
     ingredients: lr.ingredients.map(i=>({...i})),
   };
   recipes.push(newRecipe);
@@ -429,8 +456,8 @@ function renderMealSections(){
     return;
   }
   const MENU_GROUPS=[
-    {type:'goto',       icon:'⚡', label:'Go-To Meals',       desc:'Your locked-in, no-decision recipes'},
-    {type:'experimental',icon:'✨',label:'Experimental Meals', desc:'New things you\'re trying out'},
+    {type:'goto',       icon:'⚡', label:'Go-To Meals',       desc:'Reliable recipes you could cook half-asleep'},
+    {type:'experimental',icon:'✨',label:'Experimental Meals', desc:'More involved recipes that push you to try something new'},
   ];
   MENU_GROUPS.forEach(({type,icon,label,desc})=>{
     const list=recipes.filter(r=>r.type===type);
@@ -442,6 +469,7 @@ function renderMealSections(){
           <div class="meal-type-icon">${icon}</div>
           <div>
             <div class="meal-type-title">${label}</div>
+            <div class="meal-type-desc">${desc}</div>
             <div class="meal-slots-count">${list.length}/3 — ${rem>0?rem+' slot'+(rem>1?'s':'')+' left':'Menu locked in ✓'}</div>
           </div>
         </div>
@@ -488,8 +516,12 @@ function openRecipeModal(id,type){
   document.getElementById('recipeModalTitle').textContent=id?'Edit Recipe':'Add Recipe';
   document.getElementById('r_name').value=r?r.name:'';
   document.getElementById('r_servings').value=r?r.servings:4;
-  document.getElementById('r_notes').value=r?r.notes||'':'';
   document.getElementById('r_type').value=r?r.type:_editType;
+  // Populate step rows from notes (newline-separated)
+  const stepsEl=document.getElementById('stepsRows');
+  stepsEl.innerHTML='';
+  const existingSteps=r&&r.notes?r.notes.split('\n').filter(s=>s.trim()):[];
+  if(existingSteps.length===0) addStepRow(''); else existingSteps.forEach(s=>addStepRow(s));
   document.getElementById('ingRows').innerHTML='';
   const ings=r?r.ingredients:[];
   if(ings.length===0) addIngRow(); else ings.forEach(i=>addIngRow(i));
@@ -498,6 +530,23 @@ function openRecipeModal(id,type){
   if(revertBtn) revertBtn.style.display=(r&&r.libraryId)?'inline-block':'none';
   document.getElementById('recipeModal').classList.add('open');
   setTimeout(()=>document.getElementById('r_name').focus(),100);
+}
+function addStepRow(text){
+  const stepsEl=document.getElementById('stepsRows');
+  const idx=stepsEl.children.length+1;
+  const row=document.createElement('div');
+  row.className='step-row';
+  row.innerHTML=`
+    <span class="step-num">${idx}</span>
+    <input type="text" placeholder="e.g. Heat oil in pan over medium heat…" value="${text?text.replace(/"/g,'&quot;'):''}">
+    <button onclick="this.closest('.step-row').remove();_renumberSteps()" title="Remove">✕</button>`;
+  stepsEl.appendChild(row);
+}
+function _renumberSteps(){
+  document.querySelectorAll('#stepsRows .step-row').forEach((row,i)=>{
+    const num=row.querySelector('.step-num');
+    if(num) num.textContent=i+1;
+  });
 }
 function addIngRow(ing){
   const row=document.createElement('div');
@@ -520,7 +569,10 @@ function saveRecipe(){
     const ins=row.querySelectorAll('input');
     return{name:ins[0].value.trim(),qty:ins[1].value.trim(),category:row.querySelector('select').value};
   }).filter(i=>i.name);
-  const data={name,type,servings:parseInt(document.getElementById('r_servings').value)||4,notes:document.getElementById('r_notes').value.trim(),ingredients:ings};
+  // Collect steps and join as newline-separated string (matches renderSteps format)
+  const notes=Array.from(document.querySelectorAll('#stepsRows .step-row input'))
+    .map(i=>i.value.trim()).filter(Boolean).join('\n');
+  const data={name,type,servings:parseInt(document.getElementById('r_servings').value)||4,notes,ingredients:ings};
   if(_editId){const i=recipes.findIndex(r=>r.id===_editId);if(i>-1)recipes[i]={...recipes[i],...data};}
   else{recipes.push({id:uid(),...data});}
   save(K.recipes,recipes);
@@ -535,8 +587,12 @@ function revertRecipe(){
   if(!confirm('Reset this recipe to the original Meal Planning OS version? Any edits you\'ve made will be lost.')) return;
   document.getElementById('r_name').value=lr.name;
   document.getElementById('r_servings').value=lr.servings;
-  document.getElementById('r_notes').value=lr.notes||'';
   document.getElementById('r_type').value=lr.type;
+  // Repopulate step rows from library notes
+  const stepsEl=document.getElementById('stepsRows');
+  stepsEl.innerHTML='';
+  const libSteps=(lr.steps||lr.notes||'').split('\n').filter(s=>s.trim());
+  if(libSteps.length===0) addStepRow(''); else libSteps.forEach(s=>addStepRow(s));
   document.getElementById('ingRows').innerHTML='';
   lr.ingredients.forEach(i=>addIngRow(i));
 }
@@ -710,7 +766,7 @@ function openAssignModal(day,meal){
   // ── Meal name for goto / experimental / freezer ───────────────────────
   const showNameField=!isLeftovers&&!isEatingOut;
   html+=`<div id="mealNameSection" style="display:${showNameField?'block':'none'};margin-top:12px">`;
-  html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Meal Name <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional — auto-fills from recipe)</span></div>`;
+  html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Meal Name</div>`;
   html+=`<input type="text" id="a_mealName_recipe" placeholder="Leave blank or type a custom name…" value="${existing&&showNameField?existing.name:''}" onkeydown="event.stopPropagation();if(event.key==='Enter'){event.preventDefault();confirmAssign();}">`;
   html+='</div>';
 
@@ -963,9 +1019,7 @@ function renderGrocery(){
     });
   }));
 
-  // Meta
-  const meta=document.getElementById('groceryMeta');
-  if(meta) meta.textContent=recipeCount>0?`${recipeCount} recipe${recipeCount!==1?'s':''} in your plan this week`:'Add recipes to your meal plan in Step 3 to populate your list.';
+  // Meta — removed recipe count display
 
   container.innerHTML='';
 
@@ -1014,6 +1068,8 @@ function renderGrocery(){
   renderListSection(container,'📌 Weekly Staples','Your recurring essentials — add these to your cart every week.',staples,'staples',()=>renderGrocery(),true);
   // Flex & Backup
   renderListSection(container,'🛟 Flex & Backup Items','Your rescue plan for busy nights. Cheaper and better than last-minute delivery.',flexItems,'flex',()=>renderGrocery(),false);
+  // Ad-Hoc — catch-all at the bottom
+  renderListSection(container,'🛍️ Ad-Hoc Items','Anything else you need — cleaning supplies, toiletries, or whatever didn\'t make the list.',adhocItems,'adhoc',()=>renderGrocery(),false);
 }
 
 function renderListSection(container,title,subtitle,items,type,refresh,isStaples){
@@ -1028,9 +1084,10 @@ function renderListSection(container,title,subtitle,items,type,refresh,isStaples
     rows+=`<div class="list-item-row">
       <input type="checkbox" ${done?'checked':''} onchange="toggleCheck('${ckPrefix.slice(0,-1)}','${item.id}',this.checked)">
       <span class="item-name${done?' done':''}" id="gn-${ckPrefix.slice(0,-1)}-${item.id}">${item.name}</span>
-      <button class="item-remove" onclick="${isStaples?'removeStaple':'removeFlexItem'}('${item.id}')">✕</button>
+      <button class="item-remove" onclick="${type==='staples'?'removeStaple':type==='adhoc'?'removeAdhocItem':'removeFlexItem'}('${item.id}')">✕</button>
     </div>`;
   });
+  const addFn=type==='staples'?'addStaple':type==='adhoc'?'addAdhocItem':'addFlexItem';
   sec.innerHTML=`<div class="category-header" style="margin-top:10px">
     <span class="category-icon">${title.split(' ')[0]}</span>
     <span class="category-name">${title.replace(/^[^\s]+\s/,'')}</span>
@@ -1038,8 +1095,8 @@ function renderListSection(container,title,subtitle,items,type,refresh,isStaples
   <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">${subtitle}</div>
   <div class="list-only-items" id="list-${type}">${rows}</div>
   <div class="add-list-item" style="margin-top:8px">
-    <input type="text" id="${inputId}" placeholder="Add item…" onkeydown="if(event.key==='Enter')${isStaples?'addStaple':'addFlexItem'}()">
-    <button class="btn btn-secondary btn-sm" onclick="${isStaples?'addStaple':'addFlexItem'}()">Add</button>
+    <input type="text" id="${inputId}" placeholder="Add item…" onkeydown="if(event.key==='Enter')${addFn}()">
+    <button class="btn btn-secondary btn-sm" onclick="${addFn}()">Add</button>
   </div>`;
   container.appendChild(sec);
 }
@@ -1062,6 +1119,12 @@ function addFlexItem(){
   flexItems.push({id:uid(),name}); save(K.flexItems,flexItems); el.value=''; renderGrocery();
 }
 function removeFlexItem(id){ flexItems=flexItems.filter(f=>f.id!==id); save(K.flexItems,flexItems); renderGrocery(); }
+function addAdhocItem(){
+  const el=document.getElementById('new-adhoc-input'); if(!el) return;
+  const name=el.value.trim(); if(!name) return;
+  adhocItems.push({id:uid(),name}); save(K.adhocItems,adhocItems); el.value=''; renderGrocery();
+}
+function removeAdhocItem(id){ adhocItems=adhocItems.filter(a=>a.id!==id); save(K.adhocItems,adhocItems); renderGrocery(); }
 
 // ╔═══════════════════════════════════════╗
 //   FREEZER
@@ -1369,7 +1432,7 @@ async function submitPasswordReset() {
 }
 
 async function handleAuth() {
-  const email    = document.getElementById('authEmail').value.trim();
+  const email    = document.getElementById('authEmail').value.trim().toLowerCase();
   const password = document.getElementById('authPassword').value;
   const msg      = document.getElementById('authMsg');
   const btn      = document.getElementById('authBtn');
@@ -1489,10 +1552,11 @@ async function syncToSupabase() {
     week_notes:  weekNotes,
     week_start:  localStorage.getItem('mpos_weekstart') || '',
     freezer:     freezer,
-    groceries:   { staples, flexItems, checks },
+    groceries:   { staples, flexItems, checks, adhocItems },
     updated_at:  new Date().toISOString()
   };
-  await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
+  const { error: syncErr } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
+  if (syncErr) console.error('Cloud sync failed:', syncErr.message);
 }
 
 async function migrateIfNeeded(userId) {
@@ -1508,12 +1572,13 @@ function applyCloudData(data) {
   if (!data) return;
   if (Array.isArray(data.recipes))  { recipes   = data.recipes;    save(K.recipes,   recipes); }
   if (data.assignments)             { mealPlan  = data.assignments; save(K.mealPlan,  mealPlan); }
-  if (data.week_notes)              { weekNotes = data.week_notes;  save(K.weekNotes, weekNotes); }
+  if (data.week_notes !== undefined) { weekNotes = data.week_notes;  save(K.weekNotes, weekNotes); }
   if (data.freezer)                 { freezer   = data.freezer;     save(K.freezer,   freezer); }
   if (data.groceries) {
-    if (data.groceries.staples)   { staples   = data.groceries.staples;   save(K.staples,   staples); }
-    if (data.groceries.flexItems) { flexItems = data.groceries.flexItems; save(K.flexItems, flexItems); }
-    if (data.groceries.checks)    { checks    = data.groceries.checks;    save(K.checks,    checks); }
+    if (data.groceries.staples)    { staples     = data.groceries.staples;     save(K.staples,     staples); }
+    if (data.groceries.flexItems)  { flexItems   = data.groceries.flexItems;   save(K.flexItems,   flexItems); }
+    if (data.groceries.checks)     { checks      = data.groceries.checks;      save(K.checks,      checks); }
+    if (data.groceries.adhocItems) { adhocItems  = data.groceries.adhocItems;  save(K.adhocItems,  adhocItems); }
   }
 }
 
@@ -1629,6 +1694,11 @@ async function loadAndRender(userId) {
   normalizeRecipeTypes();
   renderAll();
 }
+
+// ── Flush pending cloud save on tab close ────────────────────
+window.addEventListener('beforeunload', () => {
+  if (_saveTimer) { clearTimeout(_saveTimer); syncToSupabase(); }
+});
 
 // ── Start ────────────────────────────────────────────────────
 initAuth();
