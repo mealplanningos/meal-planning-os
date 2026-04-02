@@ -1216,6 +1216,14 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 }
 .lib-source-link:hover { text-decoration: underline; }
 
+/* What's New modal */
+.whats-new-modal { max-width: 420px; }
+.whats-new-date { font-size: 11px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+.whats-new-list { padding-left: 18px; margin: 0; }
+.whats-new-list li { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 10px; }
+.whats-new-list li:last-child { margin-bottom: 0; }
+.whats-new-list strong { color: var(--text); }
+
 /* Tag picker in recipe modal */
 .tag-picker { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag-pill {

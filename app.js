@@ -11,6 +11,9 @@ const DAYS = ['monday','tuesday','wednesday','thursday','friday'];
 const DAY_FULL = {monday:'Monday',tuesday:'Tuesday',wednesday:'Wednesday',thursday:'Thursday',friday:'Friday'};
 const MEALS = ['breakfast','lunch','dinner'];
 const MEAL_ICON = {breakfast:'🌅',lunch:'☀️',dinner:'🌙'};
+// ── What's New version (change this + modal content to trigger a new popup) ──
+const CURRENT_UPDATE_VERSION = '2026-04-15-1';
+
 const CATS = ['Produce','Protein','Grains & Breads','Dairy / Dairy-Free','Pantry & Seasonings','Freezer / Flex','Snacks / Extras'];
 const CAT_ICON = {'Produce':'🥬','Protein':'🍗','Grains & Breads':'🌾','Dairy / Dairy-Free':'🥛','Pantry & Seasonings':'🧂','Freezer / Flex':'❄️','Snacks / Extras':'🥜'};
 
@@ -2215,6 +2218,23 @@ async function loadAndRender(userId) {
     detectOnboardingCompletion();
   }
   renderAll();
+  checkWhatsNew(cloud);
+}
+
+// ── What's New modal ─────────────────────────────────────────
+function checkWhatsNew(cloud) {
+  const seen = cloud && cloud.last_seen_update_version;
+  if (seen === CURRENT_UPDATE_VERSION) return;
+  const modal = document.getElementById('whatsNewModal');
+  if (modal) modal.classList.add('open');
+}
+async function dismissWhatsNew() {
+  const modal = document.getElementById('whatsNewModal');
+  if (modal) modal.classList.remove('open');
+  if (!_currentUser) return;
+  try {
+    await _sb.from('user_data').update({ last_seen_update_version: CURRENT_UPDATE_VERSION }).eq('user_id', _currentUser.id);
+  } catch(e) { /* best-effort — next login will retry */ }
 }
 
 // ── Flush pending cloud save on tab close ────────────────────
