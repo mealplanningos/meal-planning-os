@@ -4,6 +4,7 @@
   "description": "Meal Planning OS — Netlify Functions dependencies",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
+    "cheerio": "^1.0.0-rc.12",
     "stripe": "^14.0.0"
   }
 }

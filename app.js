@@ -25,14 +25,14 @@ const MEAL_CATEGORIES = [
 // Starter recipes — seeded into new users' No-Decision Menu on first visit.
 // Uses libraryId so "already added" detection works correctly in the library.
 const STARTER_RECIPES = [
-  {id:'sr1', libraryId:'lb13', type:'goto', name:'Overnight Oatmeal', servings:5,
+  {id:'sr1', libraryId:'lb13', type:'goto', onMenu:false, name:'Overnight Oatmeal', servings:5,
    notes:'Add 1 cup oats and 1 cup milk to each jar. Stir well.\nAdd mixed berries.\nSeal jars.\nRefrigerate overnight. Grab and go — no reheating needed.\n(Optional) Add other ingredients like banana, protein powder, or chia seeds.',
    ingredients:[
      {name:'Oats',         qty:'1 cup', category:'Grains & Breads'},
      {name:'Milk',         qty:'1 cup', category:'Dairy / Dairy-Free'},
      {name:'Mixed Berries',qty:'½ cup', category:'Produce'},
    ]},
-  {id:'sr2', libraryId:'lb15', type:'goto', name:'Spaghetti', servings:4,
+  {id:'sr2', libraryId:'lb15', type:'goto', onMenu:false, name:'Spaghetti', servings:4,
    notes:'Boil salted water and cook spaghetti until al dente. Drain and set aside.\nPour marinara sauce into a separate pot. Simmer for 5 minutes.\nToss with pasta.\nOptional – Top with parmesan and serve with warm bread.\nTip – Freeze leftover sauce for a future no-effort dinner. Use the "Freezer" tab to log it.',
    ingredients:[
      {name:'Spaghetti',      qty:'12 oz', category:'Grains & Breads'},
@@ -40,7 +40,7 @@ const STARTER_RECIPES = [
      {name:'(Optional) Parmesan',     qty:'¼ cup', category:'Dairy / Dairy-Free'},
      {name:'(Optional) Italian Bread',qty:'1 Loaf',category:'Grains & Breads'},
    ]},
-  {id:'sr3', libraryId:'lb21', type:'experimental', name:'Chicken & Bean Burrito', servings:3,
+  {id:'sr3', libraryId:'lb21', type:'experimental', onMenu:false, name:'Chicken & Bean Burrito', servings:3,
    notes:'Cook rice according to package instructions.\nSeason chicken with seasonings. Cook in a pan with oil until done, then shred or chop.\nWarm drained black beans in a small pot with a pinch of seasonings.\nWarm tortillas in a pan or microwave. Layer rice, chicken, beans, cheese, and salsa.\nFold and wrap tightly. Heat all sides in the same pan with oil or butter – until browned.\nEat immediately or wrap in foil for later.\nTips – Increase serving size to batch cook, and freeze for your busiest weeknights.',
    ingredients:[
      {name:'Large Tortillas', qty:'3',      category:'Grains & Breads'},
@@ -247,19 +247,240 @@ let adhocItems = load(K.adhocItems, []);
 if (recipes === null) { recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))})); save(K.recipes, recipes); }
 
 // ╔═══════════════════════════════════════╗
+//   ONBOARDING STATE
+// ╚═══════════════════════════════════════╝
+let onboardingState = { firstRunComplete: false, guideSeen: false };
+
+function isOnboardingComplete() { return onboardingState.firstRunComplete; }
+function hasSeenGuide() { return onboardingState.guideSeen === true; }
+
+function detectOnboardingCompletion() {
+  // If user already has at least 1 recipe on the menu AND at least 1 meal assigned → complete
+  const hasMenuRecipe = recipes.some(r => r.onMenu);
+  const hasMealAssigned = DAYS.some(d => MEALS.some(m => mealPlan[d] && mealPlan[d][m]));
+  if (hasMenuRecipe && hasMealAssigned) {
+    onboardingState.firstRunComplete = true;
+  }
+}
+
+// ── Soft Gating ─────────────────────────────────────────────────────────
+function checkOnboardingGate(targetTab){
+  // Soft gates are now non-blocking — the tab always renders, but we show
+  // a helpful nudge if prerequisites aren't met yet.
+  const hasRecipes = recipes.length > 0;
+  const hasMenuRecipes = recipes.some(r=>r.onMenu);
+  const mealCount = DAYS.reduce((n,d)=>n+MEALS.reduce((m2,meal)=>(mealPlan[d]&&mealPlan[d][meal]?1:0)+m2,0),0);
+
+  let msg='', btn='', redirect='';
+
+  if(targetTab==='menu' && !hasRecipes){
+    msg='Add recipes first so you have meals to choose from.';
+    btn='Go to Recipes'; redirect='recipes';
+  } else if(targetTab==='weeksetup' && !hasMenuRecipes){
+    msg='Add meals to your No-Decision Menu first.';
+    btn='Go to No-Decision Menu'; redirect='menu';
+  } else if(targetTab==='grocerylist' && mealCount<1){
+    msg='Assign at least one meal to your plan to generate your grocery list.';
+    btn='Go to Meal Plan'; redirect='mealplan';
+  }
+
+  const gateEl=document.getElementById('softGate-'+targetTab);
+  if(gateEl) gateEl.innerHTML=msg?`<div class="soft-gate">
+    <div class="soft-gate-msg">${msg}</div>
+    <button class="btn btn-primary btn-sm" onclick="switchTab('${redirect}')">${btn}</button>
+  </div>`:'';
+
+  return false; // never block — always let the tab render
+}
+
+// ── Onboarding Banners & CTAs ────────────────────────────────────────────
+let _guideMode = false; // true = user re-enabled guide after completion
+
+function renderOnboardingUI(){
+  // Clear all gates on render (they're re-evaluated on tab switch)
+  ['recipes','menu','weeksetup','mealplan','grocerylist'].forEach(id=>{
+    const gate=document.getElementById('softGate-'+id);
+    if(gate) gate.innerHTML='';
+  });
+
+  // Toggle setup guide button visibility
+  const guideAction=document.getElementById('setupGuideAction');
+  if(guideAction) guideAction.style.display=isOnboardingComplete()?'':'none';
+  const guideBtn=document.getElementById('setupGuideBtn');
+  if(guideBtn) guideBtn.textContent=(_guideMode||!hasSeenGuide())?'📖 Hide Setup Guide':'📖 Show Setup Guide';
+
+  const showGuide = !isOnboardingComplete() || _guideMode || !hasSeenGuide();
+
+  if(!showGuide){
+    // Clear all banners and CTAs
+    for(let i=1;i<=5;i++){
+      const b=document.getElementById('onboardingBanner-'+i);
+      if(b) b.innerHTML='';
+    }
+    ['recipesCTA','menuCTA','weekSetupCTA','mealPlanCTA','groceryCTA'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.innerHTML='';
+    });
+    return;
+  }
+
+  // Helper: build a banner with optional Next button on the right
+  function obBanner(step, title, desc, nextBtn){
+    return `<div class="onboarding-banner">
+      <div class="ob-banner-row">
+        <div class="ob-banner-left">
+          <div class="ob-step">Step ${step} of 5</div>
+          <div class="ob-title">${title}</div>
+          <div class="ob-desc">${desc}</div>
+        </div>
+        ${nextBtn?`<div class="ob-banner-right">${nextBtn}</div>`:''}
+      </div>
+    </div>`;
+  }
+
+  // Step 1
+  const next1=recipes.length>=1?`<button class="btn btn-primary btn-next" onclick="switchTab('menu')">Next →</button>`:'';
+  const b1=document.getElementById('onboardingBanner-1');
+  if(b1) b1.innerHTML=obBanner(1,'Add Recipes','Add a few meals you already eat. Keep it simple.',next1);
+  const cta1=document.getElementById('recipesCTA'); if(cta1) cta1.innerHTML='';
+
+  // Step 2
+  const menuRecipes=recipes.filter(r=>r.onMenu);
+  const next2=menuRecipes.length>=1?`<button class="btn btn-primary btn-next" onclick="switchTab('weeksetup')">Next →</button>`:'';
+  const b2=document.getElementById('onboardingBanner-2');
+  if(b2) b2.innerHTML=obBanner(2,'Build Your No-Decision Menu','Choose the meals you want on repeat so your week takes less thinking.',next2);
+  const cta2=document.getElementById('menuCTA'); if(cta2) cta2.innerHTML='';
+
+  // Step 3
+  const next3=`<button class="btn btn-primary btn-next" onclick="switchTab('mealplan')">Next →</button>`;
+  const b3=document.getElementById('onboardingBanner-3');
+  if(b3) b3.innerHTML=obBanner(3,'Map Your Week','Tell us what your week looks like so your plan fits your life.',next3);
+  const cta3=document.getElementById('weekSetupCTA'); if(cta3) cta3.innerHTML='';
+
+  // Step 4
+  const mealCount=DAYS.reduce((n,d)=>n+MEALS.reduce((m2,meal)=>(mealPlan[d]&&mealPlan[d][meal]?1:0)+m2,0),0);
+  const next4=mealCount>=1?`<button class="btn btn-primary btn-next" onclick="switchTab('grocerylist')">Next →</button>`:'';
+  const b4=document.getElementById('onboardingBanner-4');
+  if(b4) b4.innerHTML=obBanner(4,'Fill In Your Week','Tap each day to assign a meal from your No-Decision Menu.',next4);
+  const cta4=document.getElementById('mealPlanCTA'); if(cta4) cta4.innerHTML='';
+
+  // Step 5
+  const b5=document.getElementById('onboardingBanner-5');
+  // Existing user seeing guide for first time (or re-enabled) → "Hide Guide"; new user → "I'm Done ✓"
+  const isReview = _guideMode || (isOnboardingComplete() && !hasSeenGuide());
+  const doneBtn=isReview
+    ?`<button class="btn btn-primary btn-next" onclick="toggleSetupGuide()">Hide Guide</button>`
+    :`<button class="btn btn-primary btn-next" onclick="completeOnboarding()">I'm Done ✓</button>`;
+  if(b5) b5.innerHTML=obBanner(5,'Review Your Grocery List','Your list is built from your meal plan. Grab it and go.',doneBtn);
+  const cta5=document.getElementById('groceryCTA');
+  if(cta5){
+    if(!isReview){
+      cta5.innerHTML=`<div style="font-size:12px;color:var(--text-3);text-align:center;margin-top:-8px;margin-bottom:12px">The guide will hide after you tap "I'm Done." Reopen it anytime from the footer.</div>`;
+    } else { cta5.innerHTML=''; }
+  }
+}
+
+function completeOnboarding(){
+  onboardingState.firstRunComplete=true;
+  onboardingState.guideSeen=true;
+  _guideMode=false;
+  save(K.recipes,recipes); // triggers Supabase sync via patched save
+  renderOnboardingUI();
+}
+
+function toggleSetupGuide(){
+  // If guide is currently showing (either via _guideMode or because guideSeen is false), hide it
+  const currentlyShowing = _guideMode || !hasSeenGuide();
+  if(currentlyShowing){
+    _guideMode=false;
+    onboardingState.guideSeen=true;
+    save(K.recipes,recipes);
+    renderOnboardingUI();
+  } else {
+    _guideMode=true;
+    renderOnboardingUI();
+    switchTab('recipes');
+  }
+}
+
+// ── Reset Logic ─────────────────────────────────────────────────────────
+function startFreshWeek(){
+  if(!confirm('Start a fresh week? This will clear your Week Setup, Meal Plan, and Grocery List. Your recipes and No-Decision Menu will stay.')) return;
+  weekNotes={};
+  mealPlan={};
+  checks={};
+  adhocItems=[];
+  save(K.weekNotes,weekNotes);
+  save(K.mealPlan,mealPlan);
+  save(K.checks,checks);
+  save(K.adhocItems,adhocItems);
+  renderAll();
+  switchTab('recipes');
+}
+
+function resetEverything(){
+  if(!confirm('Reset everything? This will clear ALL your data — recipes, menu, meal plan, grocery list, and onboarding progress. This cannot be undone.')) return;
+  recipes=[];
+  weekNotes={};
+  mealPlan={};
+  checks={};
+  adhocItems=[];
+  staples=DEFAULT_STAPLES.map(s=>({...s}));
+  flexItems=DEFAULT_FLEX.map(f=>({...f}));
+  freezer=[];
+  onboardingState={firstRunComplete:false};
+  // Re-seed starters
+  recipes=STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))}));
+  save(K.recipes,recipes); save(K.weekNotes,weekNotes); save(K.mealPlan,mealPlan);
+  save(K.checks,checks); save(K.adhocItems,adhocItems); save(K.staples,staples);
+  save(K.flexItems,flexItems); save(K.freezer,freezer);
+  renderAll();
+  switchTab('recipes');
+}
+
+// Context tracker for add-from-library (Step 1 vs Step 2)
+let _addContext = 'recipes'; // 'recipes' = Step 1 (type:null), 'menu' = Step 2
+
+// ╔═══════════════════════════════════════╗
+//   SHARED PAYLOAD BUILDER
+// ╚═══════════════════════════════════════╝
+function buildSyncPayload() {
+  return {
+    user_id:     _currentUser ? _currentUser.id : null,
+    recipes:     recipes,
+    assignments: mealPlan,
+    week_notes:  weekNotes,
+    week_start:  localStorage.getItem('mpos_weekstart') || '',
+    freezer:     freezer,
+    groceries:   { staples, flexItems, checks, adhocItems },
+    onboarding:  onboardingState,
+    updated_at:  new Date().toISOString()
+  };
+}
+
+// ╔═══════════════════════════════════════╗
 //   NAV
 // ╚═══════════════════════════════════════╝
 function switchTab(id){
+  // Soft gating for first-time users
+  if(!isOnboardingComplete()){
+    const gated = checkOnboardingGate(id);
+    if(gated) return; // gate message shown, don't switch
+  }
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const idx={step1:0,step3:1,step4:2,step2:3,freezer:4,library:5}[id];
+  const idx={recipes:0,menu:1,weeksetup:2,mealplan:3,grocerylist:4,freezer:5}[id];
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
-  if(id==='library') renderLibrary();
-  if(id==='step3') renderMealPlan();
-  if(id==='step4') renderGrocery();
+  // Set add context for library rendering
+  if(id==='recipes') { _addContext='recipes'; renderLibrary(); renderOnboardingUI(); }
+  if(id==='menu') { _addContext='menu'; renderMealSections(); renderOnboardingUI(); }
+  if(id==='weeksetup') { renderWeek(); renderOnboardingUI(); }
+  if(id==='mealplan') { renderMealPlan(); renderOnboardingUI(); }
+  if(id==='grocerylist') { renderGrocery(); renderOnboardingUI(); }
   if(id==='freezer') renderFreezer();
   localStorage.setItem('mpos_active_tab', id);
+  window.scrollTo(0, 0);
 }
 
 // ╔═══════════════════════════════════════╗
@@ -275,12 +496,19 @@ function renderLibrary(){
     {id:'all',          label:'All'},
     {id:'goto',         label:'⚡ Go-To Meal'},
     {id:'experimental', label:'✨ Experimental'},
+    {id:'custom',       label:'✏️ Custom'},
   ];
-  // ── Tag filter (derived from all recipes) ────────────────────────────────
+  // ── Tag filter (derived from library + custom) ───────────────────────────
+  const customRecipes=recipes.filter(r=>!r.libraryId);
   const allTags=[...new Set(LIBRARY_RECIPES.flatMap(r=>r.tags||[]))];
+  if(customRecipes.length>0 && !allTags.includes('Custom')) allTags.push('Custom');
   filterEl.innerHTML=`
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-      ${filters.map(f=>`<button class="lib-filter-btn${_libFilter===f.id?' active':''}" onclick="_libFilter='${f.id}';renderLibrary()">${f.label}</button>`).join('')}
+      ${filters.map(f=>{
+        // Hide Custom filter if no custom recipes exist
+        if(f.id==='custom' && customRecipes.length===0) return '';
+        return `<button class="lib-filter-btn${_libFilter===f.id?' active':''}" onclick="_libFilter='${f.id}';renderLibrary()">${f.label}</button>`;
+      }).join('')}
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px">
       <button class="lib-filter-btn lib-filter-tag${_libTagFilter===''?' active':''}" onclick="_libTagFilter='';renderLibrary()">All Tags</button>
@@ -289,44 +517,111 @@ function renderLibrary(){
 
   // ── Recipe grid ─────────────────────────────────────────────────────────
   const grid=document.getElementById('libGrid');
-  let filtered=_libFilter==='all'?LIBRARY_RECIPES:LIBRARY_RECIPES.filter(r=>r.type===_libFilter);
-  if(_libTagFilter) filtered=filtered.filter(r=>(r.tags||[]).includes(_libTagFilter));
   grid.innerHTML='';
 
-  filtered.forEach(lr=>{
-    // State checks
-    const alreadyAdded=recipes.some(r=>r.libraryId===lr.id);
-    const typeCount=recipes.filter(r=>r.type===lr.type).length;
-    const catFull=!alreadyAdded && typeCount>=3;
+  // Filter library recipes
+  let filteredLib=[];
+  if(_libFilter!=='custom'){
+    filteredLib=_libFilter==='all'?[...LIBRARY_RECIPES]:LIBRARY_RECIPES.filter(r=>r.type===_libFilter);
+    if(_libTagFilter && _libTagFilter!=='Custom') filteredLib=filteredLib.filter(r=>(r.tags||[]).includes(_libTagFilter));
+    if(_libTagFilter==='Custom') filteredLib=[];
+  }
 
-    // Ingredient preview (first 4)
+  // Filter custom recipes
+  let filteredCustom=[];
+  if(_libFilter==='all'||_libFilter==='custom'){
+    filteredCustom=[...customRecipes];
+    // Custom recipes match the "Custom" tag filter; other tag filters exclude them
+    if(_libTagFilter && _libTagFilter!=='Custom') filteredCustom=[];
+  }
+
+  // Tag pill helper
+  const tagColorMap={
+    'Under 15 Min':'quick','Under 30 Min':'quick',
+    'Batch Cook':'batch','Freezer Friendly':'freezer',
+    'One Pan':'onepan','Custom':'custom',
+  };
+
+  // Count how many are on the menu per type (for disabling full categories)
+  const gotoOnMenu=recipes.filter(r=>r.onMenu&&r.type==='goto').length;
+  const expOnMenu=recipes.filter(r=>r.onMenu&&r.type==='experimental').length;
+  const gotoFull=gotoOnMenu>=5, expFull=expOnMenu>=5;
+
+  // ── Render custom recipe cards first ────────────────────────────────────
+  filteredCustom.forEach(r=>{
+    const ingList=(r.ingredients||[]).slice(0,4).map(i=>i.name).join(', ')
+      +((r.ingredients||[]).length>4?` +${r.ingredients.length-4} more`:'');
+    const srvLabel=r.servings===1?'1 serving':r.servings+' servings per batch';
+
+    const typeLabels={goto:'⚡ Go-To',experimental:'✨ Experimental'};
+    const typeName=typeLabels[r.type]||'';
+    const typeClass=r.type==='goto'?'lib-type-goto':'lib-type-experimental';
+
+    // Custom tag pills
+    const customTags=(r.tags||[]).map(t=>{
+      const cls=tagColorMap[t]||'easy';
+      return `<span class="lib-tag lib-tag-${cls}">${t}</span>`;
+    }).join('');
+
+    let footerAction='';
+    if(r.onMenu){
+      footerAction=`<span class="lib-badge-added">✓ On Your Menu</span>`;
+    } else {
+      const isFull=r.type==='goto'?gotoFull:expFull;
+      if(isFull){
+        footerAction=`<span class="lib-badge-full">Menu full — go to <a href="#" onclick="event.preventDefault();switchTab('menu')">No-Decision Menu</a> to swap</span>`;
+      } else {
+        footerAction=`<button class="btn btn-primary lib-add-btn" onclick="addToMenu('${r.id}')">+ Add to No-Decision Menu</button>`;
+      }
+    }
+
+    const card=document.createElement('div');
+    card.className='lib-card';
+    card.innerHTML=`
+      <div class="lib-card-top">
+        <div class="lib-card-name">${r.name}</div>
+        <div><span class="lib-type-tag lib-type-custom" style="margin-right:4px">✏️ Custom</span><span class="lib-type-tag ${typeClass}">${typeName}</span></div>
+      </div>
+      <div class="lib-card-srv">${srvLabel}</div>
+      <div class="lib-tags"><span class="lib-tag lib-tag-custom">Custom</span>${customTags}</div>
+      <div class="lib-card-ings">${ingList}</div>
+      ${r.sourceUrl&&r.sourceUrl.startsWith('http')?`<a href="${r.sourceUrl}" target="_blank" rel="noopener" class="lib-source-link">View original recipe →</a>`:''}
+      <div class="lib-card-footer" style="flex-wrap:wrap;gap:6px">
+        ${footerAction}
+        <div style="display:flex;gap:6px;width:100%">
+          <button class="btn btn-secondary btn-sm" onclick="openRecipeModal('${r.id}','${r.type}','recipes')" style="flex:1">Edit</button>
+          <button class="btn btn-secondary btn-sm" onclick="deleteRecipe('${r.id}')" style="flex:1;color:var(--red)">Remove</button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  // ── Render library recipe cards ─────────────────────────────────────────
+  filteredLib.forEach(lr=>{
+    const userRecipe=recipes.find(r=>r.libraryId===lr.id);
     const ingList=lr.ingredients.slice(0,4).map(i=>i.name).join(', ')
       +(lr.ingredients.length>4?` +${lr.ingredients.length-4} more`:'');
-
-    // Servings label
     const srvLabel=lr.servings===1?'1 serving':''+lr.servings+' servings per batch';
 
-    // Type badge
     const typeLabels={goto:'⚡ Go-To Meal',experimental:'✨ Experimental'};
     const typeName=typeLabels[lr.type]||(lr.type.charAt(0).toUpperCase()+lr.type.slice(1));
     const typeClass='lib-type-'+(lr.type==='goto'?'goto':'experimental');
 
-    // Footer action
+    // Footer: single "Add to No-Decision Menu" for all states
     let footerAction='';
-    if(alreadyAdded){
-      footerAction=`<span class="lib-badge-added">✓ In Your Menu</span>`;
-    } else if(catFull){
-      footerAction=`<span class="lib-badge-full">Category full (3/3)</span>`;
+    const isFull=lr.type==='goto'?gotoFull:expFull;
+    if(userRecipe && userRecipe.onMenu){
+      footerAction=`<span class="lib-badge-added">✓ On Your Menu</span>
+        <button class="btn btn-secondary btn-sm" onclick="openRecipeModal('${userRecipe.id}','${userRecipe.type}','recipes')">Edit</button>`;
+    } else if(isFull){
+      footerAction=`<span class="lib-badge-full">Menu full — go to <a href="#" onclick="event.preventDefault();switchTab('menu')">No-Decision Menu</a> to swap</span>`;
+    } else if(userRecipe){
+      footerAction=`<button class="btn btn-primary lib-add-btn" onclick="addToMenu('${userRecipe.id}')">+ Add to No-Decision Menu</button>
+        <button class="btn btn-secondary btn-sm" onclick="openRecipeModal('${userRecipe.id}','${userRecipe.type}','recipes')">Edit</button>`;
     } else {
-      footerAction=`<button class="btn btn-primary lib-add-btn" onclick="addFromLibrary('${lr.id}')">+ Add to My Menu</button>`;
+      footerAction=`<button class="btn btn-primary lib-add-btn" onclick="addFromLibrary('${lr.id}')">+ Add to No-Decision Menu</button>`;
     }
 
-    // Tag pills — colour-coded by category
-    const tagColorMap={
-      'Under 15 Min':'quick','Under 30 Min':'quick',
-      'Batch Cook':'batch','Freezer Friendly':'freezer',
-      'One Pan':'onepan',
-    };
     const tagPills=(lr.tags||[]).map(t=>{
       const cls=tagColorMap[t]||'easy';
       return `<span class="lib-tag lib-tag-${cls}">${t}</span>`;
@@ -347,27 +642,29 @@ function renderLibrary(){
     grid.appendChild(card);
   });
 
-  // Empty state (shouldn't happen, but just in case)
-  if(filtered.length===0){
+  // Empty state
+  if(filteredLib.length===0 && filteredCustom.length===0){
     grid.innerHTML=`<div style="color:var(--text-3);font-size:13px;padding:20px 0">No recipes in this category yet.</div>`;
   }
 }
 
-function addFromLibrary(id){
+function addFromLibrary(id, menuType){
   const lr=LIBRARY_RECIPES.find(r=>r.id===id);
   if(!lr) return;
-  // Double-check limits
+  // Don't add duplicates
   if(recipes.some(r=>r.libraryId===id)) return;
-  if(recipes.filter(r=>r.type===lr.type).length>=3){
-    const catLabel=lr.type==='goto'?'Go-To Meal':'Experimental';
-    alert('Your '+catLabel+' category is full (3/3) — remove one recipe to make room, then try again.');
+  // Check category limits
+  const typeToUse=menuType||lr.type;
+  if(recipes.filter(r=>r.onMenu&&r.type===typeToUse).length>=5){
+    const catLabel=typeToUse==='goto'?'Go-To':'Experimental';
+    alert('Your '+catLabel+' category is full (5/5). Remove one to make room.');
     return;
   }
-  // Copy recipe into user's list — use steps field if present, else notes
   const newRecipe={
     id: uid(),
     libraryId: lr.id,
-    type: lr.type,
+    type: typeToUse,
+    onMenu: true,
     name: lr.name,
     servings: lr.servings,
     notes: lr.steps||lr.notes||'',
@@ -375,8 +672,25 @@ function addFromLibrary(id){
   };
   recipes.push(newRecipe);
   save(K.recipes, recipes);
-  renderLibrary();        // re-render library (button state changes)
-  renderMealSections();   // keep Step 2 in sync
+  renderLibrary();
+  renderMealSections();
+  renderOnboardingUI();
+}
+
+// Add a saved recipe (custom or library) to the No-Decision Menu
+function addToMenu(recipeId){
+  const r=recipes.find(x=>x.id===recipeId);
+  if(!r) return;
+  if(recipes.filter(x=>x.onMenu&&x.type===r.type).length>=5){
+    const label=r.type==='goto'?'Go-To':'Experimental';
+    alert(label+' category is full (5/5). Remove one to make room.');
+    return;
+  }
+  r.onMenu=true;
+  save(K.recipes,recipes);
+  renderLibrary();
+  renderMealSections();
+  renderOnboardingUI();
 }
 
 // ╔═══════════════════════════════════════╗
@@ -442,26 +756,31 @@ function renderWeek(){
 function renderMealSections(){
   const el=document.getElementById('mealSections');
   el.innerHTML='';
-  // First-time empty state
-  if(recipes.length===0){
+
+  // Clear the old saved-recipes container (no longer used)
+  const savedEl=document.getElementById('menuSavedRecipes');
+  if(savedEl) savedEl.innerHTML='';
+
+  // ── No-Decision Menu groups ─────────────────────────────────────────────
+  const menuRecipes=recipes.filter(r=>r.onMenu);
+  if(menuRecipes.length===0){
     el.innerHTML=`<div style="text-align:center;padding:40px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)">
       <div style="font-size:36px;margin-bottom:12px">🍽️</div>
-      <div style="font-size:15px;font-weight:800;margin-bottom:6px">Your menu is empty</div>
-      <div style="font-size:13px;color:var(--text-2);max-width:320px;margin:0 auto 18px;line-height:1.55">Add your go-to and experimental meals here — recipes you already know and trust. Or browse the library to get started fast.</div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="openRecipeModal(null,'goto')">+ Add a Recipe</button>
-        <button class="btn btn-secondary" onclick="switchTab('library')">📚 Browse Library</button>
-      </div>
+      <div style="font-size:15px;font-weight:800;margin-bottom:6px">Your No-Decision Menu is empty.</div>
+      <div style="font-size:13px;color:var(--text-2);max-width:360px;margin:0 auto 18px;line-height:1.55">Head to the Recipe Library to add meals as Go-To or Experimental — they'll show up here.</div>
+      <button class="btn btn-primary" onclick="switchTab('recipes')">Browse Recipes</button>
     </div>`;
     return;
   }
+
   const MENU_GROUPS=[
-    {type:'goto',       icon:'⚡', label:'Go-To Meals',       desc:'Reliable recipes you could cook half-asleep'},
-    {type:'experimental',icon:'✨',label:'Experimental Meals', desc:'More involved recipes that push you to try something new'},
+    {type:'goto',       icon:'⚡', label:'Go-To Meals (repeat weekly)',       desc:'Reliable recipes you could cook half-asleep'},
+    {type:'experimental',icon:'✨',label:'Experimental Meals (optional variety)', desc:'More involved recipes that push you to try something new'},
   ];
   MENU_GROUPS.forEach(({type,icon,label,desc})=>{
-    const list=recipes.filter(r=>r.type===type);
-    const rem=3-list.length;
+    const list=recipes.filter(r=>r.onMenu&&r.type===type);
+    const max=5;
+    const rem=max-list.length;
     const wrap=document.createElement('div');
     wrap.innerHTML=`
       <div class="meal-section-header">
@@ -470,10 +789,10 @@ function renderMealSections(){
           <div>
             <div class="meal-type-title">${label}</div>
             <div class="meal-type-desc">${desc}</div>
-            <div class="meal-slots-count">${list.length}/3 — ${rem>0?rem+' slot'+(rem>1?'s':'')+' left':'Menu locked in ✓'}</div>
+            <div class="meal-slots-count">${list.length}/${max} — ${rem>0?rem+' slot'+(rem>1?'s':'')+' left':'Menu locked in ✓'}</div>
           </div>
         </div>
-        ${rem>0?`<button class="btn btn-secondary btn-sm" onclick="openRecipeModal(null,'${type}')">+ Add Recipe</button>`:''}
+        ${rem>0?`<button class="btn btn-secondary btn-sm" onclick="openRecipeModal(null,'${type}','menu')">+ Add New Recipe</button>`:''}
       </div>
       <div class="recipes-grid" id="rgrid-${type}"></div>`;
     el.appendChild(wrap);
@@ -489,34 +808,65 @@ function renderMealSections(){
         <div class="recipe-card-ings">${ingPreview||'No ingredients yet'}</div>
         <div class="recipe-card-actions">
           <button class="btn btn-secondary btn-sm" onclick="openRecipeModal('${r.id}')">Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteRecipe('${r.id}')">Remove</button>
+          <button class="btn btn-danger btn-sm" onclick="removeFromMenu('${r.id}')">Remove from Menu</button>
         </div>`;
       grid.appendChild(card);
     });
     if(rem>0){
       const slot=document.createElement('div');
       slot.className='add-recipe-slot';
-      slot.onclick=()=>openRecipeModal(null,type);
-      slot.innerHTML=`<div class="plus">+</div><div class="slot-text">Add a ${label.toLowerCase().replace(' meals','')} recipe</div>`;
+      slot.onclick=()=>openRecipeModal(null,type,'menu');
+      slot.innerHTML=`<div class="plus">+</div><div class="slot-text">Add a ${type==='goto'?'go-to':'experimental'} recipe</div>`;
       grid.appendChild(slot);
     } else {
-      const max=document.createElement('div');
-      max.className='max-reached';
-      max.innerHTML=`<strong>3/3 ✓</strong><span>Locked in — no decisions needed.</span>`;
-      grid.appendChild(max);
+      const max_el=document.createElement('div');
+      max_el.className='max-reached';
+      max_el.innerHTML=`<strong>${max}/${max} ✓</strong><span>Locked in — no decisions needed.</span>`;
+      grid.appendChild(max_el);
     }
   });
 }
 
-let _editId=null, _editType='goto';
-function openRecipeModal(id,type){
+// ── Menu management ─────────────────────────────────────────────────────
+function removeFromMenu(recipeId){
+  const r=recipes.find(x=>x.id===recipeId);
+  if(!r) return;
+  if(!confirm('Remove "'+r.name+'" from your No-Decision Menu? It will stay in your recipe library.')) return;
+  // Also remove from meal plan if assigned
+  DAYS.forEach(d=>MEALS.forEach(m=>{if(mealPlan[d]&&mealPlan[d][m]&&mealPlan[d][m].recipeId===recipeId)delete mealPlan[d][m];}));
+  r.onMenu=false;
+  save(K.recipes,recipes); save(K.mealPlan,mealPlan);
+  renderMealSections();
+  renderLibrary();
+  renderOnboardingUI();
+}
+
+const AVAILABLE_TAGS=['Under 15 Min','Under 30 Min','Batch Cook','Freezer Friendly','One Pan'];
+let _editId=null, _editType='goto', _modalContext='menu';
+function openRecipeModal(id,type,context){
   _editId=id;
+  _modalContext=context||_addContext||'menu';
   const r=id?recipes.find(x=>x.id===id):null;
-  _editType=type||(r?r.type:'goto');
+  _editType=type||(r?r.type:null);
   document.getElementById('recipeModalTitle').textContent=id?'Edit Recipe':'Add Recipe';
   document.getElementById('r_name').value=r?r.name:'';
   document.getElementById('r_servings').value=r?r.servings:4;
-  document.getElementById('r_type').value=r?r.type:_editType;
+  // Type dropdown — always visible, always required
+  const typeGroup=document.getElementById('r_type_group');
+  typeGroup.style.display='';
+  document.getElementById('r_type').value=r?r.type||'':(_editType||'goto');
+  // Tag picker — show only for custom recipes (no libraryId)
+  const tagsGroup=document.getElementById('r_tags_group');
+  const tagsPicker=document.getElementById('r_tags_picker');
+  const isCustom=!r||!r.libraryId;
+  if(tagsGroup) tagsGroup.style.display=isCustom?'':'none';
+  if(tagsPicker && isCustom){
+    const existingTags=r&&r.tags?r.tags:[];
+    tagsPicker.innerHTML=AVAILABLE_TAGS.map(t=>{
+      const active=existingTags.includes(t)?'active':'';
+      return `<button type="button" class="tag-pill ${active}" onclick="this.classList.toggle('active')">${t}</button>`;
+    }).join('');
+  }
   // Populate step rows from notes (newline-separated)
   const stepsEl=document.getElementById('stepsRows');
   stepsEl.innerHTML='';
@@ -529,7 +879,59 @@ function openRecipeModal(id,type){
   const revertBtn=document.getElementById('revertBtn');
   if(revertBtn) revertBtn.style.display=(r&&r.libraryId)?'inline-block':'none';
   document.getElementById('recipeModal').classList.add('open');
+  // URL import — reset and show only for new recipes
+  const urlGroup=document.getElementById('r_url_group');
+  if(urlGroup) urlGroup.style.display=r?'none':'';
+  const urlInput=document.getElementById('r_url');
+  if(urlInput) urlInput.value='';
+  const urlStatus=document.getElementById('r_url_status');
+  if(urlStatus){urlStatus.textContent='';urlStatus.className='url-status';}
+  _importedSourceUrl=null;
   setTimeout(()=>document.getElementById('r_name').focus(),100);
+}
+// ── URL Import ────────────────────────────────────────────────────────────
+let _importedSourceUrl=null;
+async function fetchRecipeFromUrl(){
+  const urlInput=document.getElementById('r_url');
+  const statusEl=document.getElementById('r_url_status');
+  const btn=document.getElementById('r_url_btn');
+  const url=(urlInput.value||'').trim();
+  if(!url){urlInput.focus();return;}
+  // Basic URL validation
+  try{new URL(url);}catch(e){statusEl.textContent='Please enter a valid URL.';statusEl.className='url-status url-error';return;}
+  btn.disabled=true;btn.textContent='Importing…';
+  statusEl.textContent='Fetching recipe…';statusEl.className='url-status';
+  _importedSourceUrl=null;
+  try{
+    const res=await fetch('/.netlify/functions/scrape-recipe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    const data=await res.json();
+    if(!res.ok){statusEl.textContent=data.error||'Import failed.';statusEl.className='url-status url-error';return;}
+    // Populate modal fields
+    if(data.name) document.getElementById('r_name').value=data.name;
+    if(data.servings) document.getElementById('r_servings').value=data.servings;
+    // Populate steps
+    const stepsEl=document.getElementById('stepsRows');
+    stepsEl.innerHTML='';
+    if(data.steps&&data.steps.length>0) data.steps.forEach(s=>addStepRow(s)); else addStepRow('');
+    // Populate ingredients (parse "qty name" from strings)
+    document.getElementById('ingRows').innerHTML='';
+    if(data.ingredients&&data.ingredients.length>0){
+      data.ingredients.forEach(raw=>{
+        const parts=parseIngredientString(raw);
+        addIngRow(parts);
+      });
+    } else {addIngRow();}
+    _importedSourceUrl=url;
+    statusEl.textContent='✓ Imported! Review and edit below.';statusEl.className='url-status url-success';
+  }catch(e){
+    statusEl.textContent='Could not reach the server. Try again.';statusEl.className='url-status url-error';
+  }finally{btn.disabled=false;btn.textContent='Import';}
+}
+function parseIngredientString(raw){
+  // Try to split "1 cup flour" into qty="1 cup" name="flour"
+  const m=raw.match(/^([\d\s\/⅛⅙⅕¼⅓⅜½⅝⅔¾⅚⅞.,]+\s*(?:cups?|tbsp|tsp|tablespoons?|teaspoons?|oz|ounces?|lbs?|pounds?|g|grams?|kg|ml|liters?|cloves?|cans?|bunch(?:es)?|pinch(?:es)?|dash(?:es)?|cups?|large|medium|small|whole|stalk|stalks|head|heads)?)\s+(.+)/i);
+  if(m) return{qty:m[1].trim(),name:m[2].trim(),category:'Other'};
+  return{qty:'',name:raw.trim(),category:'Other'};
 }
 function addStepRow(text){
   const stepsEl=document.getElementById('stepsRows');
@@ -553,31 +955,59 @@ function addIngRow(ing){
   row.className='ing-row';
   const opts=CATS.map(c=>`<option value="${c}"${ing&&ing.category===c?' selected':''}>${c}</option>`).join('');
   row.innerHTML=`
-    <input type="text" placeholder="e.g. Oats" value="${ing?ing.name:''}">
-    <input type="text" placeholder="1 cup" value="${ing?ing.qty:''}">
-    <select>${opts}</select>
-    <button onclick="this.closest('.ing-row').remove()" title="Remove">✕</button>`;
+    <button class="ing-remove" onclick="this.closest('.ing-row').remove()" title="Remove">✕</button>
+    <input type="text" class="ing-name" placeholder="e.g. Oats" value="${ing?ing.name:''}">
+    <div class="ing-row-bottom">
+      <input type="text" placeholder="1 cup" value="${ing?ing.qty:''}">
+      <select>${opts}</select>
+    </div>`;
   document.getElementById('ingRows').appendChild(row);
 }
 function saveRecipe(){
   const name=document.getElementById('r_name').value.trim();
   if(!name){document.getElementById('r_name').focus();return;}
-  const type=document.getElementById('r_type').value;
-  const existing=recipes.filter(r=>r.type===type&&r.id!==_editId).length;
-  if(existing>=5){alert('You\'ve reached the limit for '+type+' — 5 per category is all you need. That\'s the whole point.');return;}
+  const rawType=document.getElementById('r_type').value;
+  const type=rawType||null;
+  // Type is required
+  if(!type){
+    alert('Please select a meal type (Go-To or Experimental).');
+    document.getElementById('r_type').focus();
+    return;
+  }
+  // Collect tags from picker (custom recipes only)
+  const tagPicker=document.getElementById('r_tags_picker');
+  const tags=tagPicker?Array.from(tagPicker.querySelectorAll('.tag-pill.active')).map(b=>b.textContent):[];
   const ings=Array.from(document.querySelectorAll('#ingRows .ing-row')).map(row=>{
     const ins=row.querySelectorAll('input');
     return{name:ins[0].value.trim(),qty:ins[1].value.trim(),category:row.querySelector('select').value};
   }).filter(i=>i.name);
-  // Collect steps and join as newline-separated string (matches renderSteps format)
   const notes=Array.from(document.querySelectorAll('#stepsRows .step-row input'))
     .map(i=>i.value.trim()).filter(Boolean).join('\n');
-  const data={name,type,servings:parseInt(document.getElementById('r_servings').value)||4,notes,ingredients:ings};
-  if(_editId){const i=recipes.findIndex(r=>r.id===_editId);if(i>-1)recipes[i]={...recipes[i],...data};}
-  else{recipes.push({id:uid(),...data});}
+  const data={name,type,servings:parseInt(document.getElementById('r_servings').value)||4,notes,ingredients:ings,tags};
+  // Attach source URL if imported from a URL
+  if(_importedSourceUrl&&!_editId) data.sourceUrl=_importedSourceUrl;
+  _importedSourceUrl=null;
+  if(_editId){
+    const i=recipes.findIndex(r=>r.id===_editId);
+    if(i>-1) recipes[i]={...recipes[i],...data};
+  } else {
+    // From menu context → add directly to menu; from recipes context → save to library only
+    const goesOnMenu=_modalContext==='menu';
+    if(goesOnMenu){
+      // Check menu limits before adding
+      const onMenuCount=recipes.filter(r=>r.onMenu&&r.type===type).length;
+      if(onMenuCount>=5){
+        alert('Your '+(type==='goto'?'Go-To':'Experimental')+' menu is full (5/5). Remove one to make room.');
+        return;
+      }
+    }
+    recipes.push({id:uid(),onMenu:goesOnMenu,...data});
+  }
   save(K.recipes,recipes);
   closeModal('recipeModal');
   renderMealSections();
+  renderLibrary();
+  renderOnboardingUI();
 }
 function revertRecipe(){
   const r=recipes.find(x=>x.id===_editId);
@@ -602,6 +1032,8 @@ function deleteRecipe(id){
   DAYS.forEach(d=>MEALS.forEach(m=>{if(mealPlan[d]&&mealPlan[d][m]&&mealPlan[d][m].recipeId===id)delete mealPlan[d][m];}));
   save(K.recipes,recipes); save(K.mealPlan,mealPlan);
   renderMealSections();
+  renderLibrary();
+  renderOnboardingUI();
 }
 
 // ╔═══════════════════════════════════════╗
@@ -692,7 +1124,7 @@ function getCellTag(meal,a){
   };
   return map[t]||'';
 }
-function removeCell(d,m){if(mealPlan[d])delete mealPlan[d][m];save(K.mealPlan,mealPlan);renderMealPlan();}
+function removeCell(d,m){if(mealPlan[d])delete mealPlan[d][m];save(K.mealPlan,mealPlan);renderMealPlan();renderOnboardingUI();}
 
 // ── Cooking View ──────────────────────────────────────────────
 function openCookingView(recipeId){
@@ -764,7 +1196,7 @@ function openAssignModal(day,meal){
 
   // ── Recipe picker (goto / experimental) ──────────────────────────────
   const isRecipeCat=_aC.mealType==='goto'||_aC.mealType==='experimental';
-  const catRecipes=isRecipeCat?recipes.filter(r=>r.type===_aC.mealType):[];
+  const catRecipes=isRecipeCat?recipes.filter(r=>r.onMenu&&r.type===_aC.mealType):[];
   html+=`<div id="recipePickerSection" style="display:${isRecipeCat?'block':'none'};margin-top:12px">`;
   html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Pick from your menu <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>`;
   html+=`<div class="recipe-picker" id="recipePicker">`;
@@ -776,7 +1208,7 @@ function openAssignModal(day,meal){
       </div>`;
     });
   } else {
-    html+=`<div style="font-size:13px;color:var(--text-3);padding:8px 0">No recipes yet — <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('step2')">build your menu</a> or <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('library')">browse the library</a> first.</div>`;
+    html+=`<div style="font-size:13px;color:var(--text-3);padding:8px 0">No recipes yet — <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('menu')">build your menu</a> or <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('recipes')">browse recipes</a> first.</div>`;
   }
   html+='</div></div>';
 
@@ -835,12 +1267,12 @@ function selectAType(id){
   if(recSec){
     recSec.style.display=isRecipeCat?'block':'none';
     if(isRecipeCat){
-      const catRecipes=recipes.filter(r=>r.type===id);
+      const catRecipes=recipes.filter(r=>r.onMenu&&r.type===id);
       const picker=document.getElementById('recipePicker');
       if(picker){
         picker.innerHTML=catRecipes.length>0
           ?catRecipes.map(r=>`<div class="recipe-pick-opt${_aC.recipeId===r.id?' sel':''}" data-rid="${r.id}" onclick="pickRecipe('${r.id}','${r.name.replace(/'/g,"\\'")}',${r.servings})"><span class="rpo-name">${r.name}</span><span class="rpo-sub">${r.servings} srv</span></div>`).join('')
-          :`<div style="font-size:13px;color:var(--text-3);padding:8px 0">No recipes yet — <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('step2')">build your menu</a> or <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('library')">browse the library</a> first.</div>`;
+          :`<div style="font-size:13px;color:var(--text-3);padding:8px 0">No recipes yet — <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('menu')">build your menu</a> or <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="closeModal('assignModal');switchTab('recipes')">browse recipes</a> first.</div>`;
       }
     }
   }
@@ -897,6 +1329,7 @@ function confirmAssign(){
   save(K.mealPlan,mealPlan);
   closeModal('assignModal');
   renderMealPlan();
+  renderOnboardingUI();
 }
 
 // ╔═══════════════════════════════════════╗
@@ -1071,7 +1504,7 @@ function renderGrocery(){
   if(Object.keys(agg).length===0){
     container.innerHTML=`<div class="grocery-empty">
       <div class="empty-icon">🛒</div>
-      <p>Assign recipes to your meal plan in Step 3 and your list will build itself — sorted by store section, quantities already calculated.</p>
+      <p>Assign recipes to your meal plan and your list will build itself — sorted by store section, quantities already calculated.</p>
     </div>`;
   } else {
     CATS.forEach(cat=>{
@@ -1239,7 +1672,7 @@ function confirmFzPlan(){
   mealPlan[day][meal]={name:f.name,servings:f.servings,mealType:'freezer',freezerItem:true,freezerId:f.id};
   save(K.mealPlan,mealPlan);
   closeModal('fzPlanModal');
-  switchTab('step3');
+  switchTab('mealplan');
 }
 function removeFreezerItem(id){
   if(!confirm('Remove this meal from your freezer?')) return;
@@ -1266,7 +1699,8 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
 //   INIT
 // ╚═══════════════════════════════════════╝
 renderWeek();
-renderMealSections();
+_addContext='recipes'; renderLibrary();
+_addContext='menu'; renderMealSections();
 
 // ============================================================
 // SUPABASE AUTH + SYNC  (Supabase JS SDK loaded in index.html)
@@ -1377,6 +1811,17 @@ function normalizeRecipeTypes() {
     }
     return r;
   });
+  // Migrate existing recipes: if onMenu field is missing, infer it from type
+  // Old model: type=goto/experimental meant on menu, type=null meant saved only
+  recipes = recipes.map(r => {
+    if (r.onMenu === undefined) {
+      changed = true;
+      // If recipe had a type (goto/exp), it was on the menu in the old model
+      const wasOnMenu = r.type === 'goto' || r.type === 'experimental';
+      return {...r, onMenu: wasOnMenu};
+    }
+    return r;
+  });
   if (changed) save(K.recipes, recipes);
 }
 
@@ -1388,9 +1833,11 @@ function showApp(user) {
   document.getElementById('appRoot').style.display       = 'block';
   const ue = document.getElementById('userEmail');
   if (ue) ue.textContent = user.email;
-  // Restore last active tab
-  const savedTab = localStorage.getItem('mpos_active_tab');
-  const validTabs = ['step1','step2','step3','step4','freezer','library'];
+  // Restore last active tab (map old IDs to new ones for returning users)
+  let savedTab = localStorage.getItem('mpos_active_tab');
+  const tabMigration = {step1:'weeksetup',step2:'menu',step3:'mealplan',step4:'grocerylist',library:'recipes'};
+  if(savedTab && tabMigration[savedTab]) savedTab=tabMigration[savedTab];
+  const validTabs = ['recipes','menu','weeksetup','mealplan','grocerylist','freezer'];
   if (savedTab && validTabs.includes(savedTab)) switchTab(savedTab);
 }
 
@@ -1593,16 +2040,7 @@ function scheduleSyncToSupabase() {
 
 async function syncToSupabase() {
   if (!_currentUser) return;
-  const payload = {
-    user_id:     _currentUser.id,
-    recipes:     recipes,
-    assignments: mealPlan,
-    week_notes:  weekNotes,
-    week_start:  localStorage.getItem('mpos_weekstart') || '',
-    freezer:     freezer,
-    groceries:   { staples, flexItems, checks, adhocItems },
-    updated_at:  new Date().toISOString()
-  };
+  const payload = buildSyncPayload();
   const { error: syncErr } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
   if (syncErr) console.error('Cloud sync failed:', syncErr.message);
 }
@@ -1629,6 +2067,9 @@ function applyCloudData(data) {
     if (data.groceries.checks)     { checks      = data.groceries.checks;      save(K.checks,      checks); }
     if (data.groceries.adhocItems) { adhocItems  = data.groceries.adhocItems;  save(K.adhocItems,  adhocItems); }
   }
+  if (data.onboarding && typeof data.onboarding === 'object') {
+    onboardingState = data.onboarding;
+  }
 }
 
 function renderSteps(notes) {
@@ -1640,8 +2081,13 @@ function renderSteps(notes) {
 }
 
 function renderAll() {
-  renderWeek(); renderMealSections(); renderMealPlan();
-  renderGrocery(); renderFreezer(); renderLibrary(); updateWeekBadge();
+  _addContext='recipes';
+  renderLibrary();
+  _addContext='menu';
+  renderMealSections();
+  renderWeek(); renderMealPlan();
+  renderGrocery(); renderFreezer();
+  renderOnboardingUI();
 }
 
 // ── Patch save() to also trigger cloud sync ───────────────────
@@ -1747,6 +2193,10 @@ async function loadAndRender(userId) {
     recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))}));
     save(K.recipes, recipes);
   }
+  // Detect onboarding completion for existing users
+  if (!onboardingState.firstRunComplete) {
+    detectOnboardingCompletion();
+  }
   renderAll();
 }
 
@@ -1759,16 +2209,7 @@ window.addEventListener('beforeunload', () => {
   _saveTimer = null;
   if (!_currentUser || !_accessToken) return;
   try {
-    const payload = JSON.stringify({
-      user_id:     _currentUser.id,
-      recipes:     recipes,
-      assignments: mealPlan,
-      week_notes:  weekNotes,
-      week_start:  localStorage.getItem('mpos_weekstart') || '',
-      freezer:     freezer,
-      groceries:   { staples, flexItems, checks, adhocItems },
-      updated_at:  new Date().toISOString()
-    });
+    const payload = JSON.stringify(buildSyncPayload());
     fetch(`${SUPABASE_URL}/rest/v1/user_data`, {
       method:    'POST',
       keepalive: true,
