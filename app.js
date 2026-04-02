@@ -930,8 +930,25 @@ async function fetchRecipeFromUrl(){
 function parseIngredientString(raw){
   // Try to split "1 cup flour" into qty="1 cup" name="flour"
   const m=raw.match(/^([\d\s\/⅛⅙⅕¼⅓⅜½⅝⅔¾⅚⅞.,]+\s*(?:cups?|tbsp|tsp|tablespoons?|teaspoons?|oz|ounces?|lbs?|pounds?|g|grams?|kg|ml|liters?|cloves?|cans?|bunch(?:es)?|pinch(?:es)?|dash(?:es)?|cups?|large|medium|small|whole|stalk|stalks|head|heads)?)\s+(.+)/i);
-  if(m) return{qty:m[1].trim(),name:m[2].trim(),category:'Other'};
-  return{qty:'',name:raw.trim(),category:'Other'};
+  const name=m?m[2].trim():raw.trim();
+  const qty=m?m[1].trim():'';
+  return{qty,name,category:guessCategory(name)};
+}
+function guessCategory(name){
+  const n=name.toLowerCase();
+  const produce=/\b(lettuce|spinach|kale|arugula|tomato|onion|garlic|ginger|pepper|jalape|potato|sweet potato|carrot|celery|broccoli|cauliflower|zucchini|squash|cucumber|avocado|mushroom|corn|pea|bean sprout|cabbage|bok choy|eggplant|radish|beet|turnip|parsnip|shallot|scallion|green onion|leek|asparagus|artichoke|okra|chili|lime|lemon|orange|apple|banana|berr|mango|pineapple|peach|pear|grape|melon|strawberr|blueberr|raspberr|blackberr|cherry|plum|fig|kiwi|coconut|pomegranate|cranberr|herb|cilantro|parsley|basil|mint|dill|rosemary|thyme|sage|chive|oregano|tarragon|salad|sprout|fennel|watercress|endive|romaine)\b/;
+  const protein=/\b(chicken|beef|steak|pork|turkey|lamb|salmon|tuna|shrimp|prawn|fish|cod|tilapia|halibut|sausage|bacon|ham|ground meat|ground beef|ground turkey|ground pork|meatball|tofu|tempeh|seitan|eggs?|anchov|crab|lobster|scallop|clam|mussel|oyster|squid|bison|venison|duck|chorizo|pepperoni|salami|hot dog|bratwurst)\b/;
+  const dairy=/\b(milk|cream|cheese|yogurt|butter|sour cream|cream cheese|whipping cream|half.and.half|mozzarella|parmesan|cheddar|feta|ricotta|gouda|brie|gruyere|provolone|cottage cheese|whey|ghee|oat milk|almond milk|soy milk|coconut milk|coconut cream)\b/;
+  const grains=/\b(bread|tortillas?|pita|naan|bun|roll|rice|pasta|noodle|spaghetti|penne|fettuccine|macaroni|linguine|orzo|couscous|quinoa|oats?|flour|cornmeal|polenta|barley|bulgur|farro|millet|cereal|granola|cracker|panko|breadcrumb|wrap|bagel|croissant|english muffin|pizza dough|pie crust|puff pastry|wonton)\b/;
+  const pantry=/\b(oil|olive oil|vegetable oil|coconut oil|sesame oil|vinegar|soy sauce|fish sauce|worcestershire|hot sauce|sriracha|ketchup|mustard|mayonnaise|salt|pepper|paprika|cumin|cinnamon|nutmeg|turmeric|chili powder|cayenne|oregano|thyme|bay lea|vanilla|sugar|brown sugar|honey|maple syrup|molasses|cornstarch|baking soda|baking powder|yeast|broth|stock|bouillon|tomato paste|tomato sauce|diced tomato|crushed tomato|canned|salsa|peanut butter|almond butter|tahini|jam|jelly|syrup|cocoa|chocolate|chip|nut|almond|walnut|pecan|cashew|pistachio|peanut|seed|sesame|flax|chia|sunflower|pumpkin seed|raisin|dried|lentil|chickpea|black bean|kidney bean|pinto bean|navy bean|white bean|split pea|spice|seasoning|extract|food coloring|spray|cooking spray|worcester|hoisin|teriyaki|bbq sauce|ranch|dressing|marinade|relish|caper|olive|pickle|anchovy paste|miso|gochujang|sambal|curry paste|coconut aminos|nutritional yeast|protein powder)\b/;
+  const freezer=/\b(frozen|ice cream|popsicle|frozen pizza|frozen fruit|frozen vegetable|frozen meal|waffle|frozen fry|tater tot|ice)\b/;
+  if(produce.test(n)) return 'Produce';
+  if(protein.test(n)) return 'Protein';
+  if(dairy.test(n)) return 'Dairy / Dairy-Free';
+  if(grains.test(n)) return 'Grains & Breads';
+  if(freezer.test(n)) return 'Freezer / Flex';
+  if(pantry.test(n)) return 'Pantry & Seasonings';
+  return 'Pantry & Seasonings';
 }
 function addStepRow(text){
   const stepsEl=document.getElementById('stepsRows');
@@ -1835,10 +1852,10 @@ function showApp(user) {
   if (ue) ue.textContent = user.email;
   // Restore last active tab (map old IDs to new ones for returning users)
   let savedTab = localStorage.getItem('mpos_active_tab');
-  const tabMigration = {step1:'weeksetup',step2:'menu',step3:'mealplan',step4:'grocerylist',library:'recipes'};
+  const tabMigration = {step1:'recipes',step2:'menu',step3:'weeksetup',step4:'mealplan',library:'recipes'};
   if(savedTab && tabMigration[savedTab]) savedTab=tabMigration[savedTab];
   const validTabs = ['recipes','menu','weeksetup','mealplan','grocerylist','freezer'];
-  if (savedTab && validTabs.includes(savedTab)) switchTab(savedTab);
+  switchTab(savedTab && validTabs.includes(savedTab) ? savedTab : 'recipes');
 }
 
 // ── Email + Password Auth ─────────────────────────────────────
@@ -2222,6 +2239,16 @@ window.addEventListener('beforeunload', () => {
       body: payload
     });
   } catch(e) { /* best-effort — regular debounced sync handles normal saves */ }
+});
+
+// ── Re-fetch cloud data when tab regains focus ──────────────
+// Covers cross-device sync: edit on phone → switch to desktop tab → fresh data loads
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible' || !_currentUser) return;
+  const cloud = await loadFromSupabase(_currentUser.id);
+  if (!cloud) return;
+  applyCloudData(cloud);
+  renderAll();
 });
 
 // ── Start ────────────────────────────────────────────────────
