@@ -127,6 +127,7 @@
     <div class="user-menu">
       <div class="week-badge" id="weekBadge">Week of —</div>
       <span class="user-email" id="userEmail"></span>
+      <button class="logout-btn" onclick="openAccountSettings()" title="Account settings">⚙️</button>
       <button class="logout-btn" onclick="signOut()">Sign out</button>
     </div>
   </div>
@@ -432,6 +433,41 @@
     </div>
     <div class="modal-footer" style="justify-content:center">
       <button class="btn btn-primary" onclick="dismissWhatsNew()">Got it</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Account Settings -->
+<div class="modal-overlay" id="accountSettingsModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">Account Settings</div>
+      <button class="modal-close" onclick="closeModal('accountSettingsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="acctMsg" class="acct-msg"></div>
+      <div class="acct-section">
+        <div class="acct-section-title">Change Email</div>
+        <div class="acct-field">
+          <label>New email address</label>
+          <input type="email" id="acctNewEmail" placeholder="new@example.com">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="updateEmail()">Update Email</button>
+        <div class="acct-hint">You'll receive a confirmation link at both old and new addresses.</div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+      <div class="acct-section">
+        <div class="acct-section-title">Change Password</div>
+        <div class="acct-field">
+          <label>New password</label>
+          <input type="password" id="acctNewPass" placeholder="Min 6 characters">
+        </div>
+        <div class="acct-field">
+          <label>Confirm new password</label>
+          <input type="password" id="acctConfirmPass" placeholder="Re-enter password">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="updatePassword()">Update Password</button>
+      </div>
     </div>
   </div>
 </div>

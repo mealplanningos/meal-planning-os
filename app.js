@@ -28,7 +28,7 @@ const MEAL_CATEGORIES = [
 // Starter recipes — seeded into new users' No-Decision Menu on first visit.
 // Uses libraryId so "already added" detection works correctly in the library.
 const STARTER_RECIPES = [
-  {id:'sr1', libraryId:'lb13', type:'goto', onMenu:false, name:'Overnight Oatmeal', servings:5,
+  {id:'sr1', libraryId:'lb13', type:'goto', onMenu:false, name:'Overnight Oatmeal', servings:1,
    notes:'Add 1 cup oats and 1 cup milk to each jar. Stir well.\nAdd mixed berries.\nSeal jars.\nRefrigerate overnight. Grab and go — no reheating needed.\n(Optional) Add other ingredients like banana, protein powder, or chia seeds.',
    ingredients:[
      {name:'Oats',         qty:'1 cup', category:'Grains & Breads'},
@@ -67,7 +67,7 @@ const STARTER_RECIPES = [
 const LIBRARY_RECIPES = [
 
   // ── GO-TO MEALS ────────────────────────────────────────────────────────
-  {id:'lb13', type:'goto', name:'Overnight Oatmeal', servings:5,
+  {id:'lb13', type:'goto', name:'Overnight Oatmeal', servings:1,
    tags:['Under 15 Min','Under 30 Min','Batch Cook'],
    notes:'Make 5 jars in under 10 minutes.',
    ingredients:[
@@ -1092,7 +1092,7 @@ function renderMealPlan(){
         const cls=getCellClass(meal,asgn);
         const tag=getCellTag(meal,asgn);
         const nameEl=asgn.recipeId
-          ?`<div class="cell-meal-name cell-meal-link" onclick="event.stopPropagation();openCookingView('${asgn.recipeId}')">${asgn.name}</div>`
+          ?`<div class="cell-meal-name cell-meal-link" onclick="event.stopPropagation();openCookingView('${asgn.recipeId}','${d}','${meal}')">${asgn.name}</div>`
           :`<div class="cell-meal-name">${asgn.name}</div>`;
         row+=`<div class="cell-filled ${cls}" onclick="openAssignModal('${d}','${meal}')">
           <button class="cell-remove" onclick="event.stopPropagation();removeCell('${d}','${meal}')">✕</button>
@@ -1147,10 +1147,39 @@ function getCellTag(meal,a){
 function removeCell(d,m){if(mealPlan[d])delete mealPlan[d][m];save(K.mealPlan,mealPlan);renderMealPlan();renderOnboardingUI();}
 
 // ── Cooking View ──────────────────────────────────────────────
-function openCookingView(recipeId){
+let _cookRecipe=null, _cookServings=1;
+function openCookingView(recipeId,day,meal){
   const r=recipes.find(x=>x.id===recipeId);
   if(!r) return;
+  _cookRecipe=r;
   document.getElementById('cookingModalTitle').textContent=r.name;
+  // Default to assigned servings if available, else batch size
+  const asgn=(day&&meal&&mealPlan[day])?mealPlan[day][meal]:null;
+  _cookServings=(asgn&&asgn.servings)?asgn.servings:(r.servings||1);
+  renderCookingBody();
+  document.getElementById('cookingModal').classList.add('open');
+}
+function adjustCookServings(delta){
+  _cookServings=Math.max(1,_cookServings+delta);
+  renderCookingBody();
+}
+function renderCookingBody(){
+  const r=_cookRecipe; if(!r) return;
+  const batchSrv=r.servings||1;
+  const scale=_cookServings/batchSrv;
+  // Stepper
+  const hint=scale===1
+    ?'<span class="cook-stepper-hint">Recipe as written</span>'
+    :'<span class="cook-stepper-hint">Cooking for more or fewer? Adjust to scale.</span>';
+  const stepperHtml=`<div class="cook-stepper">
+    <div class="cook-stepper-row">
+      <span class="cook-stepper-label">Servings</span>
+      <button class="cook-stepper-btn" onclick="adjustCookServings(-1)" ${_cookServings<=1?'disabled':''}>−</button>
+      <span class="cook-stepper-val">${_cookServings}</span>
+      <button class="cook-stepper-btn" onclick="adjustCookServings(1)">+</button>
+    </div>
+    ${hint}
+  </div>`;
   // Group ingredients by category
   const grouped={};
   r.ingredients.forEach(ing=>{
@@ -1163,16 +1192,42 @@ function openCookingView(recipeId){
     if(!grouped[cat]||grouped[cat].length===0) return;
     ingHtml+=`<div class="cook-ing-group">
       <div class="cook-ing-cat">${CAT_ICON[cat]||'📦'} ${cat}</div>
-      ${grouped[cat].map(ing=>`<div class="cook-ing-row"><span class="cook-ing-qty">${ing.qty||''}</span><span class="cook-ing-name">${ing.name}</span></div>`).join('')}
+      ${grouped[cat].map(ing=>{
+        const scaledQty=scaleQty(ing.qty,scale);
+        return `<div class="cook-ing-row"><span class="cook-ing-qty">${scaledQty}</span><span class="cook-ing-name">${ing.name}</span></div>`;
+      }).join('')}
     </div>`;
   });
   const steps=r.notes?r.notes.split('\n').filter(s=>s.trim()):[];
   const stepsHtml=steps.length>0?`<div class="cook-section-title">Steps</div><ol class="cook-steps">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>`:'';
   document.getElementById('cookingModalBody').innerHTML=`
-    <div class="cook-meta">${r.servings} serving${r.servings!==1?'s':''} per batch</div>
+    ${stepperHtml}
     ${r.ingredients.length>0?`<div class="cook-section-title">Ingredients</div>${ingHtml}`:''}
     ${stepsHtml}`;
-  document.getElementById('cookingModal').classList.add('open');
+}
+function parseFrac(s){
+  // Unicode fractions
+  const uf={'½':0.5,'⅓':0.333,'⅔':0.667,'¼':0.25,'¾':0.75,'⅛':0.125,'⅜':0.375,'⅝':0.625,'⅞':0.875};
+  // Try "1 ½" or just "½"
+  const m=s.match(/^(\d+)?\s*([½⅓⅔¼¾⅛⅜⅝⅞])/);
+  if(m) return (m[1]?parseInt(m[1]):0)+(uf[m[2]]||0);
+  // Try "1/2" style
+  const f=s.match(/^(\d+)\s*\/\s*(\d+)/);
+  if(f) return parseInt(f[1])/parseInt(f[2]);
+  // Try "1 1/2" style
+  const mf=s.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)/);
+  if(mf) return parseInt(mf[1])+parseInt(mf[2])/parseInt(mf[3]);
+  return parseFloat(s);
+}
+function scaleQty(qty,scale){
+  if(!qty||scale===1) return qty||'';
+  const n=parseFrac(qty);
+  if(isNaN(n)) return qty;
+  const unit=qty.replace(/^[\d.½¼¾⅓⅔⅛⅜⅝⅞\s\/]+/,'').trim();
+  const scaled=n*scale;
+  // Clean up: show whole numbers cleanly, round fractions to 1 decimal
+  const display=scaled%1===0?String(scaled):scaled.toFixed(1).replace(/\.0$/,'');
+  return display+(unit?' '+unit:'');
 }
 
 // Assign modal
@@ -2235,6 +2290,46 @@ async function dismissWhatsNew() {
   try {
     await _sb.from('user_data').update({ last_seen_update_version: CURRENT_UPDATE_VERSION }).eq('user_id', _currentUser.id);
   } catch(e) { /* best-effort — next login will retry */ }
+}
+
+// ── Account Settings ─────────────────────────────────────────
+function openAccountSettings() {
+  document.getElementById('acctNewEmail').value = '';
+  document.getElementById('acctNewPass').value = '';
+  document.getElementById('acctConfirmPass').value = '';
+  const msg = document.getElementById('acctMsg');
+  msg.textContent = '';
+  msg.className = 'acct-msg';
+  document.getElementById('accountSettingsModal').classList.add('open');
+}
+async function updateEmail() {
+  const msg = document.getElementById('acctMsg');
+  const newEmail = document.getElementById('acctNewEmail').value.trim();
+  if (!newEmail) { msg.textContent = 'Please enter a new email address.'; msg.className = 'acct-msg acct-error'; return; }
+  msg.textContent = 'Updating…'; msg.className = 'acct-msg';
+  try {
+    const { error } = await _sb.auth.updateUser({ email: newEmail });
+    if (error) { msg.textContent = error.message; msg.className = 'acct-msg acct-error'; return; }
+    msg.textContent = 'Confirmation email sent! Check both your old and new inboxes.';
+    msg.className = 'acct-msg acct-success';
+    document.getElementById('acctNewEmail').value = '';
+  } catch(e) { msg.textContent = 'Something went wrong. Try again.'; msg.className = 'acct-msg acct-error'; }
+}
+async function updatePassword() {
+  const msg = document.getElementById('acctMsg');
+  const pass = document.getElementById('acctNewPass').value;
+  const confirm = document.getElementById('acctConfirmPass').value;
+  if (!pass || pass.length < 6) { msg.textContent = 'Password must be at least 6 characters.'; msg.className = 'acct-msg acct-error'; return; }
+  if (pass !== confirm) { msg.textContent = 'Passwords do not match.'; msg.className = 'acct-msg acct-error'; return; }
+  msg.textContent = 'Updating…'; msg.className = 'acct-msg';
+  try {
+    const { error } = await _sb.auth.updateUser({ password: pass });
+    if (error) { msg.textContent = error.message; msg.className = 'acct-msg acct-error'; return; }
+    msg.textContent = 'Password updated successfully!';
+    msg.className = 'acct-msg acct-success';
+    document.getElementById('acctNewPass').value = '';
+    document.getElementById('acctConfirmPass').value = '';
+  } catch(e) { msg.textContent = 'Something went wrong. Try again.'; msg.className = 'acct-msg acct-error'; }
 }
 
 // ── Flush pending cloud save on tab close ────────────────────

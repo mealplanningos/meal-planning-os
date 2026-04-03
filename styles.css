@@ -1235,6 +1235,28 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 .tag-pill:hover { border-color: var(--accent); color: var(--accent); }
 .tag-pill.active { background: var(--accent-light); border-color: var(--accent-mid); color: var(--accent); }
 
+/* Cooking modal stepper */
+.cook-stepper { text-align: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.cook-stepper-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 4px; }
+.cook-stepper-label { font-size: 14px; font-weight: 600; color: var(--text-1); }
+.cook-stepper-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-1); font-size: 18px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.cook-stepper-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.cook-stepper-btn:disabled { opacity: 0.3; cursor: default; }
+.cook-stepper-val { font-size: 22px; font-weight: 700; color: var(--accent); min-width: 28px; text-align: center; }
+.cook-stepper-hint { font-size: 11px; color: var(--text-3); font-style: italic; }
+
+/* Account settings modal */
+.acct-section { margin-bottom: 4px; }
+.acct-section-title { font-weight: 700; font-size: 14px; color: var(--text-1); margin-bottom: 8px; }
+.acct-field { margin-bottom: 10px; }
+.acct-field label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 3px; font-weight: 600; }
+.acct-field input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; background: var(--bg); color: var(--text-1); box-sizing: border-box; }
+.acct-hint { font-size: 11px; color: var(--text-3); margin-top: 6px; }
+.acct-msg { font-size: 13px; margin-bottom: 12px; min-height: 18px; }
+.acct-msg.acct-error { color: #c0392b; }
+.acct-msg.acct-success { color: #27ae60; }
+.btn-sm { font-size: 13px; padding: 6px 16px; }
+
 /* Mobile adjustments for saved recipes */
 @media (max-width: 600px) {
   .saved-recipe-card { flex-direction: column; align-items: stretch; }
