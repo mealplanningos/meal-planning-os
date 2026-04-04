@@ -235,7 +235,7 @@ const DEFAULT_FLEX = [
 ];
 
 function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
-function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{} scheduleSyncToSupabase();}
 function uid(){return Math.random().toString(36).substr(2,9);}
 
 let recipes    = load(K.recipes, null);
@@ -2180,7 +2180,7 @@ async function loadFromSupabase(userId) {
 function scheduleSyncToSupabase() {
   if (!_currentUser) return;
   clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(syncToSupabase, 800);
+  _saveTimer = setTimeout(syncToSupabase, 400);
 }
 
 async function syncToSupabase() {
@@ -2238,10 +2238,6 @@ function renderAll() {
   renderGrocery(); renderFreezer();
   renderOnboardingUI();
 }
-
-// ── Patch save() to also trigger cloud sync ───────────────────
-const _origSave = save;
-window.save = function(k, v) { _origSave(k, v); scheduleSyncToSupabase(); };
 
 // ── Bootstrap ────────────────────────────────────────────────
 let _isRecoveryFlow = false;    // guard: prevents SIGNED_IN from overriding the reset form
@@ -2416,9 +2412,8 @@ async function updatePassword() {
 
 // ── Flush pending cloud save on tab close ────────────────────
 // Uses fetch with keepalive:true so the request survives page unload.
-// The Supabase SDK uses async/await internally — those requests get
-// cancelled by the browser on unload. keepalive fetch does not.
-window.addEventListener('beforeunload', () => {
+// 'pagehide' is reliable on mobile Safari; 'beforeunload' covers desktop.
+function _flushToCloud() {
   clearTimeout(_saveTimer);
   _saveTimer = null;
   if (!_currentUser || !_accessToken || !_cloudLoadedOk) return;
@@ -2436,7 +2431,9 @@ window.addEventListener('beforeunload', () => {
       body: payload
     });
   } catch(e) { /* best-effort — regular debounced sync handles normal saves */ }
-});
+}
+window.addEventListener('beforeunload', _flushToCloud);
+window.addEventListener('pagehide',     _flushToCloud);
 
 // ── Re-fetch cloud data when tab regains focus ──────────────
 // Covers cross-device sync: edit on phone → switch to desktop tab → fresh data loads
