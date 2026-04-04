@@ -2117,9 +2117,16 @@ async function handleAuth() {
 
 // ── Sign out ─────────────────────────────────────────────────
 async function signOut() {
-  await _sb.auth.signOut();
-  // Reload the page for a clean slate — clears all in-memory state
-  window.location.reload();
+  _stopPeriodicSync();
+  try { await _sb.auth.signOut(); } catch(e) { /* proceed even if this fails */ }
+  // Clear cached data so next login starts fresh from cloud
+  Object.values(K).forEach(k => localStorage.removeItem(k));
+  localStorage.removeItem('mpos_weekstart');
+  localStorage.removeItem('mpos_active_tab');
+  _currentUser = null;
+  _cloudLoadedOk = false;
+  // Force full navigation — more reliable than reload() in iOS standalone/PWA mode
+  window.location.href = window.location.origin + window.location.pathname;
 }
 
 // ── Check and claim payment entitlement ──────────────────────
@@ -2188,6 +2195,7 @@ async function syncToSupabase() {
   // DATA GUARD: never write to cloud unless we successfully loaded first
   if (!_cloudLoadedOk) { console.warn('Cloud sync blocked — cloud data not loaded yet'); return; }
   const payload = buildSyncPayload();
+  _cloudUpdatedAt = payload.updated_at; // track so periodic pull skips when no external change
   const { error: syncErr } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
   if (syncErr) console.error('Cloud sync failed:', syncErr.message);
 }
@@ -2343,8 +2351,9 @@ async function loadAndRender(userId) {
   if (!onboardingState.firstRunComplete) {
     detectOnboardingCompletion();
   }
-  // Cloud data is ready — hide loading overlay, switch to saved tab, render
+  // Cloud data is ready — hide loading overlay, start background sync, render
   hideLoadingOverlay();
+  _startPeriodicSync();
   let savedTab = localStorage.getItem('mpos_active_tab');
   const tabMigration = {step1:'recipes',step2:'menu',step3:'weeksetup',step4:'mealplan',library:'recipes'};
   if(savedTab && tabMigration[savedTab]) savedTab=tabMigration[savedTab];
@@ -2439,11 +2448,27 @@ window.addEventListener('pagehide',     _flushToCloud);
 // Covers cross-device sync: edit on phone → switch to desktop tab → fresh data loads
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || !_currentUser) return;
+  _pullFromCloud();
+});
+
+// ── Periodic cloud pull — catches cross-device edits even if tab stays in foreground ──
+let _pullTimer = null;
+async function _pullFromCloud() {
+  if (!_currentUser) return;
   const cloud = await loadFromSupabase(_currentUser.id);
-  if (!cloud) return;
+  if (!cloud || !cloud.updated_at) return;
+  // Only re-render if cloud data is actually newer than what we last loaded
+  if (_cloudUpdatedAt && cloud.updated_at === _cloudUpdatedAt) return;
   applyCloudData(cloud);
   renderAll();
-});
+}
+function _startPeriodicSync() {
+  if (_pullTimer) clearInterval(_pullTimer);
+  _pullTimer = setInterval(_pullFromCloud, 30000); // every 30 seconds
+}
+function _stopPeriodicSync() {
+  if (_pullTimer) { clearInterval(_pullTimer); _pullTimer = null; }
+}
 
 // ── Start ────────────────────────────────────────────────────
 initAuth();
