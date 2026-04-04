@@ -13,7 +13,7 @@ const DAY_FULL = {monday:'Monday',tuesday:'Tuesday',wednesday:'Wednesday',thursd
 const MEALS = ['breakfast','lunch','dinner'];
 const MEAL_ICON = {breakfast:'🌅',lunch:'☀️',dinner:'🌙'};
 // ── What's New version (change this + modal content to trigger a new popup) ──
-const CURRENT_UPDATE_VERSION = '2026-04-15-1';
+const CURRENT_UPDATE_VERSION = '2026-04-04-1';
 
 const CATS = ['Produce','Protein','Grains & Breads','Dairy / Dairy-Free','Pantry & Seasonings','Freezer / Flex','Snacks / Extras'];
 const CAT_ICON = {'Produce':'🥬','Protein':'🍗','Grains & Breads':'🌾','Dairy / Dairy-Free':'🥛','Pantry & Seasonings':'🧂','Freezer / Flex':'❄️','Snacks / Extras':'🥜'};
