@@ -506,8 +506,10 @@ function renderLibrary(){
   ];
   // ── Tag filter (derived from library + custom) ───────────────────────────
   const customRecipes=recipes.filter(r=>!r.libraryId);
-  const allTags=[...new Set(LIBRARY_RECIPES.flatMap(r=>r.tags||[]))];
-  if(customRecipes.length>0 && !allTags.includes('Custom')) allTags.push('Custom');
+  const TAG_ORDER=['Breakfast','Lunch','Dinner','Under 15 Min','Under 30 Min','Batch Cook','Freezer Friendly','One Pan'];
+  const rawTags=[...new Set(LIBRARY_RECIPES.flatMap(r=>r.tags||[]))];
+  if(customRecipes.length>0 && !rawTags.includes('Custom')) rawTags.push('Custom');
+  const allTags=TAG_ORDER.filter(t=>rawTags.includes(t)).concat(rawTags.filter(t=>!TAG_ORDER.includes(t)));
   filterEl.innerHTML=`
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
       ${filters.map(f=>{
@@ -518,7 +520,7 @@ function renderLibrary(){
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px">
       <button class="lib-filter-btn lib-filter-tag${_libTagFilter===''?' active':''}" onclick="_libTagFilter='';renderLibrary()">All Tags</button>
-      ${allTags.map(t=>`<button class="lib-filter-btn lib-filter-tag${_libTagFilter===t?' active':''}" onclick="_libTagFilter='${t}';renderLibrary()">${t}</button>`).join('')}
+      ${allTags.map(t=>{const mt=['Breakfast','Lunch','Dinner'].includes(t)?' lib-filter-mealtime':'';return `<button class="lib-filter-btn lib-filter-tag${mt}${_libTagFilter===t?' active':''}" onclick="_libTagFilter='${t}';renderLibrary()">${t}</button>`;}).join('')}
     </div>`;
 
   // ── Recipe grid ─────────────────────────────────────────────────────────
@@ -1960,7 +1962,7 @@ function normalizeRecipeTypes() {
   if (changed) save(K.recipes, recipes);
 }
 
-function showApp(user) {
+function showApp(user, skipTabSwitch) {
   _currentUser = user;
   document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('authScreen').style.display    = 'none';
@@ -1968,12 +1970,17 @@ function showApp(user) {
   document.getElementById('appRoot').style.display       = 'block';
   const ue = document.getElementById('userEmail');
   if (ue) ue.textContent = user.email;
+  if (skipTabSwitch) return; // loading overlay is visible — don't render stale data yet
   // Restore last active tab (map old IDs to new ones for returning users)
   let savedTab = localStorage.getItem('mpos_active_tab');
   const tabMigration = {step1:'recipes',step2:'menu',step3:'weeksetup',step4:'mealplan',library:'recipes'};
   if(savedTab && tabMigration[savedTab]) savedTab=tabMigration[savedTab];
   const validTabs = ['recipes','menu','weeksetup','mealplan','grocerylist','freezer'];
   switchTab(savedTab && validTabs.includes(savedTab) ? savedTab : 'recipes');
+}
+function hideLoadingOverlay() {
+  const ol = document.getElementById('appLoadingOverlay');
+  if (ol) ol.style.display = 'none';
 }
 
 // ── Email + Password Auth ─────────────────────────────────────
@@ -2309,7 +2316,7 @@ async function handleSession(session) {
     let tries = 0;
     while (tries < 6) {
       const access = await checkAndClaimAccess(user.id);
-      if (access) { showApp(user); await loadAndRender(user.id); return; }
+      if (access) { showApp(user, true); await loadAndRender(user.id); return; }
       await new Promise(r => setTimeout(r, 1000));
       tries++;
     }
@@ -2321,7 +2328,7 @@ async function handleSession(session) {
   const access = await checkAndClaimAccess(user.id);
   if (!access) { showAccessGate(user); return; }
 
-  showApp(user);
+  showApp(user, true);  // show appRoot with loading overlay, skip rendering stale data
   await loadAndRender(user.id);
 }
 
@@ -2340,6 +2347,13 @@ async function loadAndRender(userId) {
   if (!onboardingState.firstRunComplete) {
     detectOnboardingCompletion();
   }
+  // Cloud data is ready — hide loading overlay, switch to saved tab, render
+  hideLoadingOverlay();
+  let savedTab = localStorage.getItem('mpos_active_tab');
+  const tabMigration = {step1:'recipes',step2:'menu',step3:'weeksetup',step4:'mealplan',library:'recipes'};
+  if(savedTab && tabMigration[savedTab]) savedTab=tabMigration[savedTab];
+  const validTabs = ['recipes','menu','weeksetup','mealplan','grocerylist','freezer'];
+  switchTab(savedTab && validTabs.includes(savedTab) ? savedTab : 'recipes');
   renderAll();
   checkWhatsNew(cloud);
 }

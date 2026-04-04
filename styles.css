@@ -427,6 +427,7 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   letter-spacing: 0.2px; white-space: nowrap;
 }
 /* Tag colour map */
+.lib-tag-mealtime { background: #E8F5E9; color: #2E7D32; }
 .lib-tag-freezer  { background: #EBF2FF; color: #1449D4; }
 .lib-tag-batch    { background: #F0ECFF; color: #6B4ECC; }
 .lib-tag-mealprep { background: #F0ECFF; color: #6B4ECC; }
@@ -438,6 +439,8 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 .lib-tag-onepan   { background: #FFF3E0; color: #E65100; }
 .lib-filter-tag { font-size: 11px; padding: 5px 12px; opacity: 0.85; }
 .lib-filter-tag.active { opacity: 1; }
+.lib-filter-mealtime { background: #E8F5E9; color: #2E7D32; border-color: #C8E6C9; }
+.lib-filter-mealtime.active { background: #2E7D32; color: #fff; border-color: #2E7D32; }
 .lib-badge-added { font-size: 12px; color: var(--green); font-weight: 700; }
 .lib-badge-full { font-size: 11px; color: var(--text-3); font-style: italic; }
 .lib-add-btn { font-size: 12px; padding: 6px 14px; }
