@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>Meal Planning OS</title>
   <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MealPlan OS">
+  <meta name="theme-color" content="#1E5EFF">
+  <link rel="apple-touch-icon" href="favicon.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <!-- Supabase SDK -->
@@ -127,7 +133,6 @@
     <div class="user-menu">
       <div class="week-badge" id="weekBadge">Week of —</div>
       <span class="user-email" id="userEmail"></span>
-      <button class="logout-btn" onclick="openAccountSettings()" title="Account settings">⚙️</button>
       <button class="logout-btn" onclick="signOut()">Sign out</button>
     </div>
   </div>
@@ -482,6 +487,10 @@
     <div class="footer-action" id="setupGuideAction">
       <button class="btn-footer-action" id="setupGuideBtn" onclick="toggleSetupGuide()">📖 Show Setup Guide</button>
       <div class="footer-action-desc">Reopen the 5-step walkthrough.</div>
+    </div>
+    <div class="footer-action">
+      <button class="btn-footer-action" onclick="openAccountSettings()">⚙️ Account Settings</button>
+      <div class="footer-action-desc">Change email or password.</div>
     </div>
   </div>
   <div style="font-size:11px;color:var(--text-3);margin-bottom:5px">

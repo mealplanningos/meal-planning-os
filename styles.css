@@ -427,6 +427,7 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   letter-spacing: 0.2px; white-space: nowrap;
 }
 /* Tag colour map */
+.lib-tag-mealtime { background: #E8F5E9; color: #2E7D32; }
 .lib-tag-freezer  { background: #EBF2FF; color: #1449D4; }
 .lib-tag-batch    { background: #F0ECFF; color: #6B4ECC; }
 .lib-tag-mealprep { background: #F0ECFF; color: #6B4ECC; }

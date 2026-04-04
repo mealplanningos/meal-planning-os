@@ -5,6 +5,7 @@ const K = {
   mealPlan:'mpos_plan_v2', staples:'mpos_staples_v2',
   flexItems:'mpos_flex_v2', freezer:'mpos_freezer_v2',
   checks:'mpos_checks_v2', adhocItems:'mpos_adhoc_v2',
+  categoryItems:'mpos_catitems_v2',
 };
 
 const DAYS = ['monday','tuesday','wednesday','thursday','friday'];
@@ -245,6 +246,7 @@ let flexItems  = load(K.flexItems, DEFAULT_FLEX);
 let freezer    = load(K.freezer, []);
 let checks     = load(K.checks, {});
 let adhocItems = load(K.adhocItems, []);
+let categoryItems = load(K.categoryItems, []);
 
 // First visit — seed with 3 starter meals so the app feels alive immediately
 if (recipes === null) { recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))})); save(K.recipes, recipes); }
@@ -431,12 +433,13 @@ function resetEverything(){
   staples=DEFAULT_STAPLES.map(s=>({...s}));
   flexItems=DEFAULT_FLEX.map(f=>({...f}));
   freezer=[];
+  categoryItems=[];
   onboardingState={firstRunComplete:false};
   // Re-seed starters
   recipes=STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))}));
   save(K.recipes,recipes); save(K.weekNotes,weekNotes); save(K.mealPlan,mealPlan);
   save(K.checks,checks); save(K.adhocItems,adhocItems); save(K.staples,staples);
-  save(K.flexItems,flexItems); save(K.freezer,freezer);
+  save(K.flexItems,flexItems); save(K.freezer,freezer); save(K.categoryItems,categoryItems);
   renderAll();
   switchTab('recipes');
 }
@@ -455,7 +458,7 @@ function buildSyncPayload() {
     week_notes:  weekNotes,
     week_start:  localStorage.getItem('mpos_weekstart') || '',
     freezer:     freezer,
-    groceries:   { staples, flexItems, checks, adhocItems },
+    groceries:   { staples, flexItems, checks, adhocItems, categoryItems },
     onboarding:  onboardingState,
     updated_at:  new Date().toISOString()
   };
@@ -540,6 +543,7 @@ function renderLibrary(){
 
   // Tag pill helper
   const tagColorMap={
+    'Breakfast':'mealtime','Lunch':'mealtime','Dinner':'mealtime',
     'Under 15 Min':'quick','Under 30 Min':'quick',
     'Batch Cook':'batch','Freezer Friendly':'freezer',
     'One Pan':'onepan','Custom':'custom',
@@ -622,7 +626,8 @@ function renderLibrary(){
       footerAction=`<button class="btn btn-primary lib-add-btn" onclick="addToMenu('${userRecipe.id}')">+ Add to No-Decision Menu</button>
         <button class="btn btn-secondary btn-sm" onclick="openRecipeModal('${userRecipe.id}','${userRecipe.type}','recipes')">Edit</button>`;
     } else {
-      footerAction=`<button class="btn btn-primary lib-add-btn" onclick="addFromLibrary('${lr.id}')">+ Add to No-Decision Menu</button>`;
+      footerAction=`<button class="btn btn-primary lib-add-btn" onclick="addFromLibrary('${lr.id}')">+ Add to No-Decision Menu</button>
+        <button class="btn btn-secondary btn-sm" onclick="editFromLibrary('${lr.id}')">Edit</button>`;
     }
 
     const tagPills=(lr.tags||[]).map(t=>{
@@ -678,6 +683,29 @@ function addFromLibrary(id, menuType){
   renderLibrary();
   renderMealSections();
   renderOnboardingUI();
+}
+
+// Copy a library recipe into the user's list (not on menu) and open editor
+function editFromLibrary(libraryId){
+  const lr=LIBRARY_RECIPES.find(r=>r.id===libraryId);
+  if(!lr) return;
+  // If already copied, just open the existing copy
+  let existing=recipes.find(r=>r.libraryId===libraryId);
+  if(!existing){
+    existing={
+      id: uid(),
+      libraryId: lr.id,
+      type: lr.type,
+      onMenu: false,
+      name: lr.name,
+      servings: lr.servings,
+      notes: lr.steps||lr.notes||'',
+      ingredients: lr.ingredients.map(i=>({...i})),
+    };
+    recipes.push(existing);
+    save(K.recipes, recipes);
+  }
+  openRecipeModal(existing.id, existing.type, 'recipes');
 }
 
 // Add a saved recipe (custom or library) to the No-Decision Menu
@@ -844,7 +872,7 @@ function removeFromMenu(recipeId){
   renderOnboardingUI();
 }
 
-const AVAILABLE_TAGS=['Under 15 Min','Under 30 Min','Batch Cook','Freezer Friendly','One Pan'];
+const AVAILABLE_TAGS=['Breakfast','Lunch','Dinner','Under 15 Min','Under 30 Min','Batch Cook','Freezer Friendly','One Pan'];
 let _editId=null, _editType='goto', _modalContext='menu';
 function openRecipeModal(id,type,context){
   _editId=id;
@@ -1576,7 +1604,12 @@ function renderGrocery(){
 
   container.innerHTML='';
 
-  if(Object.keys(agg).length===0){
+  // Determine which categories have content (auto-generated OR user-added)
+  const catsWithUserItems={};
+  categoryItems.forEach(ci=>{ if(!catsWithUserItems[ci.category]) catsWithUserItems[ci.category]=[]; catsWithUserItems[ci.category].push(ci); });
+  const hasAnyContent=Object.keys(agg).length>0||categoryItems.length>0;
+
+  if(!hasAnyContent){
     container.innerHTML=`<div class="grocery-empty">
       <div class="empty-icon">🛒</div>
       <p>Assign recipes to your meal plan and your list will build itself — sorted by store section, quantities already calculated.</p>
@@ -1584,34 +1617,53 @@ function renderGrocery(){
   } else {
     CATS.forEach(cat=>{
       const items=agg[cat];
-      if(!items||Object.keys(items).length===0) return;
+      const userItems=catsWithUserItems[cat]||[];
+      if((!items||Object.keys(items).length===0)&&userItems.length===0) return;
       const sec=document.createElement('div');
       sec.className='grocery-category';
-      const count=Object.keys(items).length;
+      const autoCount=items?Object.keys(items).length:0;
+      const totalCount=autoCount+userItems.length;
       let rows='';
-      Object.entries(items).forEach(([k,item])=>{
-        const ck=cat+'|'+k;
+      if(items){
+        Object.entries(items).forEach(([k,item])=>{
+          const ck=cat+'|'+k;
+          const done=checks[ck]||false;
+          let qty='', hint='';
+          const nums=item.qtys.filter(n=>n!==null);
+          if(nums.length>0){
+            const total=nums.reduce((a,b)=>a+b,0);
+            const rawUnit=item.rawQty?item.rawQty.replace(/^[\d.½¼¾\s\/]+/,'').trim():'';
+            const unit=rawUnit&&total!==1?pluralUnit(rawUnit,total):rawUnit;
+            qty=toFrac(total)+(unit?' '+unit:'');
+            hint=shoppingHint(item.name,total,unit);
+          } else if(item.rawQty){ qty=item.rawQty; }
+          rows+=`<div class="grocery-item">
+            <input type="checkbox" ${done?'checked':''} onchange="toggleCheck('${cat}','${k}',this.checked)">
+            <span class="grocery-item-name${done?' done':''}" id="gn-${cat}-${k}">${item.name}</span>
+            ${qty?`<span class="grocery-item-qty">${qty}${hint?` <span class="hint">(${hint})</span>`:''}</span>`:''}
+          </div>`;
+        });
+      }
+      // User-added category items
+      userItems.forEach(ci=>{
+        const ck='__catitem__|'+ci.id;
         const done=checks[ck]||false;
-        let qty='', hint='';
-        const nums=item.qtys.filter(n=>n!==null);
-        if(nums.length>0){
-          const total=nums.reduce((a,b)=>a+b,0);
-          const rawUnit=item.rawQty?item.rawQty.replace(/^[\d.½¼¾\s\/]+/,'').trim():'';
-          // Pluralize common units when total > 1
-          const unit=rawUnit&&total!==1?pluralUnit(rawUnit,total):rawUnit;
-          qty=toFrac(total)+(unit?' '+unit:'');
-          hint=shoppingHint(item.name,total,unit);
-        } else if(item.rawQty){ qty=item.rawQty; }
         rows+=`<div class="grocery-item">
-          <input type="checkbox" ${done?'checked':''} onchange="toggleCheck('${cat}','${k}',this.checked)">
-          <span class="grocery-item-name${done?' done':''}" id="gn-${cat}-${k}">${item.name}</span>
-          ${qty?`<span class="grocery-item-qty">${qty}${hint?` <span class="hint">(${hint})</span>`:''}</span>`:''}
+          <input type="checkbox" ${done?'checked':''} onchange="toggleCheck('__catitem__','${ci.id}',this.checked)">
+          <span class="grocery-item-name${done?' done':''}" id="gn-__catitem__-${ci.id}">${ci.name}</span>
+          <button class="item-remove" onclick="removeCategoryItem('${ci.id}')">✕</button>
         </div>`;
       });
+      // Inline add input
+      const inputId='catitem-'+cat.replace(/[^a-zA-Z]/g,'');
+      rows+=`<div class="add-list-item" style="margin-top:6px">
+        <input type="text" id="${inputId}" placeholder="+ Add item…" onkeydown="if(event.key==='Enter')addCategoryItem('${cat}','${inputId}')">
+        <button class="btn btn-secondary btn-sm" onclick="addCategoryItem('${cat}','${inputId}')">Add</button>
+      </div>`;
       sec.innerHTML=`<div class="category-header">
         <span class="category-icon">${CAT_ICON[cat]||'📦'}</span>
         <span class="category-name">${cat}</span>
-        <span class="category-count">${count} item${count!==1?'s':''}</span>
+        <span class="category-count">${totalCount} item${totalCount!==1?'s':''}</span>
       </div>${rows}`;
       container.appendChild(sec);
     });
@@ -1678,6 +1730,12 @@ function addAdhocItem(){
   adhocItems.push({id:uid(),name}); save(K.adhocItems,adhocItems); el.value=''; renderGrocery();
 }
 function removeAdhocItem(id){ adhocItems=adhocItems.filter(a=>a.id!==id); save(K.adhocItems,adhocItems); renderGrocery(); }
+function addCategoryItem(category,inputId){
+  const el=document.getElementById(inputId); if(!el) return;
+  const name=el.value.trim(); if(!name) return;
+  categoryItems.push({id:uid(),name,category}); save(K.categoryItems,categoryItems); el.value=''; renderGrocery();
+}
+function removeCategoryItem(id){ categoryItems=categoryItems.filter(c=>c.id!==id); save(K.categoryItems,categoryItems); renderGrocery(); }
 
 // ╔═══════════════════════════════════════╗
 //   FREEZER
@@ -1788,6 +1846,8 @@ let _currentUser     = null;
 let _saveTimer       = null;
 let _recoveryToken   = null; // access token saved from PASSWORD_RECOVERY event
 let _accessToken     = null; // current session access token — used for keepalive sync on unload
+let _cloudLoadedOk   = false; // DATA GUARD: only allow cloud writes after a successful cloud read
+let _cloudUpdatedAt  = null;  // DATA GUARD: timestamp of last successful cloud load
 
 // ── UI state helpers ─────────────────────────────────────────
 let _authMode = 'signin';
@@ -2102,9 +2162,12 @@ function startCheckout() {
 // ── Cloud load / save ─────────────────────────────────────────
 async function loadFromSupabase(userId) {
   const { data, error } = await _sb
-    .from('user_data').select('*').eq('user_id', userId).single();
-  if (error || !data) return null;
-  return data;
+    .from('user_data').select('*').eq('user_id', userId).maybeSingle();
+  if (error) { console.error('Cloud load failed:', error.message); return { _loadFailed: true }; }
+  // Successful query (even if no row exists) — safe to allow writes
+  _cloudLoadedOk = true;
+  if (data && data.updated_at) _cloudUpdatedAt = data.updated_at;
+  return data || null;
 }
 
 function scheduleSyncToSupabase() {
@@ -2115,6 +2178,8 @@ function scheduleSyncToSupabase() {
 
 async function syncToSupabase() {
   if (!_currentUser) return;
+  // DATA GUARD: never write to cloud unless we successfully loaded first
+  if (!_cloudLoadedOk) { console.warn('Cloud sync blocked — cloud data not loaded yet'); return; }
   const payload = buildSyncPayload();
   const { error: syncErr } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
   if (syncErr) console.error('Cloud sync failed:', syncErr.message);
@@ -2122,7 +2187,8 @@ async function syncToSupabase() {
 
 async function migrateIfNeeded(userId) {
   const cloud = await loadFromSupabase(userId);
-  if (cloud) return cloud;
+  if (cloud && !cloud._loadFailed) return cloud;
+  if (cloud && cloud._loadFailed) return null; // don't migrate on failed load
   const localRecipes = localStorage.getItem('mpos_recipes_v2');
   if (!localRecipes) return null;
   await syncToSupabase();
@@ -2130,7 +2196,7 @@ async function migrateIfNeeded(userId) {
 }
 
 function applyCloudData(data) {
-  if (!data) return;
+  if (!data || data._loadFailed) return;
   if (Array.isArray(data.recipes))              { recipes   = data.recipes;    save(K.recipes,   recipes); }
   if (data.assignments !== null &&
       typeof data.assignments === 'object')     { mealPlan  = data.assignments; save(K.mealPlan,  mealPlan); }
@@ -2141,6 +2207,7 @@ function applyCloudData(data) {
     if (data.groceries.flexItems)  { flexItems   = data.groceries.flexItems;   save(K.flexItems,   flexItems); }
     if (data.groceries.checks)     { checks      = data.groceries.checks;      save(K.checks,      checks); }
     if (data.groceries.adhocItems) { adhocItems  = data.groceries.adhocItems;  save(K.adhocItems,  adhocItems); }
+    if (data.groceries.categoryItems) { categoryItems = data.groceries.categoryItems; save(K.categoryItems, categoryItems); }
   }
   if (data.onboarding && typeof data.onboarding === 'object') {
     onboardingState = data.onboarding;
@@ -2264,7 +2331,8 @@ async function loadAndRender(userId) {
   applyCloudData(cloud);
   normalizeRecipeTypes();
   // Defensive: new user with no recipes yet — seed starters and sync
-  if (recipes.length === 0) {
+  // ONLY do this if cloud was successfully queried (not on failed load)
+  if (recipes.length === 0 && _cloudLoadedOk) {
     recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))}));
     save(K.recipes, recipes);
   }
@@ -2339,7 +2407,7 @@ async function updatePassword() {
 window.addEventListener('beforeunload', () => {
   clearTimeout(_saveTimer);
   _saveTimer = null;
-  if (!_currentUser || !_accessToken) return;
+  if (!_currentUser || !_accessToken || !_cloudLoadedOk) return;
   try {
     const payload = JSON.stringify(buildSyncPayload());
     fetch(`${SUPABASE_URL}/rest/v1/user_data`, {
