@@ -69,7 +69,7 @@ const LIBRARY_RECIPES = [
 
   // ── GO-TO MEALS ────────────────────────────────────────────────────────
   {id:'lb13', type:'goto', name:'Overnight Oatmeal', servings:1,
-   tags:['Under 15 Min','Under 30 Min','Batch Cook'],
+   tags:['Breakfast','Under 15 Min','Under 30 Min','Batch Cook'],
    notes:'Make 5 jars in under 10 minutes.',
    ingredients:[
      {name:'Oats',         qty:'1 cup', category:'Grains & Breads'},
@@ -79,7 +79,7 @@ const LIBRARY_RECIPES = [
    steps:'Add 1 cup oats and 1 cup milk to each jar. Stir well.\nAdd mixed berries.\nSeal jars.\nRefrigerate overnight. Grab and go — no reheating needed.\n(Optional) Add other ingredients like banana, protein powder, or chia seeds.'},
 
   {id:'lb14', type:'goto', name:'Tacos', servings:4,
-   tags:['Under 15 Min','Under 30 Min'],
+   tags:['Dinner','Under 15 Min','Under 30 Min'],
    notes:'Keep tortillas, protein, and toppings stocked. Done in under 15 minutes on any weeknight.',
    ingredients:[
      {name:'Small Tortillas',              qty:'8',       category:'Grains & Breads'},
@@ -96,7 +96,7 @@ const LIBRARY_RECIPES = [
    steps:'Saute diced onions and brown protein in a skillet over medium-high heat. Drain fat – if needed.\nAdd taco seasoning. Stir and simmer for 2 minutes.\nWarm tortillas in a dry pan or microwave for 30 seconds.\nAssemble — protein, cheese, salsa, squeeze of lime.\nTip – You can switch up your protein: ground beef, sliced steak, chicken, tofu, seitan, etc.'},
 
   {id:'lb15', type:'goto', name:'Spaghetti', servings:4,
-   tags:['Under 15 Min','Under 30 Min'],
+   tags:['Dinner','Under 15 Min','Under 30 Min'],
    notes:'The ultimate reliable weeknight meal.',
    ingredients:[
      {name:'Spaghetti',               qty:'12 oz', category:'Grains & Breads'},
@@ -107,7 +107,7 @@ const LIBRARY_RECIPES = [
    steps:'Boil salted water and cook spaghetti until al dente. Drain and set aside.\nPour marinara sauce into a separate pot. Simmer for 5 minutes.\nToss with pasta.\nOptional – Top with parmesan and serve with warm bread.\nTip – Freeze leftover sauce for a future no-effort dinner. Use the "Freezer" tab to log it.'},
 
   {id:'lb16', type:'goto', name:'Green Detox Smoothie', servings:1,
-   tags:['Under 15 Min','Under 30 Min'],
+   tags:['Breakfast','Under 15 Min','Under 30 Min'],
    notes:'Clean, energizing, and zero cooking required.',
    ingredients:[
      {name:'Spinach',    qty:'2 cups', category:'Produce'},
@@ -120,7 +120,7 @@ const LIBRARY_RECIPES = [
    steps:'Add all ingredients to a blender.\nBlend on high 30–45 seconds until smooth.\nTaste and adjust — more lemon for tang, more banana for sweetness.'},
 
   {id:'lb17', type:'goto', name:'Red Lentil Soup', servings:4,
-   tags:['Batch Cook','Freezer Friendly'],
+   tags:['Lunch','Dinner','Batch Cook','Freezer Friendly'],
    notes:'One of the best meal-prep investments you can make.',
    ingredients:[
      {name:'Red Lentils',  qty:'1 cup',   category:'Protein'},
@@ -142,7 +142,7 @@ const LIBRARY_RECIPES = [
 
   // ── EXPERIMENTAL MEALS ─────────────────────────────────────────────────
   {id:'lb18', type:'experimental', name:'One Pot Jambalaya', servings:6,
-   tags:['One Pan','Batch Cook','Freezer Friendly'],
+   tags:['Dinner','One Pan','Batch Cook','Freezer Friendly'],
    notes:'Everything goes in one pot. Big flavor, big batch.',
    ingredients:[
      {name:'Andouille Sausage',qty:'12 oz',   category:'Protein'},
@@ -159,7 +159,7 @@ const LIBRARY_RECIPES = [
    steps:'Cut meat into chunks. Brown sausage first – then chicken separately, in a large pot over medium-high heat. Set both aside.\nIn the same pot – sauté diced onion, bell pepper, and celery until softened, about 3-4 minutes.\nReturn meat to pot. Add diced tomatoes, cajun seasoning, and chicken broth. Stir to combine.\nStir in rice. Bring to a boil, cover and simmer for 20-25 minutes.\nFluff with a fork. Freeze extras in individual portions.'},
 
   {id:'lb19', type:'experimental', name:'Crustless Egg Quiche', servings:6,
-   tags:['Batch Cook','One Pan'],
+   tags:['Breakfast','Lunch','Batch Cook','One Pan'],
    notes:'Bake once, eat all week.',
    ingredients:[
      {name:'Eggs',           qty:'8',       category:'Protein'},
@@ -174,7 +174,7 @@ const LIBRARY_RECIPES = [
    steps:'Preheat the oven to 375°F. Grease a baking dish (use oil or butter).\nWhisk eggs and milk together. Season with salt and pepper.\nFold in spinach, cherry tomatoes, diced onion, and shredded cheese.\nPour into the dish and bake for 30–35 minutes until set in the center.\nSlice into portions. Reheat in the microwave for 60–90 seconds – to serve.'},
 
   {id:'lb20', type:'experimental', name:'Egg White Breakfast Burrito', servings:2,
-   tags:['Under 15 Min','Under 30 Min','Freezer Friendly','Batch Cook'],
+   tags:['Breakfast','Under 15 Min','Under 30 Min','Freezer Friendly','Batch Cook'],
    notes:'High protein and faster than stopping for one.',
    ingredients:[
      {name:'Large Tortillas',qty:'2',       category:'Grains & Breads'},
@@ -189,7 +189,7 @@ const LIBRARY_RECIPES = [
    steps:'Cook egg whites in a non-stick pan over medium heat with butter. Season with salt & pepper.\nAdd black beans and cheese into eggs.\nWarm tortilla in a dry pan for 30 seconds.\nLayer egg mixture, salsa, and sliced avocado on the tortilla.\nFold and wrap tightly. Heat all sides in the same pan with oil or butter – until browned.\nEat immediately or wrap in foil for later.\nTips – Increase serving size to batch cook, and freeze for your busiest mornings.'},
 
   {id:'lb21', type:'experimental', name:'Chicken & Bean Burrito', servings:3,
-   tags:['Batch Cook','Under 30 Min','Freezer Friendly'],
+   tags:['Lunch','Dinner','Batch Cook','Under 30 Min','Freezer Friendly'],
    notes:'Double the batch and wrap extras in foil — they freeze perfectly.',
    ingredients:[
      {name:'Large Tortillas',qty:'3',       category:'Grains & Breads'},
@@ -207,7 +207,7 @@ const LIBRARY_RECIPES = [
    steps:'Cook rice according to package instructions.\nSeason chicken with seasonings. Cook in a pan with oil until done, then shred or chop.\nWarm drained black beans in a small pot with a pinch of seasonings.\nWarm tortillas in a pan or microwave. Layer rice, chicken, beans, cheese, and salsa.\nFold and wrap tightly. Heat all sides in the same pan with oil or butter – until browned.\nEat immediately or wrap in foil for later.\nTips – Increase serving size to batch cook, and freeze for your busiest weeknights.'},
 
   {id:'lb22', type:'experimental', name:'Beef & Broccoli', servings:4,
-   tags:['Under 30 Min','One Pan'],
+   tags:['Dinner','Under 30 Min','One Pan'],
    notes:'Better than takeout and ready in 25 minutes.',
    ingredients:[
      {name:'Flank Steak',  qty:'1 lb',    category:'Protein'},
