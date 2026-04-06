@@ -235,7 +235,7 @@ const DEFAULT_FLEX = [
 ];
 
 function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
-function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{} scheduleSyncToSupabase();}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('mpos_local_dirty_at',new Date().toISOString());}catch{} scheduleSyncToSupabase();}
 function uid(){return Math.random().toString(36).substr(2,9);}
 
 let recipes    = load(K.recipes, null);
@@ -1915,6 +1915,8 @@ let _accessToken     = null; // current session access token — used for keepal
 let _cloudLoadedOk   = false; // DATA GUARD: only allow cloud writes after a successful cloud read
 let _cloudUpdatedAt  = null;  // DATA GUARD: timestamp of last successful cloud load
 let _applyingCloud   = false; // SYNC GUARD: suppresses write-back during cloud data application
+let _syncDeferred    = false; // true when a save happened before cloud was ready
+let _cloudRetryTimer = null;  // retry timer for failed cloud loads
 
 // ── UI state helpers ─────────────────────────────────────────
 let _authMode = 'signin';
@@ -2029,6 +2031,7 @@ function normalizeRecipeTypes() {
 
 function showApp(user, skipTabSwitch) {
   _currentUser = user;
+  _flushDeferredSync(); // push any saves made before auth was ready
   document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('authScreen').style.display    = 'none';
   document.getElementById('accessGate').style.display    = 'none';
@@ -2199,6 +2202,9 @@ async function signOut() {
   localStorage.removeItem('mpos_active_tab');
   _currentUser = null;
   _cloudLoadedOk = false;
+  _syncDeferred = false;
+  _syncRetries = 0;
+  localStorage.removeItem('mpos_local_dirty_at');
   // Force full navigation — more reliable than reload() in iOS standalone/PWA mode
   window.location.href = window.location.origin + window.location.pathname;
 }
@@ -2255,23 +2261,64 @@ async function loadFromSupabase(userId) {
   // Successful query (even if no row exists) — safe to allow writes
   _cloudLoadedOk = true;
   if (data && data.updated_at) _cloudUpdatedAt = data.updated_at;
+  // Flush any saves that were queued while cloud was unavailable
+  _flushDeferredSync();
   return data || null;
 }
 
 function scheduleSyncToSupabase() {
-  if (!_currentUser || _applyingCloud) return;
+  if (_applyingCloud) return;
+  // If user/cloud isn't ready yet, mark deferred — will flush when ready
+  if (!_currentUser || !_cloudLoadedOk) { _syncDeferred = true; return; }
   clearTimeout(_saveTimer);
+  _updateSyncIndicator('saving');
   _saveTimer = setTimeout(syncToSupabase, 400);
 }
 
+// ── Sync status indicator ────────────────────────────────────
+// Green = synced, orange = saving, red = error
+function _updateSyncIndicator(state) {
+  const el = document.getElementById('syncIndicator');
+  if (!el) return;
+  const colors = { synced: '#4caf50', saving: '#ff9800', error: '#f44336' };
+  const titles = { synced: 'All changes saved', saving: 'Saving…', error: 'Sync issue — retrying' };
+  el.style.background = colors[state] || colors.synced;
+  el.title = titles[state] || '';
+}
+
+// Called once cloud is ready — pushes any saves that happened before auth/cloud load completed
+function _flushDeferredSync() {
+  if (_syncDeferred && _currentUser && _cloudLoadedOk) {
+    _syncDeferred = false;
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(syncToSupabase, 200);
+  }
+}
+
+let _syncRetries = 0;
 async function syncToSupabase() {
   if (!_currentUser) return;
   // DATA GUARD: never write to cloud unless we successfully loaded first
   if (!_cloudLoadedOk) { console.warn('Cloud sync blocked — cloud data not loaded yet'); return; }
   const payload = buildSyncPayload();
-  _cloudUpdatedAt = payload.updated_at; // track so periodic pull skips when no external change
   const { error: syncErr } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
-  if (syncErr) console.error('Cloud sync failed:', syncErr.message);
+  if (syncErr) {
+    console.error('Cloud sync failed:', syncErr.message);
+    _updateSyncIndicator('error');
+    // Auto-retry up to 3 times with backoff — don't silently lose data
+    if (_syncRetries < 3) {
+      _syncRetries++;
+      clearTimeout(_saveTimer);
+      _saveTimer = setTimeout(syncToSupabase, 2000 * _syncRetries);
+    }
+  } else {
+    _syncRetries = 0;
+    // Only update the cloud timestamp AFTER a confirmed successful upsert.
+    // This ensures _pullFromCloud won't skip a pull if the previous sync failed.
+    _cloudUpdatedAt = payload.updated_at;
+    try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
+    _updateSyncIndicator('synced');
+  }
 }
 
 async function migrateIfNeeded(userId) {
@@ -2286,6 +2333,26 @@ async function migrateIfNeeded(userId) {
 
 function applyCloudData(data) {
   if (!data || data._loadFailed) return;
+
+  // ── Race-condition guard ──────────────────────────────────
+  // If local data was modified AFTER the cloud's updated_at, the keepalive
+  // flush on unload hasn't reached Supabase yet.  Preserve the newer local
+  // state and push it to the cloud instead of overwriting it.
+  try {
+    const localDirty = localStorage.getItem('mpos_local_dirty_at');
+    if (localDirty && data.updated_at) {
+      const localTs = new Date(localDirty).getTime();
+      const cloudTs = new Date(data.updated_at).getTime();
+      if (localTs > cloudTs) {
+        console.info('Local data is newer than cloud — skipping cloud overwrite, will push local → cloud');
+        // Do NOT clear mpos_local_dirty_at here — only syncToSupabase clears it
+        // on confirmed success. This keeps the protection active if re-sync also fails.
+        scheduleSyncToSupabase();
+        return;
+      }
+    }
+  } catch(e) { /* proceed with normal apply on any parse error */ }
+
   _applyingCloud = true; // suppress cloud write-back while applying pulled data
   try {
     if (Array.isArray(data.recipes))              { recipes   = data.recipes;    save(K.recipes,   recipes); }
@@ -2305,6 +2372,9 @@ function applyCloudData(data) {
     }
   } finally {
     _applyingCloud = false;
+    // Clear the dirty flag that save() set during cloud application.
+    // This data came FROM the cloud — it doesn't need to be synced back.
+    try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
   }
 }
 
@@ -2435,6 +2505,37 @@ async function loadAndRender(userId) {
   if (!onboardingState.firstRunComplete) {
     detectOnboardingCompletion();
   }
+
+  // ── Cloud load failure recovery ────────────────────────────
+  // If the initial cloud load failed (network hiccup), schedule retries so
+  // _cloudLoadedOk can eventually become true and unblock syncing.
+  if (!_cloudLoadedOk && !_cloudRetryTimer) {
+    let _retryCount = 0;
+    const maxRetries = 5;
+    _cloudRetryTimer = setInterval(async () => {
+      _retryCount++;
+      console.info('Retrying cloud load (attempt ' + _retryCount + '/' + maxRetries + ')...');
+      const retryCloud = await loadFromSupabase(userId);
+      if (_cloudLoadedOk) {
+        // Success — apply cloud data and stop retrying
+        clearInterval(_cloudRetryTimer);
+        _cloudRetryTimer = null;
+        applyCloudData(retryCloud);
+        renderAll();
+        _updateSyncIndicator('synced');
+        console.info('Cloud load retry succeeded');
+      } else if (_retryCount >= maxRetries) {
+        clearInterval(_cloudRetryTimer);
+        _cloudRetryTimer = null;
+        // Last resort: allow writes even without a cloud read so data isn't permanently orphaned
+        _cloudLoadedOk = true;
+        _flushDeferredSync();
+        _updateSyncIndicator('error');
+        console.warn('Cloud load retries exhausted — enabling writes to prevent data loss');
+      }
+    }, 5000); // retry every 5 seconds
+  }
+
   // Cloud data is ready — hide loading overlay, start background sync, render
   hideLoadingOverlay();
   _startPeriodicSync();
@@ -2524,6 +2625,12 @@ function _flushToCloud() {
   if (!_currentUser || !_accessToken || !_cloudLoadedOk) return;
   try {
     const payload = JSON.stringify(buildSyncPayload());
+    // Note: we intentionally do NOT clear mpos_local_dirty_at here.
+    // The keepalive fetch is fire-and-forget — we can't know if it succeeds.
+    // If it does succeed, the next loadFromSupabase will return data with a
+    // newer updated_at than our local dirty timestamp, so applyCloudData
+    // will proceed normally.  If it fails, the dirty flag ensures we preserve
+    // the local data on reload instead of overwriting it with stale cloud data.
     fetch(`${SUPABASE_URL}/rest/v1/user_data`, {
       method:    'POST',
       keepalive: true,
@@ -2540,21 +2647,38 @@ function _flushToCloud() {
 window.addEventListener('beforeunload', _flushToCloud);
 window.addEventListener('pagehide',     _flushToCloud);
 
-// ── Re-fetch cloud data when tab regains focus ──────────────
-// Covers cross-device sync: edit on phone → switch to desktop tab → fresh data loads
+// ── Sync on visibility change ────────────────────────────────
+// When tab goes hidden (mobile: screen lock, app switch): flush pending save NOW.
+// When tab becomes visible again: pull fresh data from cloud (for cross-device sync).
 document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState !== 'visible' || !_currentUser) return;
-  _pullFromCloud();
+  if (!_currentUser) return;
+  if (document.visibilityState === 'hidden') {
+    // Tab is being hidden — flush any pending debounced save immediately
+    if (_saveTimer) {
+      clearTimeout(_saveTimer);
+      _saveTimer = null;
+      await syncToSupabase();
+    }
+  } else if (document.visibilityState === 'visible') {
+    _pullFromCloud();
+  }
 });
 
 // ── Periodic cloud pull — catches cross-device edits even if tab stays in foreground ──
 let _pullTimer = null;
 async function _pullFromCloud() {
-  if (!_currentUser) return;
+  if (!_currentUser || _applyingCloud) return;
+  // Don't pull if there are pending local saves — let them sync first
+  if (_saveTimer) return;
+  const localDirty = localStorage.getItem('mpos_local_dirty_at');
+  if (localDirty) return; // local changes haven't been confirmed in cloud yet
   const cloud = await loadFromSupabase(_currentUser.id);
   if (!cloud || !cloud.updated_at) return;
   // Only re-render if cloud data is actually newer than what we last loaded
-  if (_cloudUpdatedAt && cloud.updated_at === _cloudUpdatedAt) return;
+  // Use Date comparison — Supabase and JS may use different ISO 8601 formats
+  // (e.g. "Z" vs "+00:00") which would cause string === to always fail
+  if (_cloudUpdatedAt &&
+      new Date(cloud.updated_at).getTime() === new Date(_cloudUpdatedAt).getTime()) return;
   applyCloudData(cloud);
   renderAll();
 }
