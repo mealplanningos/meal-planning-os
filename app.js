@@ -13,7 +13,7 @@ const DAY_FULL = {monday:'Monday',tuesday:'Tuesday',wednesday:'Wednesday',thursd
 const MEALS = ['breakfast','lunch','dinner'];
 const MEAL_ICON = {breakfast:'🌅',lunch:'☀️',dinner:'🌙'};
 // ── What's New version (change this + modal content to trigger a new popup) ──
-const CURRENT_UPDATE_VERSION = '2026-04-04-1';
+const CURRENT_UPDATE_VERSION = '2026-04-06-1';
 
 const CATS = ['Produce','Protein','Grains & Breads','Dairy / Dairy-Free','Pantry & Seasonings','Freezer / Flex','Snacks / Extras'];
 const CAT_ICON = {'Produce':'🥬','Protein':'🍗','Grains & Breads':'🌾','Dairy / Dairy-Free':'🥛','Pantry & Seasonings':'🧂','Freezer / Flex':'❄️','Snacks / Extras':'🥜'};
@@ -282,11 +282,14 @@ function checkOnboardingGate(targetTab){
     msg='Add recipes first so you have meals to choose from.';
     btn='Go to Recipes'; redirect='recipes';
   } else if(targetTab==='weeksetup' && !hasMenuRecipes){
-    msg='Add meals to your No-Decision Menu first.';
-    btn='Go to No-Decision Menu'; redirect='menu';
+    msg='Build your No-Decision Menu first so you have meals to plan with.';
+    btn='Go to Menu'; redirect='menu';
+  } else if(targetTab==='mealplan' && !hasMenuRecipes){
+    msg='Build your No-Decision Menu first so you have meals to assign.';
+    btn='Go to Menu'; redirect='menu';
   } else if(targetTab==='grocerylist' && mealCount<1){
     msg='Assign at least one meal to your plan to generate your grocery list.';
-    btn='Go to Meal Plan'; redirect='mealplan';
+    btn='Go to Meals'; redirect='mealplan';
   }
 
   const gateEl=document.getElementById('softGate-'+targetTab);
@@ -330,11 +333,12 @@ function renderOnboardingUI(){
   }
 
   // Helper: build a banner with optional Next button on the right
-  function obBanner(step, title, desc, nextBtn){
+  // phaseLabel = e.g. "Setup 1 of 2" or "Step 1 of 3"
+  function obBanner(phaseLabel, title, desc, nextBtn){
     return `<div class="onboarding-banner">
       <div class="ob-banner-row">
         <div class="ob-banner-left">
-          <div class="ob-step">Step ${step} of 5</div>
+          <div class="ob-step">${phaseLabel}</div>
           <div class="ob-title">${title}</div>
           <div class="ob-desc">${desc}</div>
         </div>
@@ -343,40 +347,40 @@ function renderOnboardingUI(){
     </div>`;
   }
 
-  // Step 1
+  // Setup 1 of 2 — Recipes (one-time setup)
   const next1=recipes.length>=1?`<button class="btn btn-primary btn-next" onclick="switchTab('menu')">Next →</button>`:'';
   const b1=document.getElementById('onboardingBanner-1');
-  if(b1) b1.innerHTML=obBanner(1,'Add Recipes','Add a few meals you already eat. Keep it simple.',next1);
+  if(b1) b1.innerHTML=obBanner('Setup 1 of 2','Build Your Recipe Library','Browse the recipe library or add your own meals — anything you already cook and enjoy. These are the building blocks for your entire plan. You only need to do this once; come back and add more anytime.', next1);
   const cta1=document.getElementById('recipesCTA'); if(cta1) cta1.innerHTML='';
 
-  // Step 2
+  // Setup 2 of 2 — No-Decision Menu (one-time setup)
   const menuRecipes=recipes.filter(r=>r.onMenu);
   const next2=menuRecipes.length>=1?`<button class="btn btn-primary btn-next" onclick="switchTab('weeksetup')">Next →</button>`:'';
   const b2=document.getElementById('onboardingBanner-2');
-  if(b2) b2.innerHTML=obBanner(2,'Build Your No-Decision Menu','Choose the meals you want on repeat so your week takes less thinking.',next2);
+  if(b2) b2.innerHTML=obBanner('Setup 2 of 2','Fill Your No-Decision Menu','Pick the meals you want on rotation this week from your recipe library. This becomes your short list — the only options you choose from when planning. Fewer choices means zero decision fatigue.', next2);
   const cta2=document.getElementById('menuCTA'); if(cta2) cta2.innerHTML='';
 
-  // Step 3
+  // Step 1 of 3 — Schedule (weekly workflow)
   const next3=`<button class="btn btn-primary btn-next" onclick="switchTab('mealplan')">Next →</button>`;
   const b3=document.getElementById('onboardingBanner-3');
-  if(b3) b3.innerHTML=obBanner(3,'Map Your Week','Tell us what your week looks like so your plan fits your life.',next3);
+  if(b3) b3.innerHTML=obBanner('Step 1 of 3','Map Your Week','Add what\'s going on this week — busy nights, events, late meetings. These notes show up next to each day in your meal plan so you pick meals that actually fit your schedule. Takes about 30 seconds.', next3);
   const cta3=document.getElementById('weekSetupCTA'); if(cta3) cta3.innerHTML='';
 
-  // Step 4
+  // Step 2 of 3 — Meals (weekly workflow)
   const mealCount=DAYS.reduce((n,d)=>n+MEALS.reduce((m2,meal)=>(mealPlan[d]&&mealPlan[d][meal]?1:0)+m2,0),0);
-  const next4=mealCount>=1?`<button class="btn btn-primary btn-next" onclick="switchTab('grocerylist')">Next →</button>`:'';
+  const next4=`<button class="btn btn-primary btn-next" onclick="switchTab('grocerylist')">Next →</button>`;
   const b4=document.getElementById('onboardingBanner-4');
-  if(b4) b4.innerHTML=obBanner(4,'Fill In Your Week','Tap each day to assign a meal from your No-Decision Menu.',next4);
+  if(b4) b4.innerHTML=obBanner('Step 2 of 3','Assign Your Meals','Give each day a meal from your menu. Busy night? Pick a Go-To meal. Free evening? Try something new. Your schedule notes are right there to guide you — this should take 30 seconds.', next4);
   const cta4=document.getElementById('mealPlanCTA'); if(cta4) cta4.innerHTML='';
 
-  // Step 5
+  // Step 3 of 3 — Groceries (weekly workflow)
   const b5=document.getElementById('onboardingBanner-5');
   // Existing user seeing guide for first time (or re-enabled) → "Hide Guide"; new user → "I'm Done ✓"
   const isReview = _guideMode || (isOnboardingComplete() && !hasSeenGuide());
   const doneBtn=isReview
     ?`<button class="btn btn-primary btn-next" onclick="toggleSetupGuide()">Hide Guide</button>`
     :`<button class="btn btn-primary btn-next" onclick="completeOnboarding()">I'm Done ✓</button>`;
-  if(b5) b5.innerHTML=obBanner(5,'Review Your Grocery List','Your list is built from your meal plan. Grab it and go.',doneBtn);
+  if(b5) b5.innerHTML=obBanner('Step 3 of 3','Review Your Grocery List','Your grocery list is built automatically from your meal plan. Quantities are calculated, items are sorted by aisle. Review it, check off what you have, and you\'re ready to shop.', doneBtn);
   const cta5=document.getElementById('groceryCTA');
   if(cta5){
     if(!isReview){
@@ -410,7 +414,7 @@ function toggleSetupGuide(){
 
 // ── Reset Logic ─────────────────────────────────────────────────────────
 function startFreshWeek(){
-  if(!confirm('Start a fresh week? This will clear your Week Setup, Meal Plan, and Grocery List. Your recipes and No-Decision Menu will stay.')) return;
+  if(!confirm('Start a fresh week? This will clear your Schedule, Meal Plan, and Grocery List. Your recipes and No-Decision Menu will stay.')) return;
   weekNotes={};
   mealPlan={};
   checks={};
@@ -420,7 +424,7 @@ function startFreshWeek(){
   save(K.checks,checks);
   save(K.adhocItems,adhocItems);
   renderAll();
-  switchTab('recipes');
+  switchTab('weeksetup');
 }
 
 function resetEverything(){
@@ -444,8 +448,8 @@ function resetEverything(){
   switchTab('recipes');
 }
 
-// Context tracker for add-from-library (Step 1 vs Step 2)
-let _addContext = 'recipes'; // 'recipes' = Step 1 (type:null), 'menu' = Step 2
+// Context tracker for add-from-library (Recipes tab vs Menu tab)
+let _addContext = 'recipes'; // 'recipes' = Recipes tab (type:null), 'menu' = Menu tab
 
 // ╔═══════════════════════════════════════╗
 //   SHARED PAYLOAD BUILDER
@@ -465,6 +469,38 @@ function buildSyncPayload() {
 }
 
 // ╔═══════════════════════════════════════╗
+//   INFO TOOLTIPS
+// ╚═══════════════════════════════════════╝
+const INFO_TIPS = {
+  recipes:     'Add meals by pasting a URL or building from scratch. Filter by meal type — Breakfast, Lunch, Dinner — or by tags like Under 15 Min, Batch Cook, and Freezer Friendly to find what fits your night. Once a recipe is saved, you can add it to your No-Decision Menu with one click.',
+  menu:        'This is the short list your entire meal plan is built from. Pick 3–5 Go-To meals you can repeat on autopilot and a few Experimental ones when you want variety. The smaller this menu is, the fewer decisions you make every week.',
+  weeksetup:   'Add what\u0027s happening each day — busy nights, kids\u0027 activities, dinners out, late meetings. This shows up right in your meal plan so you can see your schedule while you\u0027re deciding what to eat. The more detail you add, the easier it is to assign the right meal to the right night.',
+  mealplan:    'Tap any day to pick a meal from your No-Decision Menu. Busy night? Pick a 15-minute Go-To. Free evening? Try something Experimental. The goal is zero decisions at 5 PM — just open the plan and cook.',
+  grocerylist: 'Auto-generated from your meal plan — every ingredient, already calculated and sorted by store section. Duplicates are merged and fractions are combined. You can also add your own items for anything outside your recipes — staples, snacks, whatever you need.',
+  freezer:     'Your freezer is your secret weapon for busy nights. When you cook extra, log it here and we\u0027ll track it for you. Oldest meals surface first so you always use what needs to go — pull one out instead of cooking from scratch.',
+  goto:        'Go-To Meals are your reliable rotation — recipes you could cook on autopilot, even on your most exhausted night. Pick 3–5 meals that are fast, forgiving, and family-approved. These are the backbone of your weekly plan.',
+  experimental:'Experimental Meals add variety without chaos. These are recipes you want to try or rotate in occasionally — maybe a new cuisine, a more involved cook, or something seasonal. Keep 1–3 here so you have options without decision overload.',
+};
+function infoTipHtml(key){
+  const tip=INFO_TIPS[key];
+  if(!tip) return '';
+  return `<span class="info-tip-wrap"><button class="info-tip-btn" onclick="toggleInfoTip(event,'${key}')" aria-label="More info">\u24d8</button><div class="info-tip-bubble" id="tip-${key}">${tip}</div></span>`;
+}
+function toggleInfoTip(e,key){
+  e.stopPropagation();
+  const el=document.getElementById('tip-'+key);
+  if(!el) return;
+  const wasOpen=el.classList.contains('open');
+  // Close all open tips first
+  document.querySelectorAll('.info-tip-bubble.open').forEach(b=>b.classList.remove('open'));
+  if(!wasOpen) el.classList.add('open');
+}
+// Dismiss any open tooltip on outside click
+document.addEventListener('click',()=>{
+  document.querySelectorAll('.info-tip-bubble.open').forEach(b=>b.classList.remove('open'));
+});
+
+// ╔═══════════════════════════════════════╗
 //   NAV
 // ╚═══════════════════════════════════════╝
 function switchTab(id){
@@ -476,7 +512,7 @@ function switchTab(id){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const idx={recipes:0,menu:1,weeksetup:2,mealplan:3,grocerylist:4,freezer:5}[id];
+  const idx={weeksetup:0,mealplan:1,grocerylist:2,menu:3,recipes:4,freezer:5}[id];
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   // Set add context for library rendering
   if(id==='recipes') { _addContext='recipes'; renderLibrary(); renderOnboardingUI(); }
@@ -820,8 +856,7 @@ function renderMealSections(){
         <div class="meal-type-label">
           <div class="meal-type-icon">${icon}</div>
           <div>
-            <div class="meal-type-title">${label}</div>
-            <div class="meal-type-desc">${desc}</div>
+            <div class="meal-type-title">${label} ${infoTipHtml(type)}</div>
             <div class="meal-slots-count">${list.length}/${max} — ${rem>0?rem+' slot'+(rem>1?'s':'')+' left':'Menu locked in ✓'}</div>
           </div>
         </div>
@@ -834,10 +869,11 @@ function renderMealSections(){
       const card=document.createElement('div');
       card.className='recipe-card';
       const ingPreview=r.ingredients.slice(0,3).map(i=>i.name).join(', ')+(r.ingredients.length>3?` +${r.ingredients.length-3} more`:'');
+      const tagHtml=r.tags&&r.tags.length>0?`<div class="recipe-card-tags">${r.tags.map(t=>`<span class="recipe-tag">${t}</span>`).join('')}</div>`:'';
       card.innerHTML=`
         <div class="recipe-card-name">${r.name}</div>
         <div class="recipe-card-servings">${r.servings} serving${r.servings!==1?'s':''} per batch</div>
-        ${renderSteps(r.notes)}
+        ${tagHtml}
         <div class="recipe-card-ings">${ingPreview||'No ingredients yet'}</div>
         <div class="recipe-card-actions">
           <button class="btn btn-secondary btn-sm" onclick="openRecipeModal('${r.id}')">Edit</button>
@@ -1469,7 +1505,7 @@ function practicalHint(ingredientName, total, unit){
 
   // BERRIES (any kind)
   if(/berr/.test(n) && isCup){
-    if(total<=1)  return '≈ 1 small clamshell';
+    if(total<=1)  return '≈ 1 small container (6 oz)';
     if(total<=2)  return '≈ 1 pint container';
     if(total<=4)  return '≈ 1 quart container';
     return '≈ '+Math.ceil(total/4)+' quart containers';
@@ -1492,8 +1528,9 @@ function practicalHint(ingredientName, total, unit){
     if(total<=4) return '≈ 1 bag';
     return '≈ '+Math.ceil(total/4)+' bags';
   }
-  // MILK (cups — gallon context)
+  // MILK (cups — gallon context; skip hint for small amounts)
   if(/\bmilk\b/.test(n) && isCup){
+    if(total<=2)  return null; // small amounts don't need a hint
     if(total<=4)  return '≈ 1 qt';
     if(total<=8)  return '≈ 1 half-gallon';
     if(total<=16) return '≈ 1 gallon';
@@ -1542,8 +1579,13 @@ function practicalHint(ingredientName, total, unit){
   if(/oil/.test(n) && isTbsp){
     if(total<=32) return '≈ 1 bottle';
   }
-  // PARMESAN / CHEESE (shredded, in cups)
-  if(/(parmesan|mozzarella|cheddar|feta|cheese)/.test(n) && isCup){
+  // PARMESAN / FETA / CRUMBLED CHEESE → container; SHREDDED CHEESE → bag
+  if(/(parmesan|feta|cotija|crumble|grated)/.test(n) && isCup){
+    if(total<=1)  return '≈ 1 small container';
+    if(total<=2)  return '≈ 1 standard container';
+    return '≈ '+Math.ceil(total/2)+' containers';
+  }
+  if(/(mozzarella|cheddar|cheese|shredded)/.test(n) && isCup){
     if(total<=1)  return '≈ 1 small bag';
     if(total<=2)  return '≈ 1 standard bag';
     return '≈ '+Math.ceil(total/2)+' bags';
@@ -1557,13 +1599,33 @@ function practicalHint(ingredientName, total, unit){
   return null;
 }
 
+// Whole-item ingredients — things you buy as whole units at the store
+// When fractional, round up to nearest whole and return a practical qty + hint
+const WHOLE_ITEMS=/\b(onion|avocado|bell pepper|pepper|banana|lemon|lime|apple|pear|orange|potato|sweet potato|tomato|cucumber|zucchini|squash|eggplant|head|bunch|carrot|celery|mango|peach|pineapple|coconut|grapefruit|melon|watermelon|cantaloupe|pomegranate|beet|turnip|parsnip|radish|shallot|jalape|tortilla|loaf|bread)\b/;
+function isWholeItem(name, unit){
+  // Only applies when there's no measurement unit (bare count)
+  if(unit && unit.trim()) return false;
+  return WHOLE_ITEMS.test(name.toLowerCase());
+}
+
+// Round up fractional whole-item quantities and return {qty, hint}
+function resolveWholeItem(name, total, unit){
+  if(!isWholeItem(name, unit) || total<=0) return null;
+  if(total%1===0) return null; // already whole — no rounding needed
+  const rounded=Math.ceil(total);
+  return { qty: String(rounded), hint: 'rounded up from '+toFrac(total) };
+}
+
 // Master hint function — ingredient lookup first, then unit conversion fallback
 function shoppingHint(ingredientName, total, unit){
   const specific=practicalHint(ingredientName, total, unit);
   if(specific) return specific;
+  // Whole-item rounding hint (e.g. ⅓ onion → 1 onion)
+  const wholeHint=resolveWholeItem(ingredientName, total, unit);
+  if(wholeHint) return wholeHint.hint;
   // Generic unit conversions
   const u=(unit||'').toLowerCase().replace(/s$/,'').trim();
-  if(['cup','c'].includes(u) && total>=2){
+  if(['cup','c'].includes(u) && total>=4){
     if(total>=16){ return '≈ '+toFrac(total/16)+' gal'; }
     const q=total/4; return '≈ '+toFrac(q)+' qt'+(q===1?'':'s');
   }
@@ -1596,7 +1658,7 @@ function renderGrocery(){
       if(!agg[cat]) agg[cat]={};
       const k=ing.name.toLowerCase().trim();
       if(!agg[cat][k]) agg[cat][k]={name:ing.name,qtys:[],rawQty:ing.qty};
-      const n=parseFloat(ing.qty);
+      const n=parseFrac(ing.qty);
       // qty is total batch amount — scale by (assigned servings / batch size)
       agg[cat][k].qtys.push(isNaN(n)?null:n*(srv/(r.servings||1)));
     });
@@ -1634,9 +1696,11 @@ function renderGrocery(){
           const nums=item.qtys.filter(n=>n!==null);
           if(nums.length>0){
             const total=nums.reduce((a,b)=>a+b,0);
-            const rawUnit=item.rawQty?item.rawQty.replace(/^[\d.½¼¾\s\/]+/,'').trim():'';
+            const rawUnit=item.rawQty?item.rawQty.replace(/^[\d.½¼¾⅓⅔⅛⅜⅝⅞\s\/]+/,'').trim():'';
             const unit=rawUnit&&total!==1?pluralUnit(rawUnit,total):rawUnit;
-            qty=toFrac(total)+(unit?' '+unit:'');
+            // Smart rounding for whole-item ingredients (e.g. ⅛ onion → 1)
+            const wholeRound=resolveWholeItem(item.name, total, unit);
+            qty=wholeRound?wholeRound.qty+(unit?' '+unit:''):toFrac(total)+(unit?' '+unit:'');
             hint=shoppingHint(item.name,total,unit);
           } else if(item.rawQty){ qty=item.rawQty; }
           rows+=`<div class="grocery-item">
@@ -1850,6 +1914,7 @@ let _recoveryToken   = null; // access token saved from PASSWORD_RECOVERY event
 let _accessToken     = null; // current session access token — used for keepalive sync on unload
 let _cloudLoadedOk   = false; // DATA GUARD: only allow cloud writes after a successful cloud read
 let _cloudUpdatedAt  = null;  // DATA GUARD: timestamp of last successful cloud load
+let _applyingCloud   = false; // SYNC GUARD: suppresses write-back during cloud data application
 
 // ── UI state helpers ─────────────────────────────────────────
 let _authMode = 'signin';
@@ -1976,7 +2041,8 @@ function showApp(user, skipTabSwitch) {
   const tabMigration = {step1:'recipes',step2:'menu',step3:'weeksetup',step4:'mealplan',library:'recipes'};
   if(savedTab && tabMigration[savedTab]) savedTab=tabMigration[savedTab];
   const validTabs = ['recipes','menu','weeksetup','mealplan','grocerylist','freezer'];
-  switchTab(savedTab && validTabs.includes(savedTab) ? savedTab : 'recipes');
+  const defaultTab = isOnboardingComplete() ? 'weeksetup' : 'recipes';
+  switchTab(savedTab && validTabs.includes(savedTab) ? savedTab : defaultTab);
 }
 function hideLoadingOverlay() {
   const ol = document.getElementById('appLoadingOverlay');
@@ -1997,7 +2063,7 @@ function authSubmit() {
 
 // Send password reset email via Supabase (no Netlify function needed)
 async function sendPasswordReset() {
-  const email = document.getElementById('authEmail').value.trim();
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
   const btn   = document.getElementById('authBtn');
   const msg   = document.getElementById('authMsg');
   if(!email){
@@ -2005,16 +2071,24 @@ async function sendPasswordReset() {
     msg.className='auth-msg error'; return;
   }
   btn.disabled=true; btn.textContent='Sending…';
-  const { error } = await _sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + window.location.pathname
-  });
-  btn.disabled=false; btn.textContent='Send Reset Link';
-  if(error){
-    msg.textContent=error.message||'Could not send reset email. Please try again.';
+  try {
+    const { error } = await _sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    btn.disabled=false; btn.textContent='Send Reset Link';
+    if(error){
+      console.error('Password reset error:', error);
+      msg.textContent=error.message||'Could not send reset email. Please try again.';
+      msg.className='auth-msg error';
+    } else {
+      msg.innerHTML='✓ Reset link sent! Check your inbox and spam folder.<br><span style="font-size:11px;color:var(--text-3);margin-top:4px;display:inline-block">If you don\'t see it within 2 minutes, check your spam/junk folder or try again.</span>';
+      msg.className='auth-msg success';
+    }
+  } catch(e) {
+    console.error('Password reset exception:', e);
+    btn.disabled=false; btn.textContent='Send Reset Link';
+    msg.textContent='Something went wrong. Please try again.';
     msg.className='auth-msg error';
-  } else {
-    msg.textContent='✓ Check your inbox — reset link sent.';
-    msg.className='auth-msg success';
   }
 }
 
@@ -2185,7 +2259,7 @@ async function loadFromSupabase(userId) {
 }
 
 function scheduleSyncToSupabase() {
-  if (!_currentUser) return;
+  if (!_currentUser || _applyingCloud) return;
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(syncToSupabase, 400);
 }
@@ -2212,20 +2286,25 @@ async function migrateIfNeeded(userId) {
 
 function applyCloudData(data) {
   if (!data || data._loadFailed) return;
-  if (Array.isArray(data.recipes))              { recipes   = data.recipes;    save(K.recipes,   recipes); }
-  if (data.assignments !== null &&
-      typeof data.assignments === 'object')     { mealPlan  = data.assignments; save(K.mealPlan,  mealPlan); }
-  if (data.week_notes !== undefined)            { weekNotes = data.week_notes;  save(K.weekNotes, weekNotes); }
-  if (Array.isArray(data.freezer))              { freezer   = data.freezer;     save(K.freezer,   freezer); }
-  if (data.groceries) {
-    if (data.groceries.staples)    { staples     = data.groceries.staples;     save(K.staples,     staples); }
-    if (data.groceries.flexItems)  { flexItems   = data.groceries.flexItems;   save(K.flexItems,   flexItems); }
-    if (data.groceries.checks)     { checks      = data.groceries.checks;      save(K.checks,      checks); }
-    if (data.groceries.adhocItems) { adhocItems  = data.groceries.adhocItems;  save(K.adhocItems,  adhocItems); }
-    if (data.groceries.categoryItems) { categoryItems = data.groceries.categoryItems; save(K.categoryItems, categoryItems); }
-  }
-  if (data.onboarding && typeof data.onboarding === 'object') {
-    onboardingState = data.onboarding;
+  _applyingCloud = true; // suppress cloud write-back while applying pulled data
+  try {
+    if (Array.isArray(data.recipes))              { recipes   = data.recipes;    save(K.recipes,   recipes); }
+    if (data.assignments !== null &&
+        typeof data.assignments === 'object')     { mealPlan  = data.assignments; save(K.mealPlan,  mealPlan); }
+    if (data.week_notes !== undefined)            { weekNotes = data.week_notes;  save(K.weekNotes, weekNotes); }
+    if (Array.isArray(data.freezer))              { freezer   = data.freezer;     save(K.freezer,   freezer); }
+    if (data.groceries) {
+      if (data.groceries.staples)    { staples     = data.groceries.staples;     save(K.staples,     staples); }
+      if (data.groceries.flexItems)  { flexItems   = data.groceries.flexItems;   save(K.flexItems,   flexItems); }
+      if (data.groceries.checks)     { checks      = data.groceries.checks;      save(K.checks,      checks); }
+      if (data.groceries.adhocItems) { adhocItems  = data.groceries.adhocItems;  save(K.adhocItems,  adhocItems); }
+      if (data.groceries.categoryItems) { categoryItems = data.groceries.categoryItems; save(K.categoryItems, categoryItems); }
+    }
+    if (data.onboarding && typeof data.onboarding === 'object') {
+      onboardingState = data.onboarding;
+    }
+  } finally {
+    _applyingCloud = false;
   }
 }
 
@@ -2245,6 +2324,11 @@ function renderAll() {
   renderWeek(); renderMealPlan();
   renderGrocery(); renderFreezer();
   renderOnboardingUI();
+  // Inject info tooltips into section headers
+  Object.keys(INFO_TIPS).forEach(key=>{
+    const el=document.getElementById('infoTip-'+key);
+    if(el && !el.hasChildNodes()) el.innerHTML=infoTipHtml(key);
+  });
 }
 
 // ── Bootstrap ────────────────────────────────────────────────
@@ -2358,7 +2442,9 @@ async function loadAndRender(userId) {
   const tabMigration = {step1:'recipes',step2:'menu',step3:'weeksetup',step4:'mealplan',library:'recipes'};
   if(savedTab && tabMigration[savedTab]) savedTab=tabMigration[savedTab];
   const validTabs = ['recipes','menu','weeksetup','mealplan','grocerylist','freezer'];
-  switchTab(savedTab && validTabs.includes(savedTab) ? savedTab : 'recipes');
+  // New users (onboarding not complete) start at Recipes; returning users default to Schedule
+  const defaultTab = isOnboardingComplete() ? 'weeksetup' : 'recipes';
+  switchTab(savedTab && validTabs.includes(savedTab) ? savedTab : defaultTab);
   renderAll();
   checkWhatsNew(cloud);
 }
@@ -2377,6 +2463,16 @@ async function dismissWhatsNew() {
   try {
     await _sb.from('user_data').update({ last_seen_update_version: CURRENT_UPDATE_VERSION }).eq('user_id', _currentUser.id);
   } catch(e) { /* best-effort — next login will retry */ }
+}
+
+// ── Previous Updates toggle ──────────────────────────────────
+function togglePrevUpdates() {
+  const body = document.getElementById('prevUpdatesBody');
+  const arrow = document.getElementById('prevUpdatesArrow');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(90deg)';
 }
 
 // ── Account Settings ─────────────────────────────────────────

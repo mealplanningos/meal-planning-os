@@ -148,72 +148,38 @@
 <!-- NAV -->
 <div class="nav">
   <div class="nav-inner">
-    <div class="nav-tab active" onclick="switchTab('recipes')"><div class="step-num">1</div> Recipes</div>
-    <div class="nav-tab" onclick="switchTab('menu')"><div class="step-num">2</div> No-Decision Menu</div>
-    <div class="nav-tab" onclick="switchTab('weeksetup')"><div class="step-num">3</div> Week Setup</div>
-    <div class="nav-tab" onclick="switchTab('mealplan')"><div class="step-num">4</div> Meal Plan</div>
-    <div class="nav-tab" onclick="switchTab('grocerylist')"><div class="step-num">5</div> Grocery List</div>
-    <div class="nav-tab" onclick="switchTab('freezer')">❄️ Freezer</div>
+    <div class="nav-tab active" onclick="switchTab('weeksetup')"><div class="step-num">1</div> Schedule</div>
+    <div class="nav-tab" onclick="switchTab('mealplan')"><div class="step-num">2</div> Meals</div>
+    <div class="nav-tab" onclick="switchTab('grocerylist')"><div class="step-num">3</div> Groceries</div>
+    <span class="nav-divider"></span>
+    <div class="nav-tab nav-tab-secondary" onclick="switchTab('menu')">Menu</div>
+    <div class="nav-tab nav-tab-secondary" onclick="switchTab('recipes')">Recipes</div>
+    <div class="nav-tab nav-tab-secondary" onclick="switchTab('freezer')">Freezer</div>
   </div>
 </div>
 
 <!-- MAIN -->
 <div class="main">
-  <!-- STEP 1 — RECIPES -->
-  <div id="recipes" class="section active">
-    <div id="onboardingBanner-1"></div>
-    <div id="recipesCTA"></div>
-    <div id="softGate-recipes"></div>
-    <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-      <div>
-        <div class="section-title">Recipe Library</div>
-        <div class="section-subtitle">Browse tested recipes or add your own. Save what fits your life.</div>
-      </div>
-      <button class="btn-footer-action" onclick="openRecipeModal(null,null,'recipes')" style="white-space:nowrap;margin-top:2px">+ Custom Recipe</button>
-    </div>
-    <div class="lib-filters" id="libFilters"></div>
-    <div class="lib-grid" id="libGrid"></div>
-  </div>
-  <!-- STEP 2 — NO-DECISION MENU -->
-  <div id="menu" class="section">
-    <div id="onboardingBanner-2"></div>
-    <div id="menuCTA"></div>
-    <div id="softGate-menu"></div>
-    <div class="section-header">
-      <div class="section-title">Your Meals on Autopilot</div>
-      <div class="section-subtitle">Pick the meals that repeat every week. The fewer choices, the less you think.</div>
-    </div>
-    <div id="menuSavedRecipes"></div>
-    <div class="meal-sections" id="mealSections"></div>
-    <div class="starter-note">
-      <span>💾</span>
-      <span>Everything automatically saves. This is what your weekly plan will be built from.</span>
-    </div>
-  </div>
-  <!-- STEP 3 — WEEK SETUP -->
-  <div id="weeksetup" class="section">
+  <!-- TAB 1 — SCHEDULE -->
+  <div id="weeksetup" class="section active">
     <div id="onboardingBanner-3"></div>
     <div id="weekSetupCTA"></div>
     <div id="softGate-weeksetup"></div>
     <div class="section-header">
-      <div class="section-title">What Does Your Week Look Like?</div>
+      <div class="section-title">What Does Your Week Look Like? <span id="infoTip-weeksetup"></span></div>
       <div class="section-subtitle">Map your schedule so your plan fits your reality — not the other way around.</div>
     </div>
     <div class="week-grid" id="weekGrid"></div>
-    <div class="week-tip" style="margin-top:18px">
-      <span style="font-size:16px;flex-shrink:0">⚡</span>
-      <span>Anything you add here shows up in your meal plan as a reminder — so your schedule is always visible when you're deciding what to eat.</span>
-    </div>
     <div id="weekStarterNote"></div>
   </div>
-  <!-- STEP 4 — MEAL PLAN -->
+  <!-- TAB 2 — MEALS -->
   <div id="mealplan" class="section">
     <div id="onboardingBanner-4"></div>
     <div id="mealPlanCTA"></div>
     <div id="softGate-mealplan"></div>
     <div class="section-header">
-      <div class="section-title">Fill In Your Week</div>
-      <div class="section-subtitle">Tap each day to assign a meal. This should be fast — the hard decisions are already made.</div>
+      <div class="section-title">Fill In Your Meal Plan <span id="infoTip-mealplan"></span></div>
+      <div class="section-subtitle">Assign a meal to each day. The hard decisions are already made — this should be fast.</div>
     </div>
     <div class="meal-plan-wrap">
       <table class="meal-plan-table" id="mealPlanTable"></table>
@@ -222,14 +188,14 @@
       Tap a recipe name to see ingredients and cooking steps.
     </div>
   </div>
-  <!-- STEP 5 — GROCERY LIST -->
+  <!-- TAB 3 — GROCERIES -->
   <div id="grocerylist" class="section">
     <div id="onboardingBanner-5"></div>
     <div id="groceryCTA"></div>
     <div id="softGate-grocerylist"></div>
     <div class="section-header">
-      <div class="section-title">Your List, Built Automatically</div>
-      <div class="section-subtitle">Everything you need based on your meal plan. Grab it and go.</div>
+      <div class="section-title">Your Grocery List, Built Automatically <span id="infoTip-grocerylist"></span></div>
+      <div class="section-subtitle">Everything you need based on your meal plan, calculated and sorted.</div>
     </div>
     <div class="grocery-toolbar">
       <div style="font-size:13px;color:var(--text-2)" id="groceryMeta"></div>
@@ -240,11 +206,42 @@
     </div>
     <div class="grocery-main" id="groceryMain"></div>
   </div>
+  <!-- MENU -->
+  <div id="menu" class="section">
+    <div id="onboardingBanner-2"></div>
+    <div id="menuCTA"></div>
+    <div id="softGate-menu"></div>
+    <div class="section-header">
+      <div class="section-title">Your No-Decision Menu <span id="infoTip-menu"></span></div>
+      <div class="section-subtitle">The meals you're willing to cook this week. Fewer choices, less thinking.</div>
+    </div>
+    <div id="menuSavedRecipes"></div>
+    <div class="meal-sections" id="mealSections"></div>
+    <div class="starter-note">
+      <span>💾</span>
+      <span>Everything automatically saves. This is what your weekly plan will be built from.</span>
+    </div>
+  </div>
+  <!-- RECIPES -->
+  <div id="recipes" class="section">
+    <div id="onboardingBanner-1"></div>
+    <div id="recipesCTA"></div>
+    <div id="softGate-recipes"></div>
+    <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div>
+        <div class="section-title">Recipe Library <span id="infoTip-recipes"></span></div>
+        <div class="section-subtitle">Browse tested recipes or add your own. Save what fits your life.</div>
+      </div>
+      <button class="btn-footer-action" onclick="openRecipeModal(null,null,'recipes')" style="white-space:nowrap;margin-top:2px">+ Custom Recipe</button>
+    </div>
+    <div class="lib-filters" id="libFilters"></div>
+    <div class="lib-grid" id="libGrid"></div>
+  </div>
   <!-- FREEZER -->
   <div id="freezer" class="section">
     <div class="section-header">
-      <div class="section-title">❄️ Freezer Inventory</div>
-      <div class="section-subtitle">Your freezer is your secret weapon. Log extra portions when you batch cook, pull them out on your worst nights. We surface the oldest stuff first so nothing gets buried and forgotten.</div>
+      <div class="section-title">Freezer Inventory <span id="infoTip-freezer"></span></div>
+      <div class="section-subtitle">Log extra portions when you batch cook. Oldest items surface first so nothing gets buried.</div>
     </div>
     <div class="freezer-layout">
       <div>
@@ -281,13 +278,12 @@
     </div>
     <div class="modal-body">
       <div class="form-group" id="r_url_group">
-        <label>Import from URL <span style="font-weight:400;color:var(--text-3);font-size:11px">— optional</span></label>
+        <label>Import from URL <span class="info-tip-wrap" style="position:relative;display:inline"><button class="info-tip-btn" onclick="toggleInfoTip(event,'urlimport')" aria-label="More info">ⓘ</button><div class="info-tip-bubble" id="tip-urlimport">Works with most recipe sites. Results vary — edit after importing.</div></span></label>
         <div class="url-input-row">
           <input type="url" id="r_url" placeholder="Paste a recipe URL…">
           <button class="btn btn-secondary btn-sm" id="r_url_btn" onclick="fetchRecipeFromUrl()">Import</button>
         </div>
         <div id="r_url_status" class="url-status"></div>
-        <div class="url-disclaimer">Works with most recipe sites. Results vary — edit after importing.</div>
       </div>
       <div class="form-group">
         <label>Recipe Name</label>
@@ -308,19 +304,19 @@
         </div>
       </div>
       <div class="form-group" id="r_tags_group" style="display:none">
-        <label>Tags <span style="font-weight:400;color:var(--text-3);font-size:11px">— optional</span></label>
+        <label>Tags</label>
         <div id="r_tags_picker" class="tag-picker"></div>
       </div>
       <div class="form-group">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <label style="margin:0">Instructions <span style="font-weight:400;color:var(--text-3);font-size:11px">— optional, step by step</span></label>
+          <label style="margin:0">Instructions</label>
           <button class="btn btn-secondary btn-sm" onclick="addStepRow('')">+ Add Step</button>
         </div>
         <div id="stepsRows"></div>
       </div>
       <div class="divider"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <label style="margin:0">Ingredients <span style="font-weight:400;color:var(--text-3);font-size:11px">— total amounts for the full batch</span></label>
+        <label style="margin:0">Ingredients <span class="info-tip-wrap" style="position:relative;display:inline"><button class="info-tip-btn" onclick="toggleInfoTip(event,'ingredients')" aria-label="More info">ⓘ</button><div class="info-tip-bubble" id="tip-ingredients">Enter total amounts for the full batch. These quantities are used to calculate your grocery list — we'll scale them based on how many servings you need.</div></span></label>
         <button class="btn btn-secondary btn-sm" onclick="addIngRow()">+ Add</button>
       </div>
       <!-- ingredient cards rendered by addIngRow() -->
@@ -435,15 +431,30 @@
       <button class="modal-close" onclick="dismissWhatsNew()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="whats-new-date">April 4, 2026</div>
+      <div class="whats-new-date">April 6, 2026</div>
       <ul class="whats-new-list">
-        <li><strong>⚠️ Data loss fix</strong> — we discovered a bug that could wipe your meal plan on refresh. If you lost recipes or assignments, we're truly sorry. This is now fixed, and we've added an automatic backup system so it can't happen again.</li>
-        <li><strong>Breakfast / Lunch / Dinner tags</strong> — tag your recipes by meal time for easier filtering.</li>
-        <li><strong>Edit any library recipe</strong> — customize ingredients and notes on built-in recipes without adding them to your menu first.</li>
-        <li><strong>Custom grocery items per category</strong> — add your own staples (olive oil, spices, etc.) to any grocery category.</li>
-        <li><strong>Settings moved to footer</strong> — account settings now live below the setup guide for a cleaner header.</li>
-        <li><strong>Home screen shortcut fix</strong> — the "Add to Home Screen" shortcut now stays in sync with the browser version.</li>
+        <li><strong>Redesigned startup guide</strong> — the onboarding flow is now split into two phases: a one-time <em>Setup</em> (build your recipe library, fill your menu) and a repeating <em>Weekly Workflow</em> (map your week, assign meals, review groceries). First-time users should find it much clearer what to do and when.</li>
+        <li><strong>Better step descriptions</strong> — every step now has 2–3 sentences explaining what to do, why it matters, and how long it takes.</li>
+        <li><strong>Navigation fix</strong> — the "Next" button after assigning meals now always appears so you can move straight to your grocery list.</li>
+        <li><strong>Smarter grocery hints</strong> — package size estimates are now more accurate: parmesan and feta show "container" instead of "bag," berries show container sizes, and small milk amounts no longer show unnecessary conversions.</li>
       </ul>
+      <!-- Previous Updates (collapsible) -->
+      <div id="prevUpdatesSection" style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+        <a onclick="togglePrevUpdates()" style="font-size:12px;color:var(--text-3);cursor:pointer;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:4px">
+          <span id="prevUpdatesArrow" style="transition:transform 0.2s;display:inline-block">▸</span> Previous updates
+        </a>
+        <div id="prevUpdatesBody" style="display:none;margin-top:10px">
+          <div class="whats-new-date">April 4, 2026</div>
+          <ul class="whats-new-list">
+            <li><strong>⚠️ Data loss fix</strong> — we discovered a bug that could wipe your meal plan on refresh. This is now fixed with an automatic backup system.</li>
+            <li><strong>Breakfast / Lunch / Dinner tags</strong> — tag your recipes by meal time for easier filtering.</li>
+            <li><strong>Edit any library recipe</strong> — customize ingredients and notes on built-in recipes without adding them to your menu first.</li>
+            <li><strong>Custom grocery items per category</strong> — add your own staples to any grocery category.</li>
+            <li><strong>Settings moved to footer</strong> — account settings now live below the setup guide for a cleaner header.</li>
+            <li><strong>Home screen shortcut fix</strong> — the "Add to Home Screen" shortcut now stays in sync with the browser version.</li>
+          </ul>
+        </div>
+      </div>
     </div>
     <div class="modal-footer" style="justify-content:center">
       <button class="btn btn-primary" onclick="dismissWhatsNew()">Got it</button>
