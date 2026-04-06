@@ -815,9 +815,8 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   .nav-inner { padding: 0 10px; }
   /* Sticky top adjusts for shorter header */
   .nav { top: 48px; }
-  /* Footer actions stack vertically */
-  .footer-actions { flex-direction: column; gap: 8px; align-items: center; }
-  .footer-action { flex: none; max-width: 260px; width: 100%; }
+  /* Footer: hide descriptions on mobile */
+  .footer-action-desc { display: none; }
 }
 @media (max-width: 480px) {
   .week-grid { grid-template-columns: 1fr; }
@@ -1224,13 +1223,13 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   border-top: 1px solid var(--border); text-align: center;
 }
 .footer-actions {
-  display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
-  margin-bottom: 28px;
+  display: flex; flex-direction: column; gap: 6px; align-items: center;
+  margin-bottom: 20px;
 }
 .footer-action {
   text-align: center;
-  flex: 0 0 190px;
-  max-width: 190px;
+  width: 220px;
+  max-width: 100%;
 }
 .btn-footer-action {
   font-size: 11px; font-weight: 600; font-family: inherit;
