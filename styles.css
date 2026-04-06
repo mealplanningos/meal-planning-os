@@ -816,8 +816,8 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   /* Sticky top adjusts for shorter header */
   .nav { top: 48px; }
   /* Footer actions stack vertically */
-  .footer-actions { flex-direction: column; gap: 10px; align-items: stretch; }
-  .footer-action { flex: 1; max-width: 100%; }
+  .footer-actions { flex-direction: column; gap: 8px; align-items: center; }
+  .footer-action { flex: none; max-width: 260px; width: 100%; }
 }
 @media (max-width: 480px) {
   .week-grid { grid-template-columns: 1fr; }
