@@ -140,7 +140,9 @@
     .charts { grid-template-columns: 1fr 1fr; margin-top: 4px; }
     @media (max-width: 860px) { .charts { grid-template-columns: 1fr; } }
     .chart-card { padding: 20px; }
-    .chart-card canvas { max-width: 100%; }
+    .chart-wrap { position: relative; width: 100%; height: 180px; }
+    .chart-wrap.tall { height: 260px; }
+    .chart-wrap canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; }
 
     .two-col { grid-template-columns: 1fr 1fr; }
     @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
@@ -163,6 +165,32 @@
     .ret-row .label { font-weight: 600; color: var(--text); font-size: 13px; }
     .ret-row .pct { font-size: 20px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
     .ret-row .denom { color: var(--text-3); font-size: 12px; margin-left: 6px; }
+
+    /* ── Roster status pills ── */
+    .pill {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 20px;
+    }
+    .pill.active   { background: var(--green-light);  color: var(--green); }
+    .pill.slipping { background: var(--yellow-light); color: var(--yellow); }
+    .pill.drifted  { background: var(--red-light);    color: var(--red); }
+    .pill.never    { background: var(--surface-2);    color: var(--text-3); }
+
+    .roster-table td { padding: 12px 10px; font-size: 13px; }
+    .roster-table tr.status-active   { background: rgba(15,159,110,0.03); }
+    .roster-table tr.status-slipping { background: rgba(217,119,6,0.04); }
+    .roster-table tr.status-drifted  { background: rgba(220,38,38,0.04); }
+    .roster-table tr.status-never    { background: transparent; opacity: 0.82; }
+    .roster-table td.center, .roster-table th.center { text-align: center; }
+    .roster-table .tick { color: var(--green); font-weight: 700; }
+    .roster-table .dash { color: var(--text-3); }
+
+    .roster-legend {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      font-size: 11px; color: var(--text-3); margin-top: 10px;
+    }
+    .roster-legend .pill { font-size: 9px; padding: 2px 7px; }
 
     /* ── CHANGELOG ── */
     .changelog { display: flex; flex-direction: column; gap: 14px; }
@@ -385,6 +413,12 @@
           <div class="sub">${sub}</div>
         </div>`;
 
+      const roster = d.userRoster || [];
+      const counts = roster.reduce((acc, u) => {
+        acc[u.status] = (acc[u.status] || 0) + 1;
+        return acc;
+      }, {});
+
       root.innerHTML = `
         <div class="header">
           <div class="header-inner">
@@ -399,54 +433,71 @@
         </div>
 
         <main>
-          <div class="generated">Generated ${new Date(d.generatedAt).toLocaleString()}</div>
-          ${d.note ? `<div class="note">${escapeHtml(d.note)}</div>` : ''}
+          <div class="generated">Updated ${new Date(d.generatedAt).toLocaleString()}</div>
 
-          <div class="section-title">Users</div>
           <div class="grid kpis">
             ${kpi('Total users',    fmt(s.totalUsers),     `${fmt(s.betaUsers)} beta · ${fmt(s.paidUsers)} paid`, 'accent')}
-            ${kpi('New (7d)',       fmt(s.newUsers7),      `${fmt(s.newUsers30)} in last 30 days`, 'green')}
-            ${kpi('Logged in today',fmt(s.loggedInToday),  'unique users signed in in last 24h')}
-            ${kpi('Logged in (7d)', fmt(s.loggedIn7),      `${fmt(s.loggedIn30)} in last 30 days`)}
+            ${kpi('New this week',  fmt(s.newUsers7),      `${fmt(s.newUsers30)} in last 30 days`, 'green')}
+            ${kpi('Active today',   fmt(s.loggedInToday),  'logged in in last 24h')}
+            ${kpi('Active (7d)',    fmt(s.loggedIn7),      `${fmt(s.loggedIn30)} in last 30 days`)}
           </div>
 
           <div class="grid charts">
             <div class="card chart-card">
               <div class="card-title">Signups per day · 30d</div>
-              <canvas id="signupsChart" height="130"></canvas>
+              <div class="chart-wrap"><canvas id="signupsChart"></canvas></div>
             </div>
             <div class="card chart-card">
               <div class="card-title">Logins per day · 30d</div>
-              <canvas id="loginsChart" height="130"></canvas>
+              <div class="chart-wrap"><canvas id="loginsChart"></canvas></div>
             </div>
           </div>
 
           <div class="section-title">Activation funnel</div>
           <div class="card">
-            <div class="card-title">From signup to built groceries</div>
-            <canvas id="funnelChart" height="${Math.max(140, (d.funnel || []).length * 34)}"></canvas>
-            <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.5">
-              Count of users that reached each step. Login counts are from the last 30 days of <code>auth.sessions</code>.
+            <div class="card-title">Signup → built groceries</div>
+            <div class="chart-wrap tall"><canvas id="funnelChart"></canvas></div>
+          </div>
+
+          <div class="section-title">User roster</div>
+          <div class="card" style="padding:0">
+            <table class="roster-table">
+              <thead>
+                <tr>
+                  <th style="padding-left:18px">Email</th>
+                  <th>Status</th>
+                  <th class="num">Last seen</th>
+                  <th class="num">Signed up</th>
+                  <th class="num">Login days</th>
+                  <th class="num">Recipes</th>
+                  <th class="num">Meals planned</th>
+                  <th class="center">Onboarded</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${roster.length ? roster.map(u => `
+                  <tr class="status-${u.status}">
+                    <td class="email" style="padding-left:18px">${escapeHtml(u.email || '(no email)')}</td>
+                    <td><span class="pill ${u.status}">${u.status}</span></td>
+                    <td class="num" style="color:var(--text-2)">${u.lastLogin ? relativeTime(u.lastLogin) : '<span class="dash">never</span>'}</td>
+                    <td class="num" style="color:var(--text-3)">${relativeTime(u.signedUpAt)}</td>
+                    <td class="num">${u.loginDays}</td>
+                    <td class="num">${u.recipes}</td>
+                    <td class="num">${u.assignments}</td>
+                    <td class="center">${u.onboarded ? '<span class="tick">✓</span>' : '<span class="dash">—</span>'}</td>
+                  </tr>
+                `).join('') : '<tr><td colspan="8" style="color:var(--text-3);text-align:center;padding:24px">No users yet.</td></tr>'}
+              </tbody>
+            </table>
+            <div class="roster-legend" style="padding:10px 18px 14px">
+              <span><span class="pill active">active</span> logged in in last 7 days (${counts.active || 0})</span>
+              <span><span class="pill slipping">slipping</span> 8–14 days (${counts.slipping || 0})</span>
+              <span><span class="pill drifted">drifted</span> 15+ days (${counts.drifted || 0})</span>
+              <span><span class="pill never">never</span> no login in 30d (${counts.never || 0})</span>
             </div>
           </div>
 
-          <div class="section-title">Engagement</div>
-          <div class="grid kpis">
-            ${kpi('Total logins (30d)', fmt(s.totalLogins30), 'sessions opened across all users', 'purple')}
-            ${kpi('Onboarded',          fmt(f.usersOnboarded), 'completed the startup guide', 'purple')}
-            ${kpi('Auto-backups',       fmt(s.totalBackups),  'data-loss safety snapshots saved', 'purple')}
-            ${kpi('Assignments',        fmt(f.totalAssignments), 'meal plan slots filled', 'purple')}
-          </div>
-
-          <div class="section-title">Feature usage</div>
-          <div class="grid kpis">
-            ${kpi('Recipes',       fmt(f.totalRecipes),      `${f.avgRecipesPerUser} avg · ${f.usersWithRecipes} users`, 'accent')}
-            ${kpi('Freezer items', fmt(f.totalFreezerItems), `${f.avgFreezerPerUser} avg · ${f.usersWithFreezer} users`, 'accent')}
-            ${kpi('Grocery items', fmt(f.totalGroceryItems), `${f.avgGroceryPerUser} avg · ${f.usersWithGroceries} users`, 'accent')}
-            ${kpi('With assignments', fmt(f.usersWithAssignments), 'users who planned at least one meal', 'accent')}
-          </div>
-
-          <div class="section-title">Retention & loyal users</div>
+          <div class="section-title">Retention & totals</div>
           <div class="grid two-col">
             <div class="card">
               <div class="card-title">Login retention</div>
@@ -467,94 +518,23 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-title">Most loyal users</div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Email</th>
-                    <th class="num">Login days</th>
-                    <th class="num">Logins</th>
-                    <th class="num">Recipes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${(d.loyalUsers || []).length ? d.loyalUsers.map(u => `
-                    <tr>
-                      <td class="email">${escapeHtml(u.email)}</td>
-                      <td class="num">${u.loginDays}</td>
-                      <td class="num">${u.logins}</td>
-                      <td class="num">${u.recipes}</td>
-                    </tr>
-                  `).join('') : '<tr><td colspan="4" style="color:var(--text-3);text-align:center;padding:20px">No login data yet.</td></tr>'}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="section-title">Drifting users</div>
-          <div class="card" style="padding:8px 18px">
-            <table>
-              <thead>
-                <tr>
-                  <th>Email</th>
-                  <th class="num">Signed up</th>
-                  <th class="num">Last login</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${(d.driftingUsers || []).length
-                  ? d.driftingUsers.map(u => `
-                    <tr>
-                      <td class="email">${escapeHtml(u.email || '(no email)')}</td>
-                      <td class="num" style="color:var(--text-3)">${relativeTime(u.signedUpAt)}</td>
-                      <td class="num" style="color:var(--text-3)">${u.lastLogin ? `${u.daysSinceLogin}d ago` : 'never'}</td>
-                    </tr>
-                  `).join('')
-                  : '<tr><td colspan="3" style="color:var(--text-3);text-align:center;padding:20px">No drifting users — everyone is engaged!</td></tr>'}
-              </tbody>
-            </table>
-            <div style="font-size:11px;color:var(--text-3);padding:6px 0 10px;line-height:1.5">
-              Users who signed up more than 7 days ago and haven't logged in in the last 7 days.
-            </div>
-          </div>
-
-          <div class="section-title">Recent activity</div>
-          <div class="grid two-col">
-            <div class="card">
-              <div class="card-title">Recent signups</div>
-              <table>
-                <thead>
-                  <tr><th>Email</th><th class="num">Joined</th></tr>
-                </thead>
-                <tbody>
-                  ${(d.recentSignups || []).length
-                    ? d.recentSignups.map(u => `
-                      <tr>
-                        <td class="email">${escapeHtml(u.email || '(no email)')}</td>
-                        <td class="num" style="color:var(--text-3)">${relativeTime(u.created_at)}</td>
-                      </tr>
-                    `).join('')
-                    : '<tr><td colspan="2" style="color:var(--text-3);text-align:center;padding:20px">No signups yet.</td></tr>'}
-                </tbody>
-              </table>
-            </div>
-            <div class="card">
-              <div class="card-title">Recent logins</div>
-              <table>
-                <thead>
-                  <tr><th>Email</th><th class="num">When</th></tr>
-                </thead>
-                <tbody>
-                  ${(d.recentLogins || []).length
-                    ? d.recentLogins.map(u => `
-                      <tr>
-                        <td class="email">${escapeHtml(u.email || '(no email)')}</td>
-                        <td class="num" style="color:var(--text-3)">${relativeTime(u.at)}</td>
-                      </tr>
-                    `).join('')
-                    : '<tr><td colspan="2" style="color:var(--text-3);text-align:center;padding:20px">No logins in last 30 days.</td></tr>'}
-                </tbody>
-              </table>
+              <div class="card-title">What users built</div>
+              <div class="ret-row">
+                <span class="label">Recipes saved</span>
+                <span><span class="pct">${fmt(f.totalRecipes)}</span><span class="denom">${f.avgRecipesPerUser} avg</span></span>
+              </div>
+              <div class="ret-row">
+                <span class="label">Meals planned</span>
+                <span><span class="pct">${fmt(f.totalAssignments)}</span><span class="denom">${f.usersWithAssignments} users</span></span>
+              </div>
+              <div class="ret-row">
+                <span class="label">Grocery items</span>
+                <span><span class="pct">${fmt(f.totalGroceryItems)}</span><span class="denom">${f.usersWithGroceries} users</span></span>
+              </div>
+              <div class="ret-row">
+                <span class="label">Freezer items</span>
+                <span><span class="pct">${fmt(f.totalFreezerItems)}</span><span class="denom">${f.usersWithFreezer} users</span></span>
+              </div>
             </div>
           </div>
 
@@ -563,6 +543,10 @@
             ${changelog && changelog.length
               ? changelog.map(renderChangelogEntry).join('')
               : '<div class="card" style="color:var(--text-3)">No changelog entries yet. Edit <code>changelog.json</code> in the repo to add them.</div>'}
+          </div>
+
+          <div style="font-size:11px;color:var(--text-3);margin-top:30px;text-align:center;line-height:1.6">
+            ${fmt(s.totalBackups)} auto-backups saved across all users (safety net, not an engagement signal)
           </div>
         </main>
       `;
@@ -582,7 +566,10 @@
     }
 
     function drawFunnelChart(canvasId, funnel) {
-      const ctx = document.getElementById(canvasId).getContext('2d');
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      Chart.getChart(canvas)?.destroy();
+      const ctx = canvas.getContext('2d');
       const labels = funnel.map(f => f.step);
       const values = funnel.map(f => f.count);
       const top = values[0] || 1;
@@ -653,12 +640,21 @@
     }
 
     function drawLineChart(canvasId, byDay) {
-      const ctx = document.getElementById(canvasId).getContext('2d');
-      const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      Chart.getChart(canvas)?.destroy();
+      const ctx = canvas.getContext('2d');
+      const h = canvas.clientHeight || 180;
+      const gradient = ctx.createLinearGradient(0, 0, 0, h);
       gradient.addColorStop(0, 'rgba(30, 94, 255, 0.25)');
       gradient.addColorStop(1, 'rgba(30, 94, 255, 0.00)');
-      const labels = Object.keys(byDay);
-      const values = Object.values(byDay);
+      const isoLabels = Object.keys(byDay);
+      const values    = Object.values(byDay);
+      const shortDate = (iso) => {
+        const d = new Date(iso + 'T12:00:00Z');
+        return (d.getMonth() + 1) + '/' + d.getDate();
+      };
+      const labels = isoLabels.map(shortDate);
       new Chart(ctx, {
         type: 'line',
         data: {
@@ -685,6 +681,15 @@
               titleFont: { family: 'Inter', weight: '600', size: 12 },
               bodyFont:  { family: 'Inter', weight: '500', size: 12 },
               padding: 10, displayColors: false,
+              callbacks: {
+                title: (items) => {
+                  const iso = isoLabels[items[0].dataIndex];
+                  return new Date(iso + 'T12:00:00Z').toLocaleDateString(undefined, {
+                    weekday: 'short', month: 'short', day: 'numeric',
+                  });
+                },
+                label: (c) => `${c.raw}`,
+              },
             },
           },
           scales: {

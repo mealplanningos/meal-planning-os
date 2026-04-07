@@ -306,18 +306,58 @@ exports.handler = async (event) => {
       )
       .slice(0, 10);
 
-    // ── Recent logins (last 10 login rows) ──────────────────────────────
-    const recentLogins = [...loginLog]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    // ── Recent logins (distinct users, most recent first) ───────────────
+    const recentLogins = Object.entries(lastLoginByUser)
+      .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
-      .map(row => ({
-        email: emailById[row.user_id] || '(unknown)',
-        at:    row.created_at,
+      .map(([uid, when]) => ({
+        email: emailById[uid] || '(unknown)',
+        at:    when.toISOString(),
       }));
+
+    // ── User roster (one row per user, sorted by last activity) ─────────
+    // This is the founder-CRM view: every user, what they've built,
+    // when they last logged in, and a simple health status.
+    const statusFor = (ageDays, daysSinceLogin, hasLogin) => {
+      if (!hasLogin) return 'never';
+      if (daysSinceLogin == null) return 'never';
+      if (daysSinceLogin <= 7)  return 'active';
+      if (daysSinceLogin <= 14) return 'slipping';
+      return 'drifted';
+    };
+    const userRoster = authUsers
+      .map(u => {
+        const ud        = userDataMap[u.id];
+        const lastLogin = lastLoginByUser[u.id] || null;
+        const hasLogin  = !!lastLogin;
+        const daysSince = lastLogin ? Math.round((now - lastLogin) / dayMs) : null;
+        const ageDays   = Math.round((now - new Date(u.created_at)) / dayMs);
+        const recipes   = countArrayLike(ud?.recipes);
+        const assigns   = countArrayLike(ud?.assignments);
+        return {
+          email:       u.email,
+          signedUpAt:  u.created_at,
+          ageDays,
+          lastLogin:   lastLogin ? lastLogin.toISOString() : null,
+          daysSinceLogin: daysSince,
+          loginDays:   (loginDaysByUser[u.id]?.size) || 0,
+          totalLogins: loginsByUser[u.id] || 0,
+          recipes,
+          assignments: assigns,
+          onboarded:   ud?.onboarding?.firstRunComplete === true,
+          status:      statusFor(ageDays, daysSince, hasLogin),
+        };
+      })
+      .sort((a, b) => {
+        // Active users first, sorted by most recent login.
+        const aTs = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
+        const bTs = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
+        if (aTs !== bTs) return bTs - aTs;
+        return new Date(b.signedUpAt) - new Date(a.signedUpAt);
+      });
 
     return json(200, {
       generatedAt: now.toISOString(),
-      note: `Beta users = signed up on or before ${BETA_CUTOFF.toISOString().slice(0,10)} (treated as free regardless of 100%-off Stripe entitlements). Login data comes from auth.sessions via the get_admin_login_log RPC.`,
       summary: {
         totalUsers,
         betaUsers,
@@ -359,6 +399,8 @@ exports.handler = async (event) => {
         },
       },
       funnel,
+      userRoster,
+      // Kept for anyone with old clients cached; primary UI uses userRoster.
       loyalUsers,
       driftingUsers,
       recentLogins,
