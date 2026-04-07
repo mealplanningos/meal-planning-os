@@ -191,18 +191,66 @@ exports.handler = async (event) => {
       return 0;
     };
 
+    // New users are auto-seeded with 3 starter recipes (ids sr1/sr2/sr3),
+    // 3 default staples (st1/st2/st3), and 3 default flex items (fl1/fl2/fl3).
+    // None of these represent real user activity, so we exclude them from
+    // every "did this user actually do something" metric.
+    const SEED_RECIPE_ID = /^sr\d+$/;
+    const SEED_STAPLE_ID = /^st\d+$/;
+    const SEED_FLEX_ID   = /^fl\d+$/;
+
+    const realRecipes = (recipesArr) => {
+      if (!Array.isArray(recipesArr)) return 0;
+      return recipesArr.filter(r => !SEED_RECIPE_ID.test(String(r?.id || ''))).length;
+    };
+
+    // groceries is an object, not an array:
+    //   { staples, flexItems, checks, adhocItems, categoryItems }
+    // Real user-added count = non-seed staples + non-seed flex + all ad-hoc
+    // + all category items. `checks` is a map of checkbox state, not items.
+    // Auto-generated items from assigned meals are NOT stored here — they're
+    // computed on the fly — so this is the right signal for "intentional"
+    // grocery list building.
+    const realGroceryItems = (g) => {
+      if (!g || typeof g !== 'object') return 0;
+      const stp = Array.isArray(g.staples)       ? g.staples.filter(x => !SEED_STAPLE_ID.test(String(x?.id || ''))).length : 0;
+      const flx = Array.isArray(g.flexItems)     ? g.flexItems.filter(x => !SEED_FLEX_ID.test(String(x?.id || ''))).length : 0;
+      const ad  = Array.isArray(g.adhocItems)    ? g.adhocItems.length    : 0;
+      const cat = Array.isArray(g.categoryItems) ? g.categoryItems.length : 0;
+      return stp + flx + ad + cat;
+    };
+
+    // Meal plan is an object keyed by slot id. We only count slots that are
+    // actually populated (truthy value), not keys left over from clears.
+    const realAssignments = (a) => {
+      if (!a || typeof a !== 'object') return 0;
+      return Object.values(a).filter(v => {
+        if (v == null || v === '') return false;
+        if (Array.isArray(v)) return v.length > 0;
+        if (typeof v === 'object') return Object.keys(v).length > 0;
+        return true;
+      }).length;
+    };
+
     let totalRecipes = 0, totalFreezerItems = 0, totalGroceryItems = 0, totalAssignments = 0;
     let usersWithRecipes = 0, usersWithFreezer = 0, usersWithGroceries = 0, usersWithAssignments = 0;
     let usersOnboarded = 0;
 
     // Keep a lookup so we can build the activation funnel below.
-    const userDataMap = {};
+    // Also precompute per-user "real" counts (seed data excluded).
+    const userDataMap   = {};
+    const realRecipesByUser    = {};
+    const realGroceriesByUser  = {};
+    const realAssignmentsByUser = {};
     for (const u of userData) {
       userDataMap[u.user_id] = u;
-      const r = countArrayLike(u.recipes);
-      const f = countArrayLike(u.freezer);
-      const g = countArrayLike(u.groceries);
-      const a = countArrayLike(u.assignments);
+      const r = realRecipes(u.recipes);
+      const f = countArrayLike(u.freezer);         // no seed data here
+      const g = realGroceryItems(u.groceries);
+      const a = realAssignments(u.assignments);
+      realRecipesByUser[u.user_id]    = r;
+      realGroceriesByUser[u.user_id]  = g;
+      realAssignmentsByUser[u.user_id] = a;
       totalRecipes      += r;
       totalFreezerItems += f;
       totalGroceryItems += g;
@@ -255,18 +303,21 @@ exports.handler = async (event) => {
       const loggedIn = !!loginsByUser[u.id];
       if (loggedIn) funnelLoggedIn++;
       if (ud?.onboarding?.firstRunComplete === true) funnelOnboarded++;
-      if (ud && countArrayLike(ud.recipes)     > 0) funnelHasRecipe++;
-      if (ud && countArrayLike(ud.assignments) > 0) funnelHasAssignment++;
-      if (ud && countArrayLike(ud.groceries)   > 0) funnelHasGrocery++;
+      if ((realRecipesByUser[u.id]    || 0) > 0) funnelHasRecipe++;
+      if ((realAssignmentsByUser[u.id] || 0) > 0) funnelHasAssignment++;
+      if ((realGroceriesByUser[u.id]  || 0) > 0) funnelHasGrocery++;
     }
+    // "Signed up" is implicit — every user on this dashboard has signed up,
+    // so showing it as the top of the funnel just wastes a bar. We still
+    // pass the total separately so % calculations use it as the denominator.
     const funnel = [
-      { step: 'Signed up',        count: funnelSignedUp },
-      { step: 'Logged in',        count: funnelLoggedIn },
-      { step: 'Onboarded',        count: funnelOnboarded },
-      { step: 'Created recipe',   count: funnelHasRecipe },
-      { step: 'Assigned meal',    count: funnelHasAssignment },
-      { step: 'Built groceries',  count: funnelHasGrocery },
+      { step: 'Logged in',            count: funnelLoggedIn },
+      { step: 'Onboarded',            count: funnelOnboarded },
+      { step: 'Added own recipe',     count: funnelHasRecipe },
+      { step: 'Planned a meal',       count: funnelHasAssignment },
+      { step: 'Added grocery items',  count: funnelHasGrocery },
     ];
+    const funnelTotal = funnelSignedUp;
 
     // ── Drifting users (signed up ≥7d ago, no login in last 7d) ─────────
     const driftingUsers = authUsers
@@ -295,8 +346,8 @@ exports.handler = async (event) => {
         email:      emailById[uid] || '(unknown)',
         logins:     loginsByUser[uid] || 0,
         loginDays:  (loginDaysByUser[uid]?.size) || 0,
-        recipes:    countArrayLike(userDataMap[uid]?.recipes),
-        assignments: countArrayLike(userDataMap[uid]?.assignments),
+        recipes:    realRecipesByUser[uid]    || 0,
+        assignments: realAssignmentsByUser[uid] || 0,
         lastLogin:  lastLoginByUser[uid] ? lastLoginByUser[uid].toISOString() : null,
       }))
       .sort((a, b) =>
@@ -332,8 +383,6 @@ exports.handler = async (event) => {
         const hasLogin  = !!lastLogin;
         const daysSince = lastLogin ? Math.round((now - lastLogin) / dayMs) : null;
         const ageDays   = Math.round((now - new Date(u.created_at)) / dayMs);
-        const recipes   = countArrayLike(ud?.recipes);
-        const assigns   = countArrayLike(ud?.assignments);
         return {
           email:       u.email,
           signedUpAt:  u.created_at,
@@ -342,8 +391,9 @@ exports.handler = async (event) => {
           daysSinceLogin: daysSince,
           loginDays:   (loginDaysByUser[u.id]?.size) || 0,
           totalLogins: loginsByUser[u.id] || 0,
-          recipes,
-          assignments: assigns,
+          recipes:     realRecipesByUser[u.id]    || 0,
+          assignments: realAssignmentsByUser[u.id] || 0,
+          groceries:   realGroceriesByUser[u.id]  || 0,
           onboarded:   ud?.onboarding?.firstRunComplete === true,
           status:      statusFor(ageDays, daysSince, hasLogin),
         };
@@ -399,6 +449,7 @@ exports.handler = async (event) => {
         },
       },
       funnel,
+      funnelTotal,
       userRoster,
       // Kept for anyone with old clients cached; primary UI uses userRoster.
       loyalUsers,

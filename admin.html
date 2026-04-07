@@ -192,26 +192,39 @@
     }
     .roster-legend .pill { font-size: 9px; padding: 2px 7px; }
 
-    /* ── CHANGELOG ── */
-    .changelog { display: flex; flex-direction: column; gap: 14px; }
+    /* ── CHANGELOG (accordion) ── */
+    .changelog { display: flex; flex-direction: column; gap: 8px; }
     .changelog-entry {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px 18px;
       box-shadow: var(--shadow);
+      overflow: hidden;
     }
-    .changelog-head {
+    .changelog-entry > summary {
+      list-style: none; cursor: pointer; user-select: none;
+      padding: 12px 18px;
       display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-      margin-bottom: 10px;
+      transition: background .15s ease;
     }
+    .changelog-entry > summary::-webkit-details-marker { display: none; }
+    .changelog-entry > summary:hover { background: var(--surface-2); }
+    .changelog-entry > summary::after {
+      content: '▸';
+      color: var(--text-3); font-size: 14px;
+      margin-left: auto;
+      transition: transform .2s ease;
+    }
+    .changelog-entry[open] > summary::after { transform: rotate(90deg); }
+    .changelog-entry[open] > summary { border-bottom: 1px solid var(--border); }
+    .changelog-body { padding: 12px 18px 16px; }
     .changelog-date {
       font-size: 12px; font-weight: 700;
       color: var(--text-3); font-variant-numeric: tabular-nums;
       letter-spacing: 0.3px;
     }
     .changelog-title {
-      font-size: 15px; font-weight: 700; color: var(--text); flex: 1;
+      font-size: 14px; font-weight: 700; color: var(--text); flex: 1;
     }
     .tag {
       font-size: 10px; font-weight: 700; letter-spacing: 0.6px;
@@ -418,6 +431,9 @@
         acc[u.status] = (acc[u.status] || 0) + 1;
         return acc;
       }, {});
+      const retLine = (pct, denom) => denom > 0
+        ? `<span class="pct">${pct}%</span><span class="denom">of ${denom}</span>`
+        : `<span class="pct" style="color:var(--text-3)">—</span><span class="denom">nobody eligible yet</span>`;
 
       root.innerHTML = `
         <div class="header">
@@ -469,8 +485,9 @@
                   <th class="num">Last seen</th>
                   <th class="num">Signed up</th>
                   <th class="num">Login days</th>
-                  <th class="num">Recipes</th>
-                  <th class="num">Meals planned</th>
+                  <th class="num" title="Recipes beyond the 3 auto-seeded starters">Own recipes</th>
+                  <th class="num" title="Meal plan slots filled">Meals planned</th>
+                  <th class="num" title="Groceries added beyond default staples/flex">Groceries</th>
                   <th class="center">Onboarded</th>
                 </tr>
               </thead>
@@ -484,9 +501,10 @@
                     <td class="num">${u.loginDays}</td>
                     <td class="num">${u.recipes}</td>
                     <td class="num">${u.assignments}</td>
+                    <td class="num">${u.groceries ?? 0}</td>
                     <td class="center">${u.onboarded ? '<span class="tick">✓</span>' : '<span class="dash">—</span>'}</td>
                   </tr>
-                `).join('') : '<tr><td colspan="8" style="color:var(--text-3);text-align:center;padding:24px">No users yet.</td></tr>'}
+                `).join('') : '<tr><td colspan="9" style="color:var(--text-3);text-align:center;padding:24px">No users yet.</td></tr>'}
               </tbody>
             </table>
             <div class="roster-legend" style="padding:10px 18px 14px">
@@ -503,25 +521,25 @@
               <div class="card-title">Login retention</div>
               <div class="ret-row">
                 <span class="label">Day 1</span>
-                <span><span class="pct">${r.day1}%</span><span class="denom">of ${r.eligible.d1}</span></span>
+                <span>${retLine(r.day1, r.eligible.d1)}</span>
               </div>
               <div class="ret-row">
                 <span class="label">Day 7</span>
-                <span><span class="pct">${r.day7}%</span><span class="denom">of ${r.eligible.d7}</span></span>
+                <span>${retLine(r.day7, r.eligible.d7)}</span>
               </div>
               <div class="ret-row">
                 <span class="label">Day 30</span>
-                <span><span class="pct">${r.day30}%</span><span class="denom">of ${r.eligible.d30}</span></span>
+                <span>${retLine(r.day30, r.eligible.d30)}</span>
               </div>
               <div style="font-size:11px;color:var(--text-3);margin-top:12px;line-height:1.5">
                 % of eligible users who logged in again at least N days after signup.
               </div>
             </div>
             <div class="card">
-              <div class="card-title">What users built</div>
+              <div class="card-title">What users actually built</div>
               <div class="ret-row">
-                <span class="label">Recipes saved</span>
-                <span><span class="pct">${fmt(f.totalRecipes)}</span><span class="denom">${f.avgRecipesPerUser} avg</span></span>
+                <span class="label">Own recipes added</span>
+                <span><span class="pct">${fmt(f.totalRecipes)}</span><span class="denom">${f.usersWithRecipes} users</span></span>
               </div>
               <div class="ret-row">
                 <span class="label">Meals planned</span>
@@ -534,6 +552,9 @@
               <div class="ret-row">
                 <span class="label">Freezer items</span>
                 <span><span class="pct">${fmt(f.totalFreezerItems)}</span><span class="denom">${f.usersWithFreezer} users</span></span>
+              </div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:12px;line-height:1.5">
+                Excludes the 3 seed recipes and default staples/flex items every new account gets automatically.
               </div>
             </div>
           </div>
@@ -562,18 +583,18 @@
 
       drawLineChart('signupsChart', d.series.signupsByDay);
       drawLineChart('loginsChart',  d.series.loginsByDay);
-      drawFunnelChart('funnelChart', d.funnel || []);
+      drawFunnelChart('funnelChart', d.funnel || [], d.funnelTotal || s.totalUsers || 0);
     }
 
-    function drawFunnelChart(canvasId, funnel) {
+    function drawFunnelChart(canvasId, funnel, total) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
       Chart.getChart(canvas)?.destroy();
       const ctx = canvas.getContext('2d');
       const labels = funnel.map(f => f.step);
       const values = funnel.map(f => f.count);
-      const top = values[0] || 1;
-      const pcts = values.map(v => Math.round((v / top) * 100));
+      const denom = total || 1;
+      const pcts  = values.map(v => Math.round((v / denom) * 100));
       new Chart(ctx, {
         type: 'bar',
         data: {
@@ -599,7 +620,7 @@
               bodyFont:  { family: 'Inter', weight: '500', size: 12 },
               padding: 10, displayColors: false,
               callbacks: {
-                label: (c) => `${c.raw} users (${pcts[c.dataIndex]}% of signups)`,
+                label: (c) => `${c.raw} of ${denom} users (${pcts[c.dataIndex]}%)`,
               },
             },
           },
@@ -620,23 +641,27 @@
       });
     }
 
-    function renderChangelogEntry(entry) {
+    function renderChangelogEntry(entry, idx) {
       const type = (entry.type || 'chore').toLowerCase();
       const date = entry.date
         ? new Date(entry.date + 'T12:00:00Z').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
         : '';
       const items = Array.isArray(entry.items) ? entry.items : [];
+      // First (most recent) entry is expanded by default, the rest collapsed.
+      const openAttr = idx === 0 ? ' open' : '';
       return `
-        <div class="changelog-entry">
-          <div class="changelog-head">
+        <details class="changelog-entry"${openAttr}>
+          <summary>
             <span class="changelog-date">${date}</span>
             <span class="tag tag-${type}">${type}</span>
             <span class="changelog-title">${escapeHtml(entry.title || '')}</span>
+          </summary>
+          <div class="changelog-body">
+            <ul class="changelog-items">
+              ${items.map(it => `<li>${sanitizeLight(it)}</li>`).join('')}
+            </ul>
           </div>
-          <ul class="changelog-items">
-            ${items.map(it => `<li>${sanitizeLight(it)}</li>`).join('')}
-          </ul>
-        </div>`;
+        </details>`;
     }
 
     function drawLineChart(canvasId, byDay) {
