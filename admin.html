@@ -4,71 +4,273 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#1E5EFF" />
   <title>Meal Planning OS — Admin</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0f1115;
-      --panel: #171a21;
-      --panel-2: #1f2430;
-      --border: #262c3a;
-      --text: #e7eaf0;
-      --muted: #9aa3b2;
-      --accent: #7ac59a;
-      --accent-2: #8ab4ff;
-      --danger: #ff6b6b;
-      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+      --accent:        #1E5EFF;
+      --accent-dark:   #1449D4;
+      --accent-light:  #EBF2FF;
+      --accent-mid:    #BFCFFF;
+      --bg:            #F4F7FF;
+      --surface:       #FFFFFF;
+      --surface-2:     #F0F4FF;
+      --border:        #DDE4F0;
+      --border-dark:   #C4CFEA;
+      --text:          #0D1829;
+      --text-2:        #4A5878;
+      --text-3:        #8A97B8;
+      --green:         #0F9F6E;
+      --green-light:   #E8F8F3;
+      --purple:        #6B4ECC;
+      --purple-light:  #F0ECFF;
+      --yellow:        #D97706;
+      --yellow-light:  #FFF8EB;
+      --red:           #DC2626;
+      --red-light:     #FEF2F2;
+      --radius:        10px;
+      --radius-sm:     7px;
+      --shadow:        0 1px 4px rgba(30,60,120,0.08);
+      --shadow-md:     0 4px 16px rgba(30,60,120,0.12);
     }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      font-size: 14px; line-height: 1.45; }
-    a { color: var(--accent-2); text-decoration: none; }
-    header { display: flex; align-items: center; justify-content: space-between;
-      padding: 18px 24px; border-bottom: 1px solid var(--border); background: var(--panel); }
-    header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: .2px; }
-    header .who { color: var(--muted); font-size: 12px; }
-    header button { background: transparent; color: var(--muted); border: 1px solid var(--border);
-      padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-    header button:hover { color: var(--text); border-color: #394357; }
-    main { max-width: 1200px; margin: 0 auto; padding: 24px; }
-    .note { color: var(--muted); font-size: 12px; margin: 0 0 16px; }
-    .grid { display: grid; gap: 16px; }
-    .kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-      padding: 16px; box-shadow: var(--shadow); }
-    .card h3 { margin: 0 0 4px; font-size: 12px; font-weight: 500; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .6px; }
-    .kpi .value { font-size: 28px; font-weight: 600; }
-    .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .charts { grid-template-columns: 1fr 1fr; margin-top: 16px; }
-    @media (max-width: 820px) { .charts { grid-template-columns: 1fr; } }
-    .section-title { font-size: 13px; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .6px; margin: 28px 0 10px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { overflow-x: hidden; max-width: 100vw; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    a { color: var(--accent); text-decoration: none; }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      gap: 12px;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-svg { width: 34px; height: 34px; flex-shrink: 0; }
+    .logo-text { font-size: 15px; font-weight: 800; letter-spacing: -0.4px; white-space: nowrap; }
+    .logo-text span { color: var(--accent); }
+    .admin-badge {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
+      text-transform: uppercase;
+      background: var(--accent-light); color: var(--accent);
+      padding: 4px 10px; border-radius: 20px; margin-left: 4px;
+    }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      border-radius: var(--radius-sm); cursor: pointer;
+      padding: 8px 14px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-2);
+      transition: all .15s ease;
+    }
+    .btn:hover { border-color: var(--border-dark); color: var(--text); }
+    .btn-primary {
+      background: var(--accent); color: #fff; border-color: var(--accent);
+    }
+    .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
+
+    /* ── MAIN ── */
+    main { max-width: 1200px; margin: 0 auto; padding: 28px 20px 60px; }
+    .generated {
+      font-size: 12px; color: var(--text-3);
+      margin-bottom: 22px;
+    }
+    .note {
+      background: var(--accent-light); color: var(--accent-dark);
+      border: 1px solid var(--accent-mid);
+      padding: 10px 14px; border-radius: var(--radius-sm);
+      font-size: 12px; margin-bottom: 22px;
+    }
+
+    .section-title {
+      font-size: 11px; font-weight: 700; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      margin: 32px 0 12px;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    .grid { display: grid; gap: 14px; }
+    .kpis { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 11px; font-weight: 700; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.6px;
+      margin-bottom: 8px;
+    }
+    .kpi .value {
+      font-size: 28px; font-weight: 800; color: var(--text);
+      letter-spacing: -0.5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi .sub {
+      font-size: 12px; color: var(--text-3); margin-top: 4px;
+    }
+    .kpi.accent .value { color: var(--accent); }
+    .kpi.green  .value { color: var(--green); }
+    .kpi.purple .value { color: var(--purple); }
+    .kpi.yellow .value { color: var(--yellow); }
+
+    .charts { grid-template-columns: 1fr 1fr; margin-top: 4px; }
+    @media (max-width: 860px) { .charts { grid-template-columns: 1fr; } }
+    .chart-card { padding: 20px; }
+    .chart-card canvas { max-width: 100%; }
+
     .two-col { grid-template-columns: 1fr 1fr; }
-    @media (max-width: 820px) { .two-col { grid-template-columns: 1fr; } }
+    @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
+
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-    th { color: var(--muted); font-weight: 500; font-size: 11px;
-      text-transform: uppercase; letter-spacing: .5px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    th {
+      color: var(--text-3); font-weight: 600; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.6px;
+    }
     td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .ret-row { display: flex; justify-content: space-between; padding: 6px 0;
-      border-bottom: 1px dashed var(--border); }
-    .ret-row:last-child { border-bottom: none; }
-    .muted { color: var(--muted); }
-    .status { padding: 40px 24px; text-align: center; color: var(--muted); }
-    .status.error { color: var(--danger); }
-    /* Login */
-    .login { max-width: 360px; margin: 80px auto; background: var(--panel);
-      border: 1px solid var(--border); border-radius: 10px; padding: 24px; }
-    .login h2 { margin: 0 0 4px; font-size: 16px; }
-    .login p { margin: 0 0 16px; color: var(--muted); font-size: 12px; }
-    .login label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
-    .login input { width: 100%; background: var(--panel-2); color: var(--text);
-      border: 1px solid var(--border); border-radius: 6px; padding: 10px; font-size: 14px; }
-    .login button { width: 100%; margin-top: 16px; background: var(--accent); color: #0f1115;
-      border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; }
-    .login .err { color: var(--danger); font-size: 12px; margin-top: 10px; min-height: 16px; }
-    canvas { max-width: 100%; }
+    td.email { color: var(--text); font-weight: 500; }
+
+    .ret-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .ret-row:last-of-type { border-bottom: none; }
+    .ret-row .label { font-weight: 600; color: var(--text); font-size: 13px; }
+    .ret-row .pct { font-size: 20px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .ret-row .denom { color: var(--text-3); font-size: 12px; margin-left: 6px; }
+
+    /* ── CHANGELOG ── */
+    .changelog { display: flex; flex-direction: column; gap: 14px; }
+    .changelog-entry {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }
+    .changelog-head {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .changelog-date {
+      font-size: 12px; font-weight: 700;
+      color: var(--text-3); font-variant-numeric: tabular-nums;
+      letter-spacing: 0.3px;
+    }
+    .changelog-title {
+      font-size: 15px; font-weight: 700; color: var(--text); flex: 1;
+    }
+    .tag {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.6px;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 20px;
+    }
+    .tag-feature { background: var(--accent-light); color: var(--accent); }
+    .tag-fix     { background: var(--yellow-light); color: var(--yellow); }
+    .tag-admin   { background: var(--purple-light); color: var(--purple); }
+    .tag-chore   { background: var(--surface-2); color: var(--text-2); }
+    .changelog-items {
+      list-style: none; padding-left: 0; margin: 0;
+    }
+    .changelog-items li {
+      position: relative;
+      padding: 4px 0 4px 18px;
+      font-size: 13px; color: var(--text-2); line-height: 1.55;
+    }
+    .changelog-items li::before {
+      content: ""; position: absolute; left: 4px; top: 13px;
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent-mid);
+    }
+    .changelog-items li strong { color: var(--text); font-weight: 600; }
+    .changelog-items li em { font-style: italic; color: var(--text-2); }
+
+    /* ── STATUS / LOGIN ── */
+    .status {
+      padding: 60px 24px; text-align: center; color: var(--text-3);
+      font-size: 14px;
+    }
+    .status.error { color: var(--red); }
+
+    .login-wrap {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      padding: 32px;
+      width: 100%; max-width: 380px;
+    }
+    .login-logo {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-bottom: 20px;
+    }
+    .login-logo .logo-text { font-size: 17px; }
+    .login-title {
+      font-size: 20px; font-weight: 800; letter-spacing: -0.5px;
+      text-align: center; margin-bottom: 6px;
+    }
+    .login-sub {
+      font-size: 13px; color: var(--text-3);
+      text-align: center; margin-bottom: 22px;
+    }
+    .login-box label {
+      display: block; font-size: 11px; font-weight: 700; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.6px;
+      margin: 12px 0 6px;
+    }
+    .login-box input {
+      width: 100%; padding: 11px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font: inherit; font-size: 14px; color: var(--text);
+      transition: border-color .15s;
+    }
+    .login-box input:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+    .login-box button {
+      width: 100%; margin-top: 20px; padding: 12px;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      cursor: pointer; transition: background .15s;
+    }
+    .login-box button:hover { background: var(--accent-dark); }
+    .login-err {
+      color: var(--red); font-size: 12px; font-weight: 500;
+      margin-top: 12px; min-height: 16px; text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -77,7 +279,6 @@
     <div class="status">Loading…</div>
   </div>
 
-  <!-- Same Supabase SDK & key your main app uses -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
@@ -86,6 +287,27 @@
     const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const root = document.getElementById('app');
+
+    // Brand-matched logo (grid style), used in header + login.
+    const LOGO_SVG = `
+      <svg class="logo-svg" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <clipPath id="logoClip"><rect x="2" y="2" width="36" height="36" rx="8"/></clipPath>
+        </defs>
+        <rect x="2" y="2" width="36" height="36" rx="8" fill="#fff" stroke="#0D1829" stroke-width="2.5"/>
+        <g stroke="#0D1829" stroke-width="2" clip-path="url(#logoClip)">
+          <line x1="14" y1="2" x2="14" y2="38"/>
+          <line x1="26" y1="2" x2="26" y2="38"/>
+          <line x1="2" y1="14" x2="38" y2="14"/>
+          <line x1="2" y1="26" x2="38" y2="26"/>
+        </g>
+      </svg>`;
+
+    const logoBlock = `
+      <div class="logo">
+        ${LOGO_SVG}
+        <span class="logo-text">Meal Planning <span>OS</span></span>
+      </div>`;
 
     // ── Boot ────────────────────────────────────────────────────────────
     (async function init() {
@@ -97,17 +319,20 @@
     // ── Login screen ────────────────────────────────────────────────────
     function renderLogin(errMsg) {
       root.innerHTML = `
-        <div class="login">
-          <h2>Admin sign-in</h2>
-          <p>Use your admin email to view the dashboard.</p>
-          <form id="loginForm">
-            <label for="email">Email</label>
-            <input id="email" type="email" autocomplete="email" required />
-            <label for="password">Password</label>
-            <input id="password" type="password" autocomplete="current-password" required />
-            <button type="submit">Sign in</button>
-            <div class="err" id="loginErr">${errMsg || ''}</div>
-          </form>
+        <div class="login-wrap">
+          <div class="login-box">
+            <div class="login-logo">${LOGO_SVG}<span class="logo-text">Meal Planning <span>OS</span></span></div>
+            <div class="login-title">Admin</div>
+            <div class="login-sub">Sign in to view dashboard</div>
+            <form id="loginForm">
+              <label for="email">Email</label>
+              <input id="email" type="email" autocomplete="email" required />
+              <label for="password">Password</label>
+              <input id="password" type="password" autocomplete="current-password" required />
+              <button type="submit">Sign in</button>
+              <div class="login-err" id="loginErr">${errMsg || ''}</div>
+            </form>
+          </div>
         </div>
       `;
       document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -125,116 +350,219 @@
     // ── Fetch + render dashboard ────────────────────────────────────────
     async function loadDashboard(session) {
       root.innerHTML = `<div class="status">Loading stats…</div>`;
-      let data;
+      let stats, changelog = [];
       try {
-        const res = await fetch('/.netlify/functions/admin-stats', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        if (res.status === 401 || res.status === 403) {
+        const [statsRes, changelogRes] = await Promise.all([
+          fetch('/.netlify/functions/admin-stats', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          }),
+          fetch('/changelog.json', { cache: 'no-store' }),
+        ]);
+        if (statsRes.status === 401 || statsRes.status === 403) {
           await _sb.auth.signOut();
           return renderLogin('Not authorized as admin.');
         }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        data = await res.json();
+        if (!statsRes.ok) throw new Error(`Stats HTTP ${statsRes.status}`);
+        stats = await statsRes.json();
+        if (changelogRes.ok) {
+          try { changelog = await changelogRes.json(); } catch (_) { changelog = []; }
+        }
       } catch (err) {
-        root.innerHTML = `<div class="status error">Failed to load stats: ${err.message}</div>`;
+        root.innerHTML = `<div class="status error">Failed to load: ${err.message}</div>`;
         return;
       }
-      render(data, session.user.email);
+      render(stats, changelog);
     }
 
     // ── Render ──────────────────────────────────────────────────────────
-    function render(d, adminEmail) {
+    function render(d, changelog) {
       const s = d.summary, f = d.features, r = d.retention;
       const fmt = (n) => (n ?? 0).toLocaleString();
-      const kpi = (title, value, sub = '') => `
-        <div class="card kpi">
-          <h3>${title}</h3>
+      const kpi = (title, value, sub = '', tint = '') => `
+        <div class="card kpi ${tint}">
+          <div class="card-title">${title}</div>
           <div class="value">${value}</div>
           <div class="sub">${sub}</div>
         </div>`;
 
       root.innerHTML = `
-        <header>
-          <div>
-            <h1>Meal Planning OS — Admin Dashboard</h1>
-            <div class="who">Signed in as ${adminEmail} · generated ${new Date(d.generatedAt).toLocaleString()}</div>
+        <div class="header">
+          <div class="header-inner">
+            ${logoBlock}
+            <span class="admin-badge">Admin</span>
+            <div style="flex:1"></div>
+            <div class="header-actions">
+              <button class="btn" id="refreshBtn">↻ Refresh</button>
+              <button class="btn" id="signOutBtn">Sign out</button>
+            </div>
           </div>
-          <div>
-            <button id="refreshBtn">Refresh</button>
-            <button id="signOutBtn">Sign out</button>
-          </div>
-        </header>
+        </div>
+
         <main>
-          ${d.note ? `<p class="note">${d.note}</p>` : ''}
+          <div class="generated">Generated ${new Date(d.generatedAt).toLocaleString()}</div>
+          ${d.note ? `<div class="note">${escapeHtml(d.note)}</div>` : ''}
 
           <div class="section-title">Users</div>
           <div class="grid kpis">
-            ${kpi('Total users', fmt(s.totalUsers), `${fmt(s.betaUsers)} beta · ${fmt(s.paidUsers)} paid`)}
-            ${kpi('New (7d)',     fmt(s.newUsers7),  `${fmt(s.newUsers30)} in last 30d`)}
-            ${kpi('Active (1d)',  fmt(s.active1),    'edited something today')}
-            ${kpi('Active (7d)',  fmt(s.active7),    `${fmt(s.active30)} in last 30d`)}
+            ${kpi('Total users',    fmt(s.totalUsers),     `${fmt(s.betaUsers)} beta · ${fmt(s.paidUsers)} paid`, 'accent')}
+            ${kpi('New (7d)',       fmt(s.newUsers7),      `${fmt(s.newUsers30)} in last 30 days`, 'green')}
+            ${kpi('Logged in today',fmt(s.loggedInToday),  'unique users signed in in last 24h')}
+            ${kpi('Logged in (7d)', fmt(s.loggedIn7),      `${fmt(s.loggedIn30)} in last 30 days`)}
           </div>
 
           <div class="grid charts">
-            <div class="card">
-              <h3>Signups per day (30d)</h3>
-              <canvas id="signupsChart" height="140"></canvas>
+            <div class="card chart-card">
+              <div class="card-title">Signups per day · 30d</div>
+              <canvas id="signupsChart" height="130"></canvas>
             </div>
-            <div class="card">
-              <h3>Active users per day (30d)</h3>
-              <canvas id="activeChart" height="140"></canvas>
+            <div class="card chart-card">
+              <div class="card-title">Logins per day · 30d</div>
+              <canvas id="loginsChart" height="130"></canvas>
             </div>
           </div>
 
-          <div class="section-title">Engagement proxies</div>
+          <div class="section-title">Activation funnel</div>
+          <div class="card">
+            <div class="card-title">From signup to built groceries</div>
+            <canvas id="funnelChart" height="${Math.max(140, (d.funnel || []).length * 34)}"></canvas>
+            <div style="font-size:11px;color:var(--text-3);margin-top:10px;line-height:1.5">
+              Count of users that reached each step. Login counts are from the last 30 days of <code>auth.sessions</code>.
+            </div>
+          </div>
+
+          <div class="section-title">Engagement</div>
           <div class="grid kpis">
-            ${kpi('Avg lifespan', `${s.avgLifespanDays}d`,  'created → last edit')}
-            ${kpi('Avg active days', `${s.avgActiveDays}`,  'distinct days saved')}
-            ${kpi('Total snapshots', fmt(s.totalSnapshots), 'versions saved')}
-            ${kpi('Onboarded users', fmt(f.usersOnboarded), 'completed onboarding')}
+            ${kpi('Total logins (30d)', fmt(s.totalLogins30), 'sessions opened across all users', 'purple')}
+            ${kpi('Onboarded',          fmt(f.usersOnboarded), 'completed the startup guide', 'purple')}
+            ${kpi('Auto-backups',       fmt(s.totalBackups),  'data-loss safety snapshots saved', 'purple')}
+            ${kpi('Assignments',        fmt(f.totalAssignments), 'meal plan slots filled', 'purple')}
           </div>
 
           <div class="section-title">Feature usage</div>
           <div class="grid kpis">
-            ${kpi('Recipes',       fmt(f.totalRecipes),      `${f.avgRecipesPerUser} avg · ${f.usersWithRecipes} users`)}
-            ${kpi('Freezer items', fmt(f.totalFreezerItems), `${f.avgFreezerPerUser} avg · ${f.usersWithFreezer} users`)}
-            ${kpi('Grocery items', fmt(f.totalGroceryItems), `${f.avgGroceryPerUser} avg · ${f.usersWithGroceries} users`)}
-            ${kpi('Assignments',   fmt(f.totalAssignments),  'meal plan slots filled')}
+            ${kpi('Recipes',       fmt(f.totalRecipes),      `${f.avgRecipesPerUser} avg · ${f.usersWithRecipes} users`, 'accent')}
+            ${kpi('Freezer items', fmt(f.totalFreezerItems), `${f.avgFreezerPerUser} avg · ${f.usersWithFreezer} users`, 'accent')}
+            ${kpi('Grocery items', fmt(f.totalGroceryItems), `${f.avgGroceryPerUser} avg · ${f.usersWithGroceries} users`, 'accent')}
+            ${kpi('With assignments', fmt(f.usersWithAssignments), 'users who planned at least one meal', 'accent')}
           </div>
 
-          <div class="section-title">Retention & top users</div>
+          <div class="section-title">Retention & loyal users</div>
           <div class="grid two-col">
             <div class="card">
-              <h3>Retention (cohort proxy)</h3>
-              <div class="ret-row"><span>Day 1</span><span><b>${r.day1}%</b> <span class="muted">of ${r.eligible.d1}</span></span></div>
-              <div class="ret-row"><span>Day 7</span><span><b>${r.day7}%</b> <span class="muted">of ${r.eligible.d7}</span></span></div>
-              <div class="ret-row"><span>Day 30</span><span><b>${r.day30}%</b> <span class="muted">of ${r.eligible.d30}</span></span></div>
-              <p class="note" style="margin-top:12px">% of users whose user_data was still being edited at least N days after signup. Rough stickiness signal.</p>
+              <div class="card-title">Login retention</div>
+              <div class="ret-row">
+                <span class="label">Day 1</span>
+                <span><span class="pct">${r.day1}%</span><span class="denom">of ${r.eligible.d1}</span></span>
+              </div>
+              <div class="ret-row">
+                <span class="label">Day 7</span>
+                <span><span class="pct">${r.day7}%</span><span class="denom">of ${r.eligible.d7}</span></span>
+              </div>
+              <div class="ret-row">
+                <span class="label">Day 30</span>
+                <span><span class="pct">${r.day30}%</span><span class="denom">of ${r.eligible.d30}</span></span>
+              </div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:12px;line-height:1.5">
+                % of eligible users who logged in again at least N days after signup.
+              </div>
             </div>
             <div class="card">
-              <h3>Top users</h3>
+              <div class="card-title">Most loyal users</div>
               <table>
                 <thead>
                   <tr>
                     <th>Email</th>
+                    <th class="num">Login days</th>
+                    <th class="num">Logins</th>
                     <th class="num">Recipes</th>
-                    <th class="num">Snapshots</th>
-                    <th class="num">Active&nbsp;days</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${d.topUsers.map(u => `
+                  ${(d.loyalUsers || []).length ? d.loyalUsers.map(u => `
                     <tr>
-                      <td>${escapeHtml(u.email)}</td>
+                      <td class="email">${escapeHtml(u.email)}</td>
+                      <td class="num">${u.loginDays}</td>
+                      <td class="num">${u.logins}</td>
                       <td class="num">${u.recipes}</td>
-                      <td class="num">${u.snapshots}</td>
-                      <td class="num">${u.activeDays}</td>
                     </tr>
-                  `).join('') || '<tr><td colspan="4" class="muted">No data yet.</td></tr>'}
+                  `).join('') : '<tr><td colspan="4" style="color:var(--text-3);text-align:center;padding:20px">No login data yet.</td></tr>'}
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <div class="section-title">Drifting users</div>
+          <div class="card" style="padding:8px 18px">
+            <table>
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th class="num">Signed up</th>
+                  <th class="num">Last login</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(d.driftingUsers || []).length
+                  ? d.driftingUsers.map(u => `
+                    <tr>
+                      <td class="email">${escapeHtml(u.email || '(no email)')}</td>
+                      <td class="num" style="color:var(--text-3)">${relativeTime(u.signedUpAt)}</td>
+                      <td class="num" style="color:var(--text-3)">${u.lastLogin ? `${u.daysSinceLogin}d ago` : 'never'}</td>
+                    </tr>
+                  `).join('')
+                  : '<tr><td colspan="3" style="color:var(--text-3);text-align:center;padding:20px">No drifting users — everyone is engaged!</td></tr>'}
+              </tbody>
+            </table>
+            <div style="font-size:11px;color:var(--text-3);padding:6px 0 10px;line-height:1.5">
+              Users who signed up more than 7 days ago and haven't logged in in the last 7 days.
+            </div>
+          </div>
+
+          <div class="section-title">Recent activity</div>
+          <div class="grid two-col">
+            <div class="card">
+              <div class="card-title">Recent signups</div>
+              <table>
+                <thead>
+                  <tr><th>Email</th><th class="num">Joined</th></tr>
+                </thead>
+                <tbody>
+                  ${(d.recentSignups || []).length
+                    ? d.recentSignups.map(u => `
+                      <tr>
+                        <td class="email">${escapeHtml(u.email || '(no email)')}</td>
+                        <td class="num" style="color:var(--text-3)">${relativeTime(u.created_at)}</td>
+                      </tr>
+                    `).join('')
+                    : '<tr><td colspan="2" style="color:var(--text-3);text-align:center;padding:20px">No signups yet.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+            <div class="card">
+              <div class="card-title">Recent logins</div>
+              <table>
+                <thead>
+                  <tr><th>Email</th><th class="num">When</th></tr>
+                </thead>
+                <tbody>
+                  ${(d.recentLogins || []).length
+                    ? d.recentLogins.map(u => `
+                      <tr>
+                        <td class="email">${escapeHtml(u.email || '(no email)')}</td>
+                        <td class="num" style="color:var(--text-3)">${relativeTime(u.at)}</td>
+                      </tr>
+                    `).join('')
+                    : '<tr><td colspan="2" style="color:var(--text-3);text-align:center;padding:20px">No logins in last 30 days.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="section-title">Changelog</div>
+          <div class="changelog">
+            ${changelog && changelog.length
+              ? changelog.map(renderChangelogEntry).join('')
+              : '<div class="card" style="color:var(--text-3)">No changelog entries yet. Edit <code>changelog.json</code> in the repo to add them.</div>'}
           </div>
         </main>
       `;
@@ -248,42 +576,161 @@
         renderLogin();
       });
 
-      drawLineChart('signupsChart', d.series.signupsByDay, '#7ac59a');
-      drawLineChart('activeChart',  d.series.activeByDay,  '#8ab4ff');
+      drawLineChart('signupsChart', d.series.signupsByDay);
+      drawLineChart('loginsChart',  d.series.loginsByDay);
+      drawFunnelChart('funnelChart', d.funnel || []);
     }
 
-    function drawLineChart(canvasId, byDay, color) {
-      const labels = Object.keys(byDay);
-      const values = Object.values(byDay);
-      new Chart(document.getElementById(canvasId), {
-        type: 'line',
+    function drawFunnelChart(canvasId, funnel) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const labels = funnel.map(f => f.step);
+      const values = funnel.map(f => f.count);
+      const top = values[0] || 1;
+      const pcts = values.map(v => Math.round((v / top) * 100));
+      new Chart(ctx, {
+        type: 'bar',
         data: {
           labels,
           datasets: [{
             data: values,
-            borderColor: color,
-            backgroundColor: color + '33',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 2,
-            borderWidth: 2,
+            backgroundColor: 'rgba(30, 94, 255, 0.85)',
+            borderColor: '#1E5EFF',
+            borderWidth: 0,
+            borderRadius: 6,
+            barThickness: 22,
           }],
         },
         options: {
+          indexAxis: 'y',
           responsive: true,
-          plugins: { legend: { display: false } },
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0D1829',
+              titleFont: { family: 'Inter', weight: '600', size: 12 },
+              bodyFont:  { family: 'Inter', weight: '500', size: 12 },
+              padding: 10, displayColors: false,
+              callbacks: {
+                label: (c) => `${c.raw} users (${pcts[c.dataIndex]}% of signups)`,
+              },
+            },
+          },
           scales: {
-            x: { ticks: { color: '#9aa3b2', maxTicksLimit: 6 }, grid: { color: '#262c3a' } },
-            y: { ticks: { color: '#9aa3b2', precision: 0 }, grid: { color: '#262c3a' }, beginAtZero: true },
+            x: {
+              ticks: { color: '#8A97B8', precision: 0, font: { family: 'Inter', size: 11 } },
+              grid:  { color: '#EBF2FF' },
+              border: { display: false },
+              beginAtZero: true,
+            },
+            y: {
+              ticks: { color: '#38466A', font: { family: 'Inter', size: 12, weight: '600' } },
+              grid:  { display: false },
+              border: { color: '#DDE4F0' },
+            },
           },
         },
       });
     }
 
+    function renderChangelogEntry(entry) {
+      const type = (entry.type || 'chore').toLowerCase();
+      const date = entry.date
+        ? new Date(entry.date + 'T12:00:00Z').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+        : '';
+      const items = Array.isArray(entry.items) ? entry.items : [];
+      return `
+        <div class="changelog-entry">
+          <div class="changelog-head">
+            <span class="changelog-date">${date}</span>
+            <span class="tag tag-${type}">${type}</span>
+            <span class="changelog-title">${escapeHtml(entry.title || '')}</span>
+          </div>
+          <ul class="changelog-items">
+            ${items.map(it => `<li>${sanitizeLight(it)}</li>`).join('')}
+          </ul>
+        </div>`;
+    }
+
+    function drawLineChart(canvasId, byDay) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+      gradient.addColorStop(0, 'rgba(30, 94, 255, 0.25)');
+      gradient.addColorStop(1, 'rgba(30, 94, 255, 0.00)');
+      const labels = Object.keys(byDay);
+      const values = Object.values(byDay);
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            borderColor: '#1E5EFF',
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointHoverBackgroundColor: '#1E5EFF',
+            borderWidth: 2.5,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0D1829',
+              titleFont: { family: 'Inter', weight: '600', size: 12 },
+              bodyFont:  { family: 'Inter', weight: '500', size: 12 },
+              padding: 10, displayColors: false,
+            },
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: '#8A97B8', maxTicksLimit: 6,
+                font: { family: 'Inter', size: 11 },
+              },
+              grid: { display: false },
+              border: { color: '#DDE4F0' },
+            },
+            y: {
+              ticks: {
+                color: '#8A97B8', precision: 0,
+                font: { family: 'Inter', size: 11 },
+              },
+              grid: { color: '#EBF2FF' },
+              border: { display: false },
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+    }
+
+    // ── helpers ─────────────────────────────────────────────────────────
     function escapeHtml(s) {
       return String(s ?? '').replace(/[&<>"']/g, c => (
         { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
       ));
+    }
+    // Allow a very small, safe subset of markup in changelog items (<strong>, <em>, <code>).
+    function sanitizeLight(s) {
+      const escaped = escapeHtml(s);
+      return escaped
+        .replace(/&lt;(\/?)(strong|em|code)&gt;/g, '<$1$2>');
+    }
+    function relativeTime(iso) {
+      if (!iso) return '—';
+      const then = new Date(iso).getTime();
+      const diff = Date.now() - then;
+      const m = 60 * 1000, h = 60 * m, dMs = 24 * h;
+      if (diff < h)    return Math.max(1, Math.round(diff / m)) + 'm ago';
+      if (diff < dMs)  return Math.round(diff / h) + 'h ago';
+      if (diff < 30 * dMs) return Math.round(diff / dMs) + 'd ago';
+      return new Date(iso).toLocaleDateString();
     }
   </script>
 </body>

@@ -1,0 +1,58 @@
+[
+  {
+    "date": "2026-04-06",
+    "version": "2026-04-06-3",
+    "type": "admin",
+    "title": "Admin dashboard: honest login metrics",
+    "items": [
+      "Login-based activity — 'active' KPIs now come from real <code>auth.sessions</code> data instead of data-save timestamps, so we can see who's actually opening the app",
+      "New KPIs — Logged in today / 7d / 30d, total logins (30d), and a logins-per-day trend chart",
+      "Activation funnel — visualizes drop-off from Signed up → Logged in → Onboarded → Created recipe → Assigned meal → Built groceries",
+      "Drifting users list — surfaces users who signed up ≥7 days ago but haven't logged in in the last week",
+      "Loyal users table — ranks by distinct login days, replacing the old 'top users by snapshots' table",
+      "Recent logins feed — alongside Recent signups, see who's been in lately",
+      "Fixed Onboarded count — now requires <code>firstRunComplete === true</code> instead of any non-empty onboarding object",
+      "Renamed 'snapshots' to 'auto-backups' to make clear these are data-loss safety copies, not engagement signals"
+    ]
+  },
+  {
+    "date": "2026-04-06",
+    "version": "2026-04-06-2",
+    "type": "admin",
+    "title": "Admin dashboard launched",
+    "items": [
+      "New `/admin.html` page — branded to match the web app",
+      "Read-only aggregate stats endpoint at `/.netlify/functions/admin-stats` (service-role, admin-gated)",
+      "KPIs: total users, new 7/30d, active 1/7/30d, engagement proxies, feature usage, retention, top users, recent signups",
+      "Signups-per-day and active-users-per-day charts (30d)",
+      "Changelog surfaced on dashboard, sourced from `changelog.json` (this file)",
+      "Owner account (hellmanskitchen@gmail.com) excluded from all metrics"
+    ]
+  },
+  {
+    "date": "2026-04-06",
+    "version": "2026-04-06-1",
+    "type": "feature",
+    "title": "Redesigned startup guide",
+    "items": [
+      "Onboarding split into one-time Setup and repeating Weekly Workflow phases",
+      "Every step now has 2–3 sentences explaining what to do, why it matters, and how long it takes",
+      "Navigation fix — the Next button after assigning meals now always appears so you can move straight to your grocery list",
+      "Smarter grocery hints — parmesan/feta show 'container' instead of 'bag', berries show container sizes, small milk amounts no longer show unnecessary conversions"
+    ]
+  },
+  {
+    "date": "2026-04-04",
+    "version": "2026-04-04-1",
+    "type": "fix",
+    "title": "Data loss fix + new recipe tools",
+    "items": [
+      "⚠️ Critical fix — bug that could wipe meal plans on refresh is resolved, with an automatic backup system in place",
+      "Breakfast / Lunch / Dinner tags — tag recipes by meal time for easier filtering",
+      "Edit any library recipe — customize ingredients and notes on built-in recipes without adding them to your menu first",
+      "Custom grocery items per category — add your own staples to any grocery category",
+      "Settings moved to footer for a cleaner header",
+      "Home screen shortcut fix — 'Add to Home Screen' now stays in sync with the browser version"
+    ]
+  }
+]

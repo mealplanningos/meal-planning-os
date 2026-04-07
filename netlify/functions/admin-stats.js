@@ -19,6 +19,21 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'hellmanskitchen@gmail.com')
   .map(s => s.trim().toLowerCase())
   .filter(Boolean);
 
+// Users created on or before this cutoff are treated as beta (free),
+// even if they have an "active" Stripe entitlement from a 100%-off
+// discount code. Override with BETA_CUTOFF env var (ISO date string).
+// Default: end of today (2026-04-06) so every current user is beta.
+const BETA_CUTOFF = new Date(process.env.BETA_CUTOFF || '2026-04-06T23:59:59Z');
+
+// Emails excluded from all stats (owner/admin accounts). They can still
+// sign in and view the dashboard, they just don't pollute the metrics.
+const EXCLUDED_EMAILS = new Set(
+  (process.env.EXCLUDED_EMAILS || 'hellmanskitchen@gmail.com')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean)
+);
+
 const json = (statusCode, body) => ({
   statusCode,
   headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
@@ -41,30 +56,51 @@ exports.handler = async (event) => {
     }
 
     // ── Fetch data in parallel ──────────────────────────────────────────
-    // auth.users is the source of truth for "who has an account".
-    // payment_entitlements reflects actual Stripe purchases.
-    // user_data holds everything people have actually built in the app.
+    // Single round-trip: one Promise.all batches every data source we need.
+    // auth.users          → who has an account (source of truth)
+    // payment_entitlements→ actual Stripe purchases
+    // user_data           → what people have built in the app (recipes, plans, etc.)
+    // user_data_snapshots → data-loss-fix auto-backups (NOT a usage signal)
+    // get_admin_login_log → per-login rows from auth.sessions (via SECURITY DEFINER RPC)
     const [
       authUsersRes,
       entitlementsRes,
       userDataRes,
       snapshotsRes,
+      loginLogRes,
     ] = await Promise.all([
       admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
       admin.from('payment_entitlements').select('email,access_status,payment_status,plan,purchased_at'),
       admin.from('user_data').select('user_id,recipes,assignments,freezer,groceries,week_start,created_at,updated_at,onboarding'),
       admin.from('user_data_snapshots').select('user_id,created_at'),
+      admin.rpc('get_admin_login_log', { days_back: 30 }),
     ]);
 
     if (authUsersRes.error)    return json(500, { error: authUsersRes.error.message });
     if (entitlementsRes.error) return json(500, { error: entitlementsRes.error.message });
     if (userDataRes.error)     return json(500, { error: userDataRes.error.message });
     if (snapshotsRes.error)    return json(500, { error: snapshotsRes.error.message });
+    if (loginLogRes.error)     return json(500, { error: loginLogRes.error.message });
 
-    const authUsers    = authUsersRes.data?.users || [];
-    const entitlements = entitlementsRes.data     || [];
-    const userData     = userDataRes.data         || [];
-    const snapshots    = snapshotsRes.data        || [];
+    // Raw pulls
+    const rawAuthUsers    = authUsersRes.data?.users || [];
+    const rawEntitlements = entitlementsRes.data     || [];
+    const rawUserData     = userDataRes.data         || [];
+    const rawSnapshots    = snapshotsRes.data        || [];
+    const rawLoginLog     = loginLogRes.data         || [];
+
+    // Exclude owner/admin accounts from stats entirely.
+    const excludedUserIds = new Set(
+      rawAuthUsers
+        .filter(u => EXCLUDED_EMAILS.has((u.email || '').toLowerCase()))
+        .map(u => u.id)
+    );
+
+    const authUsers    = rawAuthUsers.filter(u => !EXCLUDED_EMAILS.has((u.email || '').toLowerCase()));
+    const entitlements = rawEntitlements.filter(e => !EXCLUDED_EMAILS.has((e.email || '').toLowerCase()));
+    const userData     = rawUserData.filter(u => !excludedUserIds.has(u.user_id));
+    const snapshots    = rawSnapshots.filter(s => !excludedUserIds.has(s.user_id));
+    const loginLog     = rawLoginLog.filter(r => !excludedUserIds.has(r.user_id));
 
     const now     = new Date();
     const dayMs   = 24 * 60 * 60 * 1000;
@@ -75,24 +111,53 @@ exports.handler = async (event) => {
     // ── Users ───────────────────────────────────────────────────────────
     const totalUsers = authUsers.length;
 
-    // "Paid" = has an active Stripe entitlement. During beta this is expected to be 0.
+    // "Paid" = has an active Stripe entitlement AND signed up after the beta cutoff.
+    // Anyone who signed up on or before BETA_CUTOFF is treated as a beta/free user,
+    // even if they went through Stripe checkout with a 100%-off discount code.
     const paidEmails = new Set(
       entitlements
         .filter(e => e.access_status === 'active' || e.payment_status === 'paid')
         .map(e => (e.email || '').toLowerCase())
         .filter(Boolean)
     );
-    const paidUsers = authUsers.filter(u => paidEmails.has((u.email || '').toLowerCase())).length;
-    const betaUsers = totalUsers - paidUsers; // everyone else is a beta/free user
+    const paidUsers = authUsers.filter(u =>
+      new Date(u.created_at) > BETA_CUTOFF &&
+      paidEmails.has((u.email || '').toLowerCase())
+    ).length;
+    const betaUsers = totalUsers - paidUsers;
 
     const newUsers7  = authUsers.filter(u => new Date(u.created_at) >= daysAgo(7)).length;
     const newUsers30 = authUsers.filter(u => new Date(u.created_at) >= daysAgo(30)).length;
 
-    // Active = user_data.updated_at within window (proxy for activity,
-    // since we do not currently record sessions or events).
-    const active1  = userData.filter(u => u.updated_at && new Date(u.updated_at) >= daysAgo(1)).length;
-    const active7  = userData.filter(u => u.updated_at && new Date(u.updated_at) >= daysAgo(7)).length;
-    const active30 = userData.filter(u => u.updated_at && new Date(u.updated_at) >= daysAgo(30)).length;
+    // ── Login-based activity (from auth.sessions via RPC) ───────────────
+    // One row per login. Distinct days per user = "login days"; count = total logins.
+    const loginsByUser     = {};  // user_id -> total login count
+    const loginDaysByUser  = {};  // user_id -> Set of ISO date strings
+    const lastLoginByUser  = {};  // user_id -> most recent login Date
+    for (const row of loginLog) {
+      const uid = row.user_id;
+      const createdAt = new Date(row.created_at);
+      loginsByUser[uid] = (loginsByUser[uid] || 0) + 1;
+      loginDaysByUser[uid] = loginDaysByUser[uid] || new Set();
+      loginDaysByUser[uid].add(iso(createdAt));
+      if (!lastLoginByUser[uid] || createdAt > lastLoginByUser[uid]) {
+        lastLoginByUser[uid] = createdAt;
+      }
+    }
+
+    // Active = distinct users with at least one login in the window
+    const activeUserIdsIn = (nDays) => {
+      const cutoff = daysAgo(nDays);
+      const s = new Set();
+      for (const row of loginLog) {
+        if (new Date(row.created_at) >= cutoff) s.add(row.user_id);
+      }
+      return s;
+    };
+    const loggedInToday  = activeUserIdsIn(1).size;
+    const loggedIn7      = activeUserIdsIn(7).size;
+    const loggedIn30     = activeUserIdsIn(30).size;
+    const totalLogins30  = loginLog.length;
 
     // Signups per day (last 30 days)
     const signupsByDay = {};
@@ -102,39 +167,21 @@ exports.handler = async (event) => {
       if (key in signupsByDay) signupsByDay[key]++;
     }
 
-    // Active users per day (count of user_data rows updated on that day), last 30 days
-    const activeByDay = {};
-    for (let i = 29; i >= 0; i--) activeByDay[iso(daysAgo(i))] = 0;
-    for (const u of userData) {
-      if (!u.updated_at) continue;
-      const key = iso(new Date(u.updated_at));
-      if (key in activeByDay) activeByDay[key]++;
+    // Logins per day — one count per login row. Replaces the old
+    // "active by day" metric which was based on user_data.updated_at.
+    const loginsByDay = {};
+    for (let i = 29; i >= 0; i--) loginsByDay[iso(daysAgo(i))] = 0;
+    for (const row of loginLog) {
+      const key = iso(new Date(row.created_at));
+      if (key in loginsByDay) loginsByDay[key]++;
     }
 
-    // ── Engagement proxies (no true session tracking yet) ───────────────
-    //   - activeDays : distinct days a user saved a snapshot
-    //   - lifespan   : days between created_at and last updated_at of user_data
-    //   - snapshots  : total versions saved per user
-    const snapsByUser = {};
-    const daysByUser  = {};
+    // ── Auto-backups (from user_data_snapshots) ─────────────────────────
+    // NOT a usage signal — these are the data-loss-fix safety backups.
+    const backupsByUser = {};
     for (const s of snapshots) {
-      snapsByUser[s.user_id] = (snapsByUser[s.user_id] || 0) + 1;
-      const d = iso(new Date(s.created_at));
-      daysByUser[s.user_id] = daysByUser[s.user_id] || new Set();
-      daysByUser[s.user_id].add(d);
+      backupsByUser[s.user_id] = (backupsByUser[s.user_id] || 0) + 1;
     }
-
-    const lifespans = userData
-      .filter(u => u.created_at && u.updated_at)
-      .map(u => Math.max(0, (new Date(u.updated_at) - new Date(u.created_at)) / dayMs));
-    const avgLifespanDays = lifespans.length
-      ? lifespans.reduce((a, b) => a + b, 0) / lifespans.length
-      : 0;
-
-    const activeDaysPerUser = Object.values(daysByUser).map(s => s.size);
-    const avgActiveDays = activeDaysPerUser.length
-      ? activeDaysPerUser.reduce((a, b) => a + b, 0) / activeDaysPerUser.length
-      : 0;
 
     // ── Feature usage (jsonb in user_data) ──────────────────────────────
     const countArrayLike = (v) => {
@@ -145,9 +192,13 @@ exports.handler = async (event) => {
     };
 
     let totalRecipes = 0, totalFreezerItems = 0, totalGroceryItems = 0, totalAssignments = 0;
-    let usersWithRecipes = 0, usersWithFreezer = 0, usersWithGroceries = 0, usersOnboarded = 0;
+    let usersWithRecipes = 0, usersWithFreezer = 0, usersWithGroceries = 0, usersWithAssignments = 0;
+    let usersOnboarded = 0;
 
+    // Keep a lookup so we can build the activation funnel below.
+    const userDataMap = {};
     for (const u of userData) {
+      userDataMap[u.user_id] = u;
       const r = countArrayLike(u.recipes);
       const f = countArrayLike(u.freezer);
       const g = countArrayLike(u.groceries);
@@ -159,64 +210,129 @@ exports.handler = async (event) => {
       if (r > 0) usersWithRecipes++;
       if (f > 0) usersWithFreezer++;
       if (g > 0) usersWithGroceries++;
-      if (u.onboarding && Object.keys(u.onboarding).length) usersOnboarded++;
+      if (a > 0) usersWithAssignments++;
+      // Onboarded = the user actually completed the first-run guide.
+      // (Previously we counted any non-empty onboarding object, which is
+      // initialized to {guideSeen:false, firstRunComplete:false} on signup,
+      // so it counted every user.)
+      if (u.onboarding?.firstRunComplete === true) usersOnboarded++;
     }
 
     const avg = (num, den) => den ? +(num / den).toFixed(1) : 0;
 
-    // ── Retention (simple cohort proxy) ─────────────────────────────────
-    // For users whose accounts are ≥ N days old, did they still have
-    // user_data edits after day N? Gives a rough stickiness signal.
-    const userDataByUser = Object.fromEntries(userData.map(u => [u.user_id, u]));
+    // ── Retention (login-based cohort proxy) ────────────────────────────
+    // For users whose accounts are ≥ N days old, did they come BACK and
+    // log in at least once more than N days after signup?
+    // (Previously used user_data.updated_at; now uses real session data.)
     const retention = { d1: 0, d7: 0, d30: 0, eligible1: 0, eligible7: 0, eligible30: 0 };
     for (const u of authUsers) {
       const created = new Date(u.created_at);
-      const ud = userDataByUser[u.id];
-      const updated = ud?.updated_at ? new Date(ud.updated_at) : null;
+      const lastLogin = lastLoginByUser[u.id] || null;
       const ageDays = (now - created) / dayMs;
-      if (ageDays >= 1)  { retention.eligible1++;  if (updated && (updated - created) / dayMs >= 1)  retention.d1++;  }
-      if (ageDays >= 7)  { retention.eligible7++;  if (updated && (updated - created) / dayMs >= 7)  retention.d7++;  }
-      if (ageDays >= 30) { retention.eligible30++; if (updated && (updated - created) / dayMs >= 30) retention.d30++; }
+      const returnedAfter = (n) => lastLogin && ((lastLogin - created) / dayMs >= n);
+      if (ageDays >= 1)  { retention.eligible1++;  if (returnedAfter(1))  retention.d1++;  }
+      if (ageDays >= 7)  { retention.eligible7++;  if (returnedAfter(7))  retention.d7++;  }
+      if (ageDays >= 30) { retention.eligible30++; if (returnedAfter(30)) retention.d30++; }
     }
     const pct = (n, d) => d ? Math.round((n / d) * 100) : 0;
 
-    // ── Top users (by engagement proxy score) ───────────────────────────
-    const emailById = Object.fromEntries(authUsers.map(u => [u.id, u.email]));
-    const topUsers = userData
+    // ── Activation funnel ───────────────────────────────────────────────
+    // Sequential steps, each a subset of the previous.
+    //  1. Signed up
+    //  2. Logged in at least once (post-signup session)
+    //  3. Completed onboarding (firstRunComplete === true)
+    //  4. Created at least one recipe
+    //  5. Assigned at least one meal to a slot
+    //  6. Generated a grocery list
+    let funnelSignedUp = authUsers.length;
+    let funnelLoggedIn = 0;
+    let funnelOnboarded = 0;
+    let funnelHasRecipe = 0;
+    let funnelHasAssignment = 0;
+    let funnelHasGrocery = 0;
+    for (const u of authUsers) {
+      const ud = userDataMap[u.id];
+      const loggedIn = !!loginsByUser[u.id];
+      if (loggedIn) funnelLoggedIn++;
+      if (ud?.onboarding?.firstRunComplete === true) funnelOnboarded++;
+      if (ud && countArrayLike(ud.recipes)     > 0) funnelHasRecipe++;
+      if (ud && countArrayLike(ud.assignments) > 0) funnelHasAssignment++;
+      if (ud && countArrayLike(ud.groceries)   > 0) funnelHasGrocery++;
+    }
+    const funnel = [
+      { step: 'Signed up',        count: funnelSignedUp },
+      { step: 'Logged in',        count: funnelLoggedIn },
+      { step: 'Onboarded',        count: funnelOnboarded },
+      { step: 'Created recipe',   count: funnelHasRecipe },
+      { step: 'Assigned meal',    count: funnelHasAssignment },
+      { step: 'Built groceries',  count: funnelHasGrocery },
+    ];
+
+    // ── Drifting users (signed up ≥7d ago, no login in last 7d) ─────────
+    const driftingUsers = authUsers
+      .filter(u => {
+        const ageDays = (now - new Date(u.created_at)) / dayMs;
+        if (ageDays < 7) return false;
+        const last = lastLoginByUser[u.id];
+        if (!last) return true;  // never logged in at all (in 30d window)
+        return (now - last) / dayMs > 7;
+      })
       .map(u => ({
-        email: emailById[u.user_id] || '(unknown)',
-        recipes:   countArrayLike(u.recipes),
-        freezer:   countArrayLike(u.freezer),
-        groceries: countArrayLike(u.groceries),
-        snapshots: snapsByUser[u.user_id] || 0,
-        activeDays: (daysByUser[u.user_id]?.size) || 0,
-        lastSeen: u.updated_at,
+        email: u.email,
+        signedUpAt: u.created_at,
+        lastLogin:  lastLoginByUser[u.id] ? lastLoginByUser[u.id].toISOString() : null,
+        daysSinceLogin: lastLoginByUser[u.id]
+          ? Math.round((now - lastLoginByUser[u.id]) / dayMs)
+          : null,
+      }))
+      .sort((a, b) => (b.daysSinceLogin || 999) - (a.daysSinceLogin || 999))
+      .slice(0, 15);
+
+    // ── Most loyal users (by login days, then total logins) ─────────────
+    const emailById = Object.fromEntries(authUsers.map(u => [u.id, u.email]));
+    const loyalUsers = Object.keys(loginsByUser)
+      .map(uid => ({
+        email:      emailById[uid] || '(unknown)',
+        logins:     loginsByUser[uid] || 0,
+        loginDays:  (loginDaysByUser[uid]?.size) || 0,
+        recipes:    countArrayLike(userDataMap[uid]?.recipes),
+        assignments: countArrayLike(userDataMap[uid]?.assignments),
+        lastLogin:  lastLoginByUser[uid] ? lastLoginByUser[uid].toISOString() : null,
       }))
       .sort((a, b) =>
-        (b.snapshots + b.activeDays * 2 + b.recipes) -
-        (a.snapshots + a.activeDays * 2 + a.recipes)
+        (b.loginDays - a.loginDays) ||
+        (b.logins    - a.logins) ||
+        (b.recipes   - a.recipes)
       )
       .slice(0, 10);
 
+    // ── Recent logins (last 10 login rows) ──────────────────────────────
+    const recentLogins = [...loginLog]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 10)
+      .map(row => ({
+        email: emailById[row.user_id] || '(unknown)',
+        at:    row.created_at,
+      }));
+
     return json(200, {
       generatedAt: now.toISOString(),
-      note: 'Beta period: all users are free. "Paid" reflects Stripe entitlements only.',
+      note: `Beta users = signed up on or before ${BETA_CUTOFF.toISOString().slice(0,10)} (treated as free regardless of 100%-off Stripe entitlements). Login data comes from auth.sessions via the get_admin_login_log RPC.`,
       summary: {
         totalUsers,
         betaUsers,
         paidUsers,
         newUsers7,
         newUsers30,
-        active1,
-        active7,
-        active30,
-        avgLifespanDays: +avgLifespanDays.toFixed(1),
-        avgActiveDays:   +avgActiveDays.toFixed(1),
-        totalSnapshots:  snapshots.length,
+        loggedInToday,
+        loggedIn7,
+        loggedIn30,
+        totalLogins30,
+        totalBackups: snapshots.length,
       },
       series: {
         signupsByDay,
-        activeByDay,
+        loginsByDay,
       },
       features: {
         totalRecipes,
@@ -226,6 +342,7 @@ exports.handler = async (event) => {
         usersWithRecipes,
         usersWithFreezer,
         usersWithGroceries,
+        usersWithAssignments,
         usersOnboarded,
         avgRecipesPerUser: avg(totalRecipes,      userData.length),
         avgFreezerPerUser: avg(totalFreezerItems, userData.length),
@@ -241,7 +358,14 @@ exports.handler = async (event) => {
           d30: retention.eligible30,
         },
       },
-      topUsers,
+      funnel,
+      loyalUsers,
+      driftingUsers,
+      recentLogins,
+      recentSignups: [...authUsers]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 8)
+        .map(u => ({ email: u.email, created_at: u.created_at })),
     });
   } catch (err) {
     console.error('admin-stats error:', err);
