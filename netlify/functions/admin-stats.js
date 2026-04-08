@@ -259,11 +259,19 @@ exports.handler = async (event) => {
       if (f > 0) usersWithFreezer++;
       if (g > 0) usersWithGroceries++;
       if (a > 0) usersWithAssignments++;
-      // Onboarded = the user actually completed the first-run guide.
-      // (Previously we counted any non-empty onboarding object, which is
-      // initialized to {guideSeen:false, firstRunComplete:false} on signup,
-      // so it counted every user.)
-      if (u.onboarding?.firstRunComplete === true) usersOnboarded++;
+      // Onboarded = the user has reached the core "aha" of planning their week.
+      // We no longer trust `firstRunComplete` alone: the onboarding guide is now
+      // optional/soft, and a version bump resets the flag, so long-time users can
+      // end up marked "not onboarded" even after heavy use. Behavioral definition:
+      //   - explicit firstRunComplete === true, OR
+      //   - has planned at least one meal, OR
+      //   - has added at least one of their own recipes
+      // Any of those signals = this person has used the core loop.
+      const _isOnboarded =
+        (u.onboarding?.firstRunComplete === true) ||
+        (a > 0) ||
+        (r > 0);
+      if (_isOnboarded) usersOnboarded++;
     }
 
     const avg = (num, den) => den ? +(num / den).toFixed(1) : 0;
@@ -302,7 +310,12 @@ exports.handler = async (event) => {
       const ud = userDataMap[u.id];
       const loggedIn = !!loginsByUser[u.id];
       if (loggedIn) funnelLoggedIn++;
-      if (ud?.onboarding?.firstRunComplete === true) funnelOnboarded++;
+      // Same behavioral definition as summary counter above.
+      const _onboardedFunnel =
+        (ud?.onboarding?.firstRunComplete === true) ||
+        ((realAssignmentsByUser[u.id] || 0) > 0) ||
+        ((realRecipesByUser[u.id] || 0) > 0);
+      if (_onboardedFunnel) funnelOnboarded++;
       if ((realRecipesByUser[u.id]    || 0) > 0) funnelHasRecipe++;
       if ((realAssignmentsByUser[u.id] || 0) > 0) funnelHasAssignment++;
       if ((realGroceriesByUser[u.id]  || 0) > 0) funnelHasGrocery++;
@@ -394,7 +407,10 @@ exports.handler = async (event) => {
           recipes:     realRecipesByUser[u.id]    || 0,
           assignments: realAssignmentsByUser[u.id] || 0,
           groceries:   realGroceriesByUser[u.id]  || 0,
-          onboarded:   ud?.onboarding?.firstRunComplete === true,
+          onboarded:
+            (ud?.onboarding?.firstRunComplete === true) ||
+            ((realAssignmentsByUser[u.id] || 0) > 0) ||
+            ((realRecipesByUser[u.id] || 0) > 0),
           status:      statusFor(ageDays, daysSince, hasLogin),
         };
       })

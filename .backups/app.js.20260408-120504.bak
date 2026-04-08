@@ -6,21 +6,17 @@ const K = {
   flexItems:'mpos_flex_v2', freezer:'mpos_freezer_v2',
   checks:'mpos_checks_v2', adhocItems:'mpos_adhoc_v2',
   categoryItems:'mpos_catitems_v2',
-  onboarding:'mpos_onboarding_v2',
 };
 
-const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-const DAY_FULL = {monday:'Monday',tuesday:'Tuesday',wednesday:'Wednesday',thursday:'Thursday',friday:'Friday',saturday:'Saturday',sunday:'Sunday'};
-const DAY_SHORT = {monday:'Mon',tuesday:'Tue',wednesday:'Wed',thursday:'Thu',friday:'Fri',saturday:'Sat',sunday:'Sun'};
-const WEEKDAYS = ['monday','tuesday','wednesday','thursday','friday']; // subset used by legacy loops
-const WEEKEND = ['saturday','sunday'];
+const DAYS = ['monday','tuesday','wednesday','thursday','friday'];
+const DAY_FULL = {monday:'Monday',tuesday:'Tuesday',wednesday:'Wednesday',thursday:'Thursday',friday:'Friday'};
 const MEALS = ['breakfast','lunch','dinner'];
-const MEAL_LABEL = {breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner'};
+const MEAL_ICON = {breakfast:'🌅',lunch:'☀️',dinner:'🌙'};
 // ── What's New version (change this + modal content to trigger a new popup) ──
-const CURRENT_UPDATE_VERSION = '2026-04-08-3';
+const CURRENT_UPDATE_VERSION = '2026-04-08-1';
 
-const CATS = ['Produce','Protein','Grains & Breads','Dairy / Dairy-Free','Pantry & Seasonings'];
-const CAT_ICON = {'Produce':'🥬','Protein':'🍗','Grains & Breads':'🌾','Dairy / Dairy-Free':'🥛','Pantry & Seasonings':'🧂'};
+const CATS = ['Produce','Protein','Grains & Breads','Dairy / Dairy-Free','Pantry & Seasonings','Freezer / Flex','Snacks / Extras'];
+const CAT_ICON = {'Produce':'🥬','Protein':'🍗','Grains & Breads':'🌾','Dairy / Dairy-Free':'🥛','Pantry & Seasonings':'🧂','Freezer / Flex':'❄️','Snacks / Extras':'🥜'};
 
 const MEAL_CATEGORIES = [
   {id:'goto',        icon:'⚡', name:'Go-To Meal',       sub:'Your reliable, no-decision choice'},
@@ -256,412 +252,20 @@ let categoryItems = load(K.categoryItems, []);
 if (recipes === null) { recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))})); save(K.recipes, recipes); }
 
 // ╔═══════════════════════════════════════╗
-//   SLOT SCHEMA MIGRATION (non-destructive)
-// ╚═══════════════════════════════════════╝
-// Slot shape going forward:
-//   mealPlan[day][meal] = { state:'cook'|'skipped', recipeId, name, servings, mealType, note, ... }
-// Absence of an entry  = unplanned (rendered as "—" / treated like skipped-no-note).
-// Old data had entries without a `state` field but always with a recipeId — those are
-// all implicitly `state:'cook'`. Weekend days didn't exist in the old schema and default
-// to no entries, which is exactly the behavior we want.
-// We also carry any legacy day-level AM/PM week notes into per-slot notes so nothing is lost.
-function migrateSlotSchema(){
-  try {
-    let touched = false;
-    // Helper: strip poisoned string values ("undefined", "null", "NaN") that may
-    // have been stored by earlier template-literal bugs. Returns clean string or ''.
-    const _cleanStr = (v) => {
-      if(v == null) return '';
-      const s = String(v).trim();
-      if(!s) return '';
-      const lower = s.toLowerCase();
-      if(lower === 'undefined' || lower === 'null' || lower === 'nan') return '';
-      return s;
-    };
-    DAYS.forEach(d=>{
-      if(mealPlan[d] && typeof mealPlan[d] === 'object'){
-        MEALS.forEach(m=>{
-          let a = mealPlan[d][m];
-          // Drop non-object legacy entries (strings, null, undefined) entirely
-          if(a != null && typeof a !== 'object'){
-            delete mealPlan[d][m];
-            touched = true;
-            return;
-          }
-          if(!a || typeof a !== 'object') return;
-          // Sanitize poisoned string fields
-          const cleanName = _cleanStr(a.name);
-          if(a.name !== cleanName){ a.name = cleanName; touched = true; }
-          const cleanNote = _cleanStr(a.note);
-          if(a.note !== cleanNote){ a.note = cleanNote; touched = true; }
-          // Legacy-shape detection: stamp state
-          if(!a.state){
-            a.state = 'cook';
-            if(typeof a.note !== 'string') a.note = '';
-            touched = true;
-          }
-          // Carry forward legacy meal-type "not cooking" entries into skipped with label
-          //   - leftovers → {state:'skipped', note:'Leftovers'}
-          //   - eatingout/out/lunchout/takeout → {state:'skipped', note:'Eating out'}
-          // But only if there's no recipeId (otherwise it was a cooked recipe tagged leftovers, keep it)
-          if(a.state === 'cook' && !a.recipeId && !a.freezerId && a.mealType){
-            const mt = String(a.mealType).toLowerCase();
-            if(mt === 'leftovers'){
-              mealPlan[d][m] = {state:'skipped', recipeId:null, note: a.name && a.name !== 'Leftovers' ? a.name : 'Leftovers'};
-              touched = true;
-              return;
-            }
-            if(['eatingout','out','lunchout','takeout'].includes(mt)){
-              mealPlan[d][m] = {state:'skipped', recipeId:null, note: a.name && a.name !== 'Eating out' ? a.name : 'Eating out'};
-              touched = true;
-              return;
-            }
-            if(mt === 'freezer'){
-              // Legacy freezer entry without freezerId — leave as skipped with the name
-              mealPlan[d][m] = {state:'skipped', recipeId:null, note: a.name || 'Freezer meal'};
-              touched = true;
-              return;
-            }
-          }
-          // Catch-all: cook state, no recipeId, no freezerId, has a name → preserve as skipped-with-note
-          if(a.state === 'cook' && !a.recipeId && !a.freezerId && a.name){
-            mealPlan[d][m] = {state:'skipped', recipeId:null, note: a.name};
-            touched = true;
-            return;
-          }
-          // Catch-all: cook state with no recipeId, no freezerId, no name — clear it (would render "Pick one" forever)
-          if(a.state === 'cook' && !a.recipeId && !a.freezerId && !a.name){
-            delete mealPlan[d][m];
-            touched = true;
-            return;
-          }
-        });
-      }
-    });
-    // Carry legacy AM/PM notes to breakfast/dinner slot notes (lossless, additive).
-    if(weekNotes && typeof weekNotes === 'object'){
-      DAYS.forEach(d=>{
-        const wn = weekNotes[d];
-        if(!wn || typeof wn !== 'object') return;
-        if(!mealPlan[d]) mealPlan[d] = {};
-        if(wn.am && (!mealPlan[d].breakfast || !mealPlan[d].breakfast.note)){
-          if(!mealPlan[d].breakfast) mealPlan[d].breakfast = {state:'skipped', recipeId:null, note:''};
-          if(!mealPlan[d].breakfast.note) mealPlan[d].breakfast.note = String(wn.am);
-          touched = true;
-        }
-        if(wn.pm && (!mealPlan[d].dinner || !mealPlan[d].dinner.note)){
-          if(!mealPlan[d].dinner) mealPlan[d].dinner = {state:'skipped', recipeId:null, note:''};
-          if(!mealPlan[d].dinner.note) mealPlan[d].dinner.note = String(wn.pm);
-          touched = true;
-        }
-      });
-    }
-    if(touched){
-      // Persist the stamped shape but DO NOT touch the legacy weekNotes key (safety net).
-      try { localStorage.setItem(K.mealPlan, JSON.stringify(mealPlan)); } catch {}
-    }
-  } catch(e) { /* migration is best-effort; never block app boot */ }
-}
-migrateSlotSchema();
-
-// ── Slot helpers ───────────────────────────────────────────────────────────
-function getSlot(day,meal){ return (mealPlan[day]&&mealPlan[day][meal])||null; }
-function isSlotCook(day,meal){ const s=getSlot(day,meal); return !!(s && s.state==='cook'); }
-function isSlotSkipped(day,meal){ const s=getSlot(day,meal); return !s || s.state==='skipped'; }
-function setSlotCook(day,meal){
-  if(!mealPlan[day]) mealPlan[day]={};
-  const existing = mealPlan[day][meal] || {};
-  // If we're transitioning FROM a skipped state, the existing note was the skip
-  // reason ("Leftovers", "Eating out", etc.) — don't carry it into the cook slot.
-  const carryNote = (existing.state==='cook') ? (existing.note||'') : '';
-  mealPlan[day][meal] = Object.assign({}, existing, {state:'cook', note:carryNote});
-  if(!('recipeId' in mealPlan[day][meal])) mealPlan[day][meal].recipeId = null;
-}
-function setSlotSkipped(day,meal,note){
-  if(!mealPlan[day]) mealPlan[day]={};
-  mealPlan[day][meal] = {state:'skipped', recipeId:null, note:(note||'').trim()};
-}
-function clearSlot(day,meal){
-  if(mealPlan[day]) delete mealPlan[day][meal];
-}
-function setSlotNote(day,meal,note){
-  if(!mealPlan[day]) mealPlan[day]={};
-  if(!mealPlan[day][meal]) mealPlan[day][meal]={state:'skipped', recipeId:null, note:''};
-  mealPlan[day][meal].note = String(note||'');
-}
-
-// ╔═══════════════════════════════════════╗
-//   PLAN-THIS-WEEK — 2-modal flow
-// ╚═══════════════════════════════════════╝
-// Draft state lives outside mealPlan until the user hits "Done" so Cancel is clean.
-let _planDraft = null; // { cook: { 'monday_dinner': true, ... }, notes: { 'monday_dinner': 'text' } }
-
-function openPlanWeekModal1(){
-  // Seed the draft from current mealPlan so "Adjust" feels like editing, not restarting.
-  _planDraft = { cook: {}, notes: {} };
-  DAYS.forEach(d=>MEALS.forEach(m=>{
-    const s = getSlot(d,m);
-    const key = d+'_'+m;
-    if(s && s.state==='cook') _planDraft.cook[key] = true;
-    if(s && s.note) _planDraft.notes[key] = s.note;
-  }));
-  _renderPlanModal1();
-  const ov = document.getElementById('planModal1');
-  if(ov) ov.classList.add('open');
-}
-
-function _renderPlanModal1(){
-  const body = document.getElementById('planModal1Body');
-  if(!body) return;
-  const countEl_id = 'planModal1Count';
-  let html = '';
-  html += '<div class="plan-modal-intro">Tap the meals you\'re cooking.<br><span style="color:var(--text-3);font-size:12px">Leave the rest — we\'ll handle those.</span></div>';
-  // Column header pills
-  html += '<div class="plan-grid-wrap"><div class="plan-grid">';
-  html += '<div class="plan-grid-corner"></div>';
-  MEALS.forEach(m=>{
-    html += `<div class="plan-col-head" data-meal="${m}" id="planColHead-${m}">${MEAL_LABEL[m]}</div>`;
-  });
-  DAYS.forEach(d=>{
-    const weekend = (d==='saturday'||d==='sunday');
-    html += `<div class="plan-row-head${weekend?' weekend':''}">${DAY_SHORT[d]}</div>`;
-    MEALS.forEach(m=>{
-      const key = d+'_'+m;
-      const on = !!_planDraft.cook[key];
-      html += `<button type="button" class="plan-cell${on?' on':''}${weekend?' weekend':''}" data-key="${key}" onclick="_togglePlanCell('${d}','${m}')" aria-pressed="${on}"><span class="plan-cell-check">${on?'✓':''}</span></button>`;
-    });
-  });
-  html += '</div></div>';
-  html += `<div class="plan-counter" id="${countEl_id}"></div>`;
-  html += '<div class="plan-quick-row">';
-  html += '<button type="button" class="btn btn-secondary btn-sm" onclick="_planQuickAllDinners()">All weekday dinners</button>';
-  html += '<button type="button" class="btn btn-secondary btn-sm" onclick="_planQuickClear()">Clear all</button>';
-  html += '</div>';
-  body.innerHTML = html;
-  _updatePlanCounter();
-  _updatePlanColumnHeads();
-}
-
-function _updatePlanCounter(){
-  const el = document.getElementById('planModal1Count');
-  if(!el) return;
-  const n = Object.keys(_planDraft.cook).filter(k=>_planDraft.cook[k]).length;
-  let msg = 'Tap the meals you\'re cooking';
-  if(n===1||n===2) msg = 'Nice start';
-  else if(n>=3 && n<=5) msg = 'Looking good';
-  else if(n>=6 && n<=10) msg = 'Big week';
-  else if(n>=11) msg = 'Chef mode';
-  el.textContent = `${n} meal${n===1?'':'s'} planned · ${msg}`;
-}
-
-function _updatePlanColumnHeads(){
-  MEALS.forEach(m=>{
-    const head = document.getElementById('planColHead-'+m);
-    if(!head) return;
-    const anyOn = DAYS.some(d=>_planDraft.cook[d+'_'+m]);
-    head.classList.toggle('active', anyOn);
-  });
-}
-
-function _togglePlanCell(day,meal){
-  const key = day+'_'+meal;
-  if(_planDraft.cook[key]) delete _planDraft.cook[key];
-  else _planDraft.cook[key] = true;
-  // Targeted re-render of the cell + counter + col head for perf/feel
-  const btn = document.querySelector(`.plan-cell[data-key="${key}"]`);
-  if(btn){
-    const on = !!_planDraft.cook[key];
-    btn.classList.toggle('on', on);
-    btn.setAttribute('aria-pressed', on?'true':'false');
-    const chk = btn.querySelector('.plan-cell-check');
-    if(chk) chk.textContent = on?'✓':'';
-  }
-  _updatePlanCounter();
-  _updatePlanColumnHeads();
-}
-
-function _planQuickAllDinners(){
-  WEEKDAYS.forEach(d=>{ _planDraft.cook[d+'_dinner'] = true; });
-  _renderPlanModal1();
-}
-function _planQuickClear(){
-  _planDraft.cook = {};
-  _renderPlanModal1();
-}
-
-function closePlanModal1(){
-  const ov = document.getElementById('planModal1');
-  if(ov) ov.classList.remove('open');
-}
-
-function planModal1Next(){
-  closePlanModal1();
-  openPlanWeekModal2();
-}
-
-function openPlanWeekModal2(){
-  _renderPlanModal2();
-  const ov = document.getElementById('planModal2');
-  if(ov) ov.classList.add('open');
-}
-
-// Per-meal rotating placeholder prompts — real schedule-conflict examples only
-const _NOTE_PROMPTS = {
-  breakfast: [
-    'early meeting',
-    'commute to office',
-    'appointment',
-  ],
-  lunch: [
-    'work lunch',
-    "kid's field trip",
-    'meetings back-to-back',
-  ],
-  dinner: [
-    "kid's practice at 6",
-    'dinner party for 6',
-    'late night at office',
-    'family plans',
-  ],
-};
-function _notePlaceholder(meal, idx){
-  const arr = _NOTE_PROMPTS[meal] || ['add a note'];
-  return 'e.g. ' + arr[idx % arr.length];
-}
-
-function _renderPlanModal2(){
-  const body = document.getElementById('planModal2Body');
-  if(!body) return;
-  // Group by day: each day shows its cook slots (and optionally skipped slots).
-  const perDay = {};
-  let totalCook = 0, totalSkip = 0;
-  DAYS.forEach(d=>{
-    perDay[d] = { cook: [], skip: [] };
-    MEALS.forEach(m=>{
-      const key = d+'_'+m;
-      if(_planDraft.cook[key]){ perDay[d].cook.push({meal:m,key}); totalCook++; }
-      else { perDay[d].skip.push({meal:m,key}); totalSkip++; }
-    });
-  });
-
-  let html = '';
-  const _guideActive = !isOnboardingComplete() || _guideMode || !hasSeenGuide();
-  if(_guideActive){
-    html += '<div class="plan-modal-step-label">Step 2 of 4</div>';
-  }
-  html += '<div class="plan-modal-intro">Anything to plan around? <span style="color:var(--text-3);font-size:12px">(all optional)</span></div>';
-
-  if(totalCook===0){
-    html += '<div style="padding:16px;text-align:center;color:var(--text-3);font-size:13px">No meals selected to cook this week. That\'s fine — tap <strong>Done</strong> to head Home.</div>';
-  } else {
-    html += '<div class="plan-days-list">';
-    let promptIdx = 0;
-    DAYS.forEach(d=>{
-      if(perDay[d].cook.length===0) return; // only days with cook slots
-      const weekend = (d==='saturday'||d==='sunday');
-      html += `<div class="plan-day-group${weekend?' weekend':''}">`;
-      html += `<div class="plan-day-head">${DAY_FULL[d]}</div>`;
-      html += '<div class="plan-day-meals">';
-      perDay[d].cook.forEach(({meal,key})=>{
-        const noteVal = _planDraft.notes[key] || '';
-        const ph = _notePlaceholder(meal, promptIdx++);
-        html += `<div class="plan-note-row"><div class="plan-note-label"><span class="plan-note-check">✓</span> ${MEAL_LABEL[meal]}</div><input type="text" class="plan-note-input" data-key="${key}" value="${_esc(noteVal)}" placeholder="${_esc(ph)}" oninput="_planDraft.notes['${key}']=this.value"></div>`;
-      });
-      html += '</div></div>';
-    });
-    html += '</div>';
-  }
-  body.innerHTML = html;
-}
-
-function _esc(s){
-  let v = s == null ? '' : String(s);
-  // Strip poisoned string literals from any legacy data
-  const lower = v.trim().toLowerCase();
-  if(lower === 'undefined' || lower === 'null' || lower === 'nan') v = '';
-  return v.replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-}
-
-function closePlanModal2(){
-  const ov = document.getElementById('planModal2');
-  if(ov) ov.classList.remove('open');
-}
-
-function planModal2Back(){
-  closePlanModal2();
-  openPlanWeekModal1();
-}
-
-function planModal2Save(){
-  // Apply the draft into mealPlan.
-  DAYS.forEach(d=>MEALS.forEach(m=>{
-    const key = d+'_'+m;
-    const wantsCook = !!_planDraft.cook[key];
-    const note = (_planDraft.notes[key]||'').trim();
-    const existing = getSlot(d,m);
-    if(wantsCook){
-      // Preserve existing recipe if already assigned.
-      if(existing && existing.recipeId){
-        setSlotCook(d,m);
-        mealPlan[d][m].note = note;
-      } else {
-        setSlotCook(d,m);
-        mealPlan[d][m].note = note;
-      }
-    } else {
-      // Skipped
-      if(note || (existing && existing.state==='skipped')){
-        setSlotSkipped(d,m,note);
-      } else {
-        // No note, no prior skipped state → clear the slot entirely
-        clearSlot(d,m);
-      }
-    }
-  }));
-  save(K.mealPlan, mealPlan);
-  closePlanModal2();
-  _planDraft = null;
-  renderDashboard();
-  renderOnboardingUI();
-}
-
-// ╔═══════════════════════════════════════╗
 //   ONBOARDING STATE
 // ╚═══════════════════════════════════════╝
-// version: bumped when we materially change the guide. Users at an older
-// version are walked through the new guide exactly once.
-const ONBOARDING_VERSION = 2;
-// Loaded from localStorage on boot; falls back to defaults for first-time users.
-// Also gets overwritten by cloud sync (applyCloudData) when Supabase has a more recent copy.
-let onboardingState = load(K.onboarding, { firstRunComplete: false, guideSeen: false, version: ONBOARDING_VERSION });
-_migrateOnboardingState();
+let onboardingState = { firstRunComplete: false, guideSeen: false };
 
 function isOnboardingComplete() { return onboardingState.firstRunComplete; }
 function hasSeenGuide() { return onboardingState.guideSeen === true; }
-function _persistOnboardingState(){
-  // Single source of truth for onboarding persistence: local first, then cloud via save().
-  save(K.onboarding, onboardingState);
-}
-
-// Normalizes state after loading from storage or cloud sync. If the user
-// hasn't seen the current guide version, reset the completion flags so the
-// new walkthrough shows up exactly once.
-function _migrateOnboardingState(){
-  if(!onboardingState || typeof onboardingState !== 'object'){
-    onboardingState = { firstRunComplete:false, guideSeen:false, version:ONBOARDING_VERSION };
-    return;
-  }
-  const ver = onboardingState.version || 1;
-  if(ver < ONBOARDING_VERSION){
-    onboardingState.firstRunComplete = false;
-    onboardingState.guideSeen = false;
-    onboardingState.version = ONBOARDING_VERSION;
-  }
-}
 
 function detectOnboardingCompletion() {
-  // Retired in v2 — completion is now only driven by the "I'm Done" button
-  // on Step 4. Left as a no-op to preserve any call sites.
+  // If user already has at least 1 recipe on the menu AND at least 1 meal assigned → complete
+  const hasMenuRecipe = recipes.some(r => r.onMenu);
+  const hasMealAssigned = DAYS.some(d => MEALS.some(m => mealPlan[d] && mealPlan[d][m]));
+  if (hasMenuRecipe && hasMealAssigned) {
+    onboardingState.firstRunComplete = true;
+  }
 }
 
 // ── Soft Gating ─────────────────────────────────────────────────────────
@@ -677,9 +281,15 @@ function checkOnboardingGate(targetTab){
   if(targetTab==='menu' && !hasRecipes){
     msg='Add recipes first so you have meals to choose from.';
     btn='Go to Recipes'; redirect='recipes';
+  } else if(targetTab==='weeksetup' && !hasMenuRecipes){
+    msg='Build your No-Decision Menu first so you have meals to plan with.';
+    btn='Go to Menu'; redirect='menu';
+  } else if(targetTab==='mealplan' && !hasMenuRecipes){
+    msg='Build your No-Decision Menu first so you have meals to assign.';
+    btn='Go to Menu'; redirect='menu';
   } else if(targetTab==='grocerylist' && mealCount<1){
-    msg='Plan at least one meal on your Home tab to generate your grocery list.';
-    btn='Go Home'; redirect='dashboard';
+    msg='Assign at least one meal to your plan to generate your grocery list.';
+    btn='Go to Meals'; redirect='mealplan';
   }
 
   const gateEl=document.getElementById('softGate-'+targetTab);
@@ -696,39 +306,34 @@ let _guideMode = false; // true = user re-enabled guide after completion
 
 function renderOnboardingUI(){
   // Clear all gates on render (they're re-evaluated on tab switch)
-  ['recipes','menu','grocerylist','dashboard'].forEach(id=>{
+  ['recipes','menu','weeksetup','mealplan','grocerylist'].forEach(id=>{
     const gate=document.getElementById('softGate-'+id);
     if(gate) gate.innerHTML='';
   });
 
-  // Toggle setup guide row inside Settings modal based on onboarding state
-  const guideRow=document.getElementById('settingsGuideRow');
-  if(guideRow){
-    guideRow.style.display=isOnboardingComplete()?'':'none';
-    const titleEl = guideRow.querySelector('.settings-row-title');
-    if(titleEl) titleEl.textContent=(_guideMode||!hasSeenGuide())?'📖 Hide Setup Guide':'📖 Show Setup Guide';
-  }
+  // Toggle setup guide button visibility
+  const guideAction=document.getElementById('setupGuideAction');
+  if(guideAction) guideAction.style.display=isOnboardingComplete()?'':'none';
+  const guideBtn=document.getElementById('setupGuideBtn');
+  if(guideBtn) guideBtn.textContent=(_guideMode||!hasSeenGuide())?'📖 Hide Setup Guide':'📖 Show Setup Guide';
 
   const showGuide = !isOnboardingComplete() || _guideMode || !hasSeenGuide();
 
-  // IDs that may hold onboarding content — cleared on every render
-  const ALL_BANNER_IDS = ['onboardingBanner-1','onboardingBanner-2','onboardingBanner-3','onboardingBanner-4','onboardingBanner-5','onboardingBanner-6','onboardingBanner-dash'];
-  const ALL_CTA_IDS = ['recipesCTA','menuCTA','weekSetupCTA','mealPlanCTA','groceryCTA'];
-  const clearAllBanners = () => {
-    ALL_BANNER_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
-    ALL_CTA_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
-  };
-
   if(!showGuide){
-    clearAllBanners();
+    // Clear all banners and CTAs
+    for(let i=1;i<=6;i++){
+      const b=document.getElementById('onboardingBanner-'+i);
+      if(b) b.innerHTML='';
+    }
+    ['recipesCTA','menuCTA','weekSetupCTA','mealPlanCTA','groceryCTA'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.innerHTML='';
+    });
     return;
   }
 
-  // Reset before re-rendering so stale banners (e.g. Step 1 when we should now show Step 3) don't linger
-  clearAllBanners();
-
   // Helper: build a banner with optional Next button on the right
-  // phaseLabel = e.g. "Setup 1 of 3" or "Step 1 of 4"
+  // phaseLabel = e.g. "Setup 1 of 2" or "Step 1 of 3"
   function obBanner(phaseLabel, title, desc, nextBtn){
     return `<div class="onboarding-banner">
       <div class="ob-banner-row">
@@ -742,86 +347,65 @@ function renderOnboardingUI(){
     </div>`;
   }
 
-  // ─── SETUP PHASE (1–3): one-time foundation ───
-  // Setup 1 of 3 — Recipes
+  // Setup 1 of 3 — Recipes (one-time setup)
   const next1=recipes.length>=1?`<button class="btn btn-primary btn-next" onclick="switchTab('menu')">Next →</button>`:'';
   const b1=document.getElementById('onboardingBanner-1');
   if(b1) b1.innerHTML=obBanner('Setup 1 of 3','Build Your Recipe Library','Browse the recipe library or add your own meals — anything you already cook and enjoy. These are the building blocks for your entire plan. You only need to do this once; come back and add more anytime.', next1);
+  const cta1=document.getElementById('recipesCTA'); if(cta1) cta1.innerHTML='';
 
-  // Setup 2 of 3 — No-Decision Menu
+  // Setup 2 of 3 — No-Decision Menu (one-time setup)
   const menuRecipes=recipes.filter(r=>r.onMenu);
   const next2=menuRecipes.length>=1?`<button class="btn btn-primary btn-next" onclick="switchTab('freezer')">Next →</button>`:'';
   const b2=document.getElementById('onboardingBanner-2');
   if(b2) b2.innerHTML=obBanner('Setup 2 of 3','Fill Your No-Decision Menu','Pick the meals you want on rotation this week from your recipe library. This becomes your short list — the only options you choose from when planning. Fewer choices means zero decision fatigue.', next2);
+  const cta2=document.getElementById('menuCTA'); if(cta2) cta2.innerHTML='';
 
-  // Setup 3 of 3 — Freezer (optional). Advances to Step 1 on Home, does NOT complete onboarding.
-  const next6=`<button class="btn btn-primary btn-next" onclick="switchTab('dashboard')">Next →</button>`;
-  const b6=document.getElementById('onboardingBanner-6');
-  if(b6) b6.innerHTML=obBanner('Setup 3 of 3','Stock Your Freezer (Optional)','Already have meals in the freezer? Log them here so you can drop them into any day of your plan. Totally optional — skip if your freezer is empty and come back anytime you batch cook.', next6);
-
-  // ─── WEEKLY FLOW PHASE (Steps 1–4): the repeating planning loop ───
-  // Count cook slots and which ones have recipes assigned, to decide
-  // whether the dashboard shows Step 1 (plan) or Step 3 (assign).
-  let totalCookSlots = 0;
-  let unassignedCookSlots = 0;
-  DAYS.forEach(d=>MEALS.forEach(m=>{
-    const s = mealPlan[d]&&mealPlan[d][m];
-    if(s && s.state==='cook'){
-      totalCookSlots++;
-      if(!s.recipeId && !s.freezerId) unassignedCookSlots++;
-    }
-  }));
-  // A week is considered "planned" if ANY slot entry exists (cook or skipped).
-  // This matches how the Plan This Week modal writes state.
-  let anySlotTouched = false;
-  DAYS.forEach(d=>MEALS.forEach(m=>{
-    if(mealPlan[d]&&mealPlan[d][m]) anySlotTouched = true;
-  }));
-
-  const bDash=document.getElementById('onboardingBanner-dash');
-  if(bDash){
-    if(!anySlotTouched){
-      // Step 1 — plan this week
-      const step1Btn=`<button class="btn btn-primary btn-next" onclick="openPlanWeekModal1()">Plan This Week →</button>`;
-      bDash.innerHTML=obBanner('Step 1 of 4','Plan Your Week','Tap Plan This Week and pick which meals you\'re actually cooking. Takes about 30 seconds. Anything you don\'t pick, we\'ll treat as leftovers, eating out, or skipped — no pressure.', step1Btn);
-    } else {
-      // Step 3 — assign recipes to cook slots. Content varies by state.
-      let title, desc, btn;
-      if(totalCookSlots === 0){
-        // Nothing to cook this week — subtle nudge to Groceries
-        title = 'Nothing to Cook This Week';
-        desc = 'You\'ve marked every meal as skipped, leftovers, or eating out. That\'s fine — head to Groceries for your flex & backup list just in case.';
-        btn = `<button class="btn btn-primary btn-next" onclick="switchTab('grocerylist')">See Groceries →</button>`;
-      } else if(unassignedCookSlots === 0){
-        // All cook slots have recipes — move on
-        title = 'All Meals Assigned';
-        desc = 'Nice — every cooking slot has a recipe. Your grocery list is ready.';
-        btn = `<button class="btn btn-primary btn-next" onclick="switchTab('grocerylist')">See Groceries →</button>`;
-      } else {
-        // Normal case — instruct user to tap slots
-        title = 'Assign Your Meals';
-        desc = `Tap any cooking slot below and pick a recipe from your no-decision menu. ${unassignedCookSlots} slot${unassignedCookSlots===1?'':'s'} still need${unassignedCookSlots===1?'s':''} a meal. <strong>Tip:</strong> set servings per meal — your grocery list scales automatically.`;
-        btn = `<button class="btn btn-secondary btn-next" onclick="switchTab('grocerylist')">Skip to Groceries →</button>`;
-      }
-      bDash.innerHTML=obBanner('Step 3 of 4', title, desc, btn);
-    }
-  }
-
-  // Step 4 — Groceries. "I'm Done" here is what flips firstRunComplete=true.
-  const isReviewMode = _guideMode || (isOnboardingComplete() && !hasSeenGuide());
-  const step4Btn = isReviewMode
+  // Setup 3 of 3 — Freezer (one-time setup, skippable). Ends the guide → Dashboard.
+  const isReviewSetup3 = _guideMode || (isOnboardingComplete() && !hasSeenGuide());
+  const next6 = isReviewSetup3
     ? `<button class="btn btn-primary btn-next" onclick="toggleSetupGuide()">Hide Guide</button>`
-    : `<button class="btn btn-primary btn-next" onclick="completeOnboarding()">I'm Done →</button>`;
+    : `<button class="btn btn-primary btn-next" onclick="completeOnboarding()">I'm Done — View Dashboard →</button>`;
+  const b6=document.getElementById('onboardingBanner-6');
+  if(b6) b6.innerHTML=obBanner('Setup 3 of 3','Stock Your Freezer (Optional)','Already have meals in the freezer? Log them here so you can drop them into any day of your plan. Totally optional — skip if your freezer is empty and come back anytime you batch cook. Once you click done, your Dashboard becomes your home base — go to Schedule, Meals, and Groceries anytime to fill it in.', next6);
+
+  // ── Weekly workflow banners (Schedule / Meals / Groceries) ──
+  // Only show these in explicit review mode (user tapped "Show Setup Guide"
+  // from the footer). Fresh-run onboarding now ends at Setup Step 3 → Dashboard.
+  const showWeekly = _guideMode;
+  const b3=document.getElementById('onboardingBanner-3');
+  const b4=document.getElementById('onboardingBanner-4');
   const b5=document.getElementById('onboardingBanner-5');
-  if(b5) b5.innerHTML=obBanner('Step 4 of 4','Grab Your Grocery List','Your list is built from the meals you assigned — quantities calculated, sorted by store section. Check items off as you shop, and use the Flex & Backup section for safety-net meals. When you\'re done, tap I\'m Done to retire this guide.', step4Btn);
+  const cta3=document.getElementById('weekSetupCTA');
+  const cta4=document.getElementById('mealPlanCTA');
+  const cta5=document.getElementById('groceryCTA');
+  if(!showWeekly){
+    if(b3) b3.innerHTML='';
+    if(b4) b4.innerHTML='';
+    if(b5) b5.innerHTML='';
+    if(cta3) cta3.innerHTML='';
+    if(cta4) cta4.innerHTML='';
+    if(cta5) cta5.innerHTML='';
+  } else {
+    // Review mode — show the three weekly-loop tips with a "Hide Guide" exit.
+    const next3=`<button class="btn btn-primary btn-next" onclick="switchTab('mealplan')">Next →</button>`;
+    if(b3) b3.innerHTML=obBanner('Weekly Loop 1 of 3','Map Your Week','Add what\'s going on this week — busy nights, events, late meetings. These notes show up next to each day in your meal plan so you pick meals that actually fit your schedule. Takes about 30 seconds.', next3);
+    if(cta3) cta3.innerHTML='';
+
+    const next4=`<button class="btn btn-primary btn-next" onclick="switchTab('grocerylist')">Next →</button>`;
+    if(b4) b4.innerHTML=obBanner('Weekly Loop 2 of 3','Assign Your Meals','Give each day a meal from your menu. Busy night? Pick a Go-To meal. Free evening? Try something new. Your schedule notes are right there to guide you — this should take 30 seconds.', next4);
+    if(cta4) cta4.innerHTML='';
+
+    const doneBtn=`<button class="btn btn-primary btn-next" onclick="toggleSetupGuide()">Hide Guide</button>`;
+    if(b5) b5.innerHTML=obBanner('Weekly Loop 3 of 3','Review Your Grocery List','Your grocery list is built automatically from your meal plan. Quantities are calculated, items are sorted by aisle. Review it, check off what you have, and you\'re ready to shop.', doneBtn);
+    if(cta5) cta5.innerHTML='';
+  }
 }
 
 function completeOnboarding(){
   onboardingState.firstRunComplete=true;
   onboardingState.guideSeen=true;
-  onboardingState.version=ONBOARDING_VERSION;
   _guideMode=false;
-  _persistOnboardingState(); // local + cloud
+  save(K.recipes,recipes); // triggers Supabase sync via patched save
   renderOnboardingUI();
   // Dashboard is the home tab once setup is done
   switchTab('dashboard');
@@ -833,7 +417,7 @@ function toggleSetupGuide(){
   if(currentlyShowing){
     _guideMode=false;
     onboardingState.guideSeen=true;
-    _persistOnboardingState();
+    save(K.recipes,recipes);
     renderOnboardingUI();
   } else {
     _guideMode=true;
@@ -854,7 +438,7 @@ function startFreshWeek(){
   save(K.checks,checks);
   save(K.adhocItems,adhocItems);
   renderAll();
-  switchTab('dashboard');
+  switchTab('weeksetup');
 }
 
 function resetEverything(){
@@ -868,13 +452,12 @@ function resetEverything(){
   flexItems=DEFAULT_FLEX.map(f=>({...f}));
   freezer=[];
   categoryItems=[];
-  onboardingState={firstRunComplete:false,guideSeen:false,version:ONBOARDING_VERSION};
+  onboardingState={firstRunComplete:false};
   // Re-seed starters
   recipes=STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))}));
   save(K.recipes,recipes); save(K.weekNotes,weekNotes); save(K.mealPlan,mealPlan);
   save(K.checks,checks); save(K.adhocItems,adhocItems); save(K.staples,staples);
   save(K.flexItems,flexItems); save(K.freezer,freezer); save(K.categoryItems,categoryItems);
-  save(K.onboarding,onboardingState);
   renderAll();
   switchTab('recipes');
 }
@@ -960,10 +543,6 @@ document.addEventListener('click',()=>{
 //   NAV
 // ╚═══════════════════════════════════════╝
 function switchTab(id){
-  // Legacy tabs — redirect to Dashboard (Meals + Schedule now live inside the 2-modal flow)
-  if(id==='weeksetup' || id==='mealplan'){
-    id = 'dashboard';
-  }
   // Soft gating for first-time users
   if(!isOnboardingComplete()){
     const gated = checkOnboardingGate(id);
@@ -971,24 +550,19 @@ function switchTab(id){
   }
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  const sec=document.getElementById(id);
-  if(sec) sec.classList.add('active');
-  // Mark active nav tab by data attribute (index-free so reordering is safe)
-  const activeBtn = document.querySelector(`.nav-tab[data-tab="${id}"]`);
-  if(activeBtn) activeBtn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  const idx={dashboard:0,weeksetup:1,mealplan:2,grocerylist:3,menu:4,recipes:5,freezer:6}[id];
+  document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   // Set add context for library rendering
   if(id==='dashboard') { renderDashboard(); }
   if(id==='recipes') { _addContext='recipes'; renderLibrary(); renderOnboardingUI(); }
   if(id==='menu') { _addContext='menu'; renderMealSections(); renderOnboardingUI(); }
+  if(id==='weeksetup') { renderWeek(); renderOnboardingUI(); }
+  if(id==='mealplan') { renderMealPlan(); renderOnboardingUI(); }
   if(id==='grocerylist') { renderGrocery(); renderOnboardingUI(); }
   if(id==='freezer') renderFreezer();
   localStorage.setItem('mpos_active_tab', id);
   window.scrollTo(0, 0);
-  // FAB visibility follows the dashboard
-  if(typeof _updatePlanFab === 'function'){
-    const hasPlan = DAYS.some(d=>MEALS.some(m=>!!(mealPlan[d]&&mealPlan[d][m])));
-    _updatePlanFab(hasPlan);
-  }
 }
 
 // ╔═══════════════════════════════════════╗
@@ -1100,12 +674,12 @@ function renderLibrary(){
     card.className='lib-card';
     card.innerHTML=`
       <div class="lib-card-top">
-        <div class="lib-card-name">${_esc(r.name)}</div>
+        <div class="lib-card-name">${r.name}</div>
         <div><span class="lib-type-tag lib-type-custom" style="margin-right:4px">✏️ Custom</span><span class="lib-type-tag ${typeClass}">${typeName}</span></div>
       </div>
       <div class="lib-card-srv">${srvLabel}</div>
       <div class="lib-tags"><span class="lib-tag lib-tag-custom">Custom</span>${customTags}</div>
-      <div class="lib-card-ings">${_esc(ingList)}</div>
+      <div class="lib-card-ings">${ingList}</div>
       ${r.sourceUrl&&r.sourceUrl.startsWith('http')?`<a href="${r.sourceUrl}" target="_blank" rel="noopener" class="lib-source-link">View original recipe →</a>`:''}
       <div class="lib-card-footer" style="flex-wrap:wrap;gap:6px">
         ${footerAction}
@@ -1153,7 +727,7 @@ function renderLibrary(){
     card.className='lib-card';
     card.innerHTML=`
       <div class="lib-card-top">
-        <div class="lib-card-name">${_esc(lr.name)}</div>
+        <div class="lib-card-name">${lr.name}</div>
         <span class="lib-type-tag ${typeClass}">${typeName}</span>
       </div>
       <div class="lib-card-srv">${srvLabel}</div>
@@ -1242,14 +816,12 @@ function addToMenu(recipeId){
 //   STEP 1 — WEEK NOTES
 // ╚═══════════════════════════════════════╝
 function renderWeek(){
-  // Week badge (still used in header)
+  // Week badge
   const now=new Date(), d=now.getDay();
   const mon=new Date(now); mon.setDate(now.getDate()-(d===0?6:d-1));
-  const wb=document.getElementById('weekBadge');
-  if(wb) wb.textContent='Week of '+mon.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  document.getElementById('weekBadge').textContent='Week of '+mon.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 
   const grid=document.getElementById('weekGrid');
-  if(!grid) return; // legacy Schedule tab removed — no-op
   grid.innerHTML='';
   DAYS.forEach(day=>{
     const notes=weekNotes[day]||{am:'',pm:''};
@@ -1307,7 +879,7 @@ function renderDashboard(){
   const dateRangeEl=document.getElementById('dashDateRange');
   if(!body) return;
 
-  // Compute Monday of this week and Mon-Sun date labels
+  // Compute Monday of this week and Mon-Fri date labels
   const now=new Date();
   const dow=now.getDay(); // 0=Sun..6=Sat
   const mon=new Date(now); mon.setDate(now.getDate()-(dow===0?6:dow-1));
@@ -1317,343 +889,69 @@ function renderDashboard(){
     const dt=new Date(mon); dt.setDate(mon.getDate()+i);
     dayDates[d]=dt;
   });
+  const fri=dayDates.friday;
   if(dateRangeEl){
     const fmt={month:'short',day:'numeric'};
-    dateRangeEl.textContent=`${mon.toLocaleDateString('en-US',fmt)} – ${dayDates.sunday.toLocaleDateString('en-US',fmt)}`;
+    dateRangeEl.textContent=`${mon.toLocaleDateString('en-US',fmt)} – ${fri.toLocaleDateString('en-US',fmt)}`;
   }
 
-  // "Today" highlights the current day (Mon..Sun)
-  const todayIdx = dow===0 ? 6 : dow-1;
+  // "Today" only highlights Mon-Fri; Sat/Sun fall back to no highlight
+  const todayIdx=dow>=1&&dow<=5?dow-1:-1;
 
-  // Count how many cook slots are planned this week
-  let cookCount=0, hasAny=false;
-  DAYS.forEach(d=>MEALS.forEach(m=>{
-    const a = mealPlan[d]&&mealPlan[d][m];
-    if(a) hasAny = true;
-    if(a && a.state==='cook') cookCount++;
-  }));
+  // Count how many meals are planned this week
+  let filledCount=0;
+  DAYS.forEach(d=>{
+    MEALS.forEach(m=>{
+      if(mealPlan[d]&&mealPlan[d][m]) filledCount++;
+    });
+  });
 
-  // Empty state — nothing planned yet
-  if(!hasAny){
-    body.innerHTML = `
+  // Empty state — no meals planned at all
+  if(filledCount===0){
+    body.innerHTML=`
       <div class="dash-empty">
         <div class="dash-empty-icon">🍽️</div>
         <div class="dash-empty-title">Your week is wide open</div>
-        <div class="dash-empty-sub">Tap the button below to plan your week in about 30 seconds.</div>
-        <button class="btn btn-primary" onclick="openPlanWeekModal1()">Plan This Week →</button>
+        <div class="dash-empty-sub">Plug in what's happening each day, then assign meals. Your plan will show up here.</div>
+        <button class="btn btn-primary" onclick="switchTab('weeksetup')">Plan This Week →</button>
       </div>`;
-    _updatePlanFab(false);
     return;
   }
 
-  // Build streamlined day-card grid (7 day cards, Sat/Sun de-emphasized)
-  const fmtDate = {month:'short',day:'numeric'};
-  let html = '<div class="dash-grid">';
+  // Build day cards
+  const fmtDate={month:'short',day:'numeric'};
+  let html='<div class="dash-grid">';
   DAYS.forEach((day,i)=>{
-    const isToday = i===todayIdx;
-    const weekend = (day==='saturday'||day==='sunday');
-    const dateStr = dayDates[day].toLocaleDateString('en-US',fmtDate);
-    html += `<div class="dash-day-card${isToday?' today':''}${weekend?' weekend':''}">`;
-    html += `<div class="dash-day-header"><div><div class="dash-day-name">${DAY_FULL[day]}</div><div class="dash-day-date">${dateStr}</div></div></div>`;
+    const isToday=i===todayIdx;
+    const dateStr=dayDates[day].toLocaleDateString('en-US',fmtDate);
+    html+=`<div class="dash-day-card${isToday?' today':''}">
+      <div class="dash-day-header">
+        <div>
+          <div class="dash-day-name">${DAY_FULL[day]}</div>
+          <div class="dash-day-date">${dateStr}</div>
+        </div>
+        ${isToday?'<span class="dash-today-badge">Today</span>':''}
+      </div>`;
     MEALS.forEach(meal=>{
-      const a = mealPlan[day]&&mealPlan[day][meal];
-      const state = a && a.state ? a.state : 'skipped';
-      // For cook states we render the note as a sub-line; for skipped states the note IS the label, so don't double-print it.
-      const noteHtml = (state==='cook' && a && a.note) ? `<div class="dash-meal-sub">${_esc(a.note)}</div>` : '';
-      // A "noted" skipped slot (Leftovers / Eating out / anything with a note) is still an intentional plan —
-      // treat it visually like a planned meal so users see what they committed to.
-      const hasSkipNote = (state==='skipped' && a && a.note && String(a.note).trim().length>0);
-      const isPlanned = (state==='cook') || hasSkipNote;
-      const _rowCls = isPlanned ? 'dash-meal-row is-cook' : 'dash-meal-row is-skip';
-      const _lblCls = isPlanned ? 'dash-meal-label is-cook' : 'dash-meal-label is-skip';
-      html += `<div class="${_rowCls}" onclick="openSlotEditor('${day}','${meal}')" title="Click to edit">`;
-      html += `<div class="${_lblCls}">${meal}</div>`;
-
-      if(state==='cook' && a && a.recipeId){
-        // Recipe assigned — click on name opens cooking view (instructions + servings)
-        const _r = (recipes||[]).find(x=>x.id===a.recipeId);
-        const _nm = _r ? _r.name : (a.name||'Meal');
-        let _tipBits = [];
-        if(_r){
-          if(Array.isArray(_r.ingredients) && _r.ingredients.length){
-            _tipBits.push('Ingredients:\n' + _r.ingredients.map(i=>{
-              if(typeof i==='string') return '• '+i;
-              return '• ' + [i.qty,i.unit,i.name].filter(Boolean).join(' ');
-            }).join('\n'));
-          }
-          if(_r.notes && String(_r.notes).trim()){
-            _tipBits.push('Instructions:\n' + String(_r.notes).trim());
-          } else if(_r.instructions && String(_r.instructions).trim()){
-            _tipBits.push('Instructions:\n' + String(_r.instructions).trim());
-          }
-        }
-        const _tip = _tipBits.join('\n\n') || _nm;
-        html += `<div class="dash-meal-name cookable" title="${_esc(_tip)}" onclick="event.stopPropagation();openCookingView('${a.recipeId}','${day}','${meal}')">${_esc(_nm)}</div>`;
-      } else if(state==='cook' && a && a.freezerId){
-        // Freezer pull — row click opens slot editor
-        const _nm = a.name || 'Freezer meal';
-        html += `<div class="dash-meal-name freezer">❄ ${_esc(_nm)}</div>`;
-      } else if(state==='cook'){
-        // Cook but no recipe picked — row click opens slot editor
-        html += `<div class="dash-meal-name empty-cook">Pick one <span class="dash-slot-dot"></span></div>`;
-      } else {
-        // Skipped with a note (Leftovers / Eating out / custom) → render as a planned alt meal in dark text.
-        // Skipped with no note → leave blank and muted.
-        if(a && a.note){
-          const _n = String(a.note).trim();
-          html += `<div class="dash-meal-name planned-alt">${_esc(_n)}</div>`;
+      const asgn=mealPlan[day]&&mealPlan[day][meal];
+      html+=`<div class="dash-meal-row">
+        <div class="dash-meal-label">${MEAL_ICON[meal]} ${meal}</div>`;
+      if(asgn){
+        if(asgn.recipeId){
+          // Cookable — clicking opens the existing cooking view modal
+          html+=`<div class="dash-meal-name cookable" onclick="openCookingView('${asgn.recipeId}','${day}','${meal}')">${asgn.name}</div>`;
         } else {
-          html += `<div class="dash-meal-empty">&nbsp;</div>`;
+          html+=`<div class="dash-meal-name">${asgn.name}</div>`;
         }
+      } else {
+        html+=`<div class="dash-meal-empty">—</div>`;
       }
-      html += noteHtml;
-      html += '</div>';
+      html+=`</div>`;
     });
-    if(isToday) html += '<div class="dash-today-footer">Today</div>';
-    html += '</div>'; // /day-card
+    html+='</div>'; // /day-card
   });
-  html += '</div>'; // /grid
-  body.innerHTML = html;
-  _updatePlanFab(true);
-}
-
-// ── Floating Action Button ───────────────────────────────────────────────
-function _updatePlanFab(hasPlan){
-  const fab = document.getElementById('planFab');
-  if(!fab) return;
-  // Only show on Dashboard
-  const dashActive = document.getElementById('dashboard') && document.getElementById('dashboard').classList.contains('active');
-  fab.style.display = dashActive ? 'flex' : 'none';
-  const label = fab.querySelector('.fab-label');
-  const sub = fab.querySelector('.fab-sub');
-  if(hasPlan){
-    if(label) label.textContent = '↻ Adjust My Week';
-    if(sub) sub.textContent = 'Change your mind? Redo it';
-  } else {
-    if(label) label.textContent = 'Plan This Week →';
-    if(sub) sub.textContent = 'Takes about 30 seconds';
-  }
-}
-
-// ── Slot Editor popover (tap-to-edit on Dashboard) ──────────────────────
-let _slotEditCtx = null;
-let _slotEditStaged = null; // {kind:'recipe'|'freezer', id, name, servings}
-function openSlotEditor(day,meal){
-  _slotEditCtx = {day,meal};
-  const cur = getSlot(day,meal);
-  // Pre-stage an existing assignment so the servings panel reflects the current state
-  if(cur && cur.state==='cook' && cur.recipeId){
-    const _r = recipes.find(x=>x.id===cur.recipeId);
-    _slotEditStaged = {kind:'recipe', id:cur.recipeId, name:(cur.name||(_r&&_r.name)||''), servings:cur.servings||(_r&&_r.servings)||2};
-  } else if(cur && cur.state==='cook' && cur.freezerId){
-    _slotEditStaged = {kind:'freezer', id:cur.freezerId, name:cur.name||'', servings:cur.servings||2};
-  } else {
-    _slotEditStaged = null;
-  }
-  const state = cur && cur.state ? cur.state : 'unplanned';
-  const note = cur && cur.note ? cur.note : '';
-  const recipeId = cur && cur.recipeId ? cur.recipeId : '';
-  const title = `${DAY_FULL[day]} ${MEAL_LABEL[meal]}`;
-  const menuRecipes = recipes.filter(r=>r.onMenu);
-
-  const experimentalRecipes = recipes.filter(r=>!r.onMenu);
-
-  let html = `<div class="slot-editor-title">${title}</div>`;
-
-  // Cook section
-  html += '<div class="slot-editor-section"><div class="slot-editor-section-label">Cook this meal:</div>';
-
-  if(menuRecipes.length===0){
-    html += '<div class="slot-editor-empty" style="margin-bottom:10px">No recipes on your No-Decision Menu yet. <a href="#" onclick="event.preventDefault();closeSlotEditor();switchTab(\'menu\')">Build your menu →</a></div>';
-  } else {
-    html += '<div class="slot-editor-recipes">';
-    menuRecipes.forEach(r=>{
-      const sel = r.id===recipeId ? ' selected' : '';
-      const _rn = r.name.replace(/'/g,"\\'");
-      html += `<button type="button" class="slot-editor-recipe${sel}" data-rid="${r.id}" onclick="_slotEditorStageRecipe('${r.id}','${_rn}',${r.servings||2})">${_esc(r.name)}</button>`;
-    });
-    html += '</div>';
-  }
-
-  // Experimental subheader + non-menu recipes
-  if(experimentalRecipes.length>0){
-    html += '<div class="slot-editor-sub-label">or try an experimental meal</div>';
-    html += '<div class="slot-editor-recipes experimental">';
-    experimentalRecipes.forEach(r=>{
-      const sel = r.id===recipeId ? ' selected' : '';
-      const _rn = r.name.replace(/'/g,"\\'");
-      html += `<button type="button" class="slot-editor-recipe${sel}" data-rid="${r.id}" onclick="_slotEditorStageRecipe('${r.id}','${_rn}',${r.servings||2})">✨ ${_esc(r.name)}</button>`;
-    });
-    html += '</div>';
-  }
-
-  // Freezer option
-  if(freezer && freezer.length>0){
-    html += '<div class="slot-editor-sub-label">or pull from freezer</div><div class="slot-editor-recipes">';
-    freezer.forEach(f=>{
-      const sel = cur && cur.freezerId===f.id ? ' selected' : '';
-      const _fn = f.name.replace(/'/g,"\\'");
-      html += `<button type="button" class="slot-editor-recipe${sel}" data-fid="${f.id}" onclick="_slotEditorStageFreezer('${f.id}','${_fn}',${f.servings||2})">❄ ${_esc(f.name)}</button>`;
-    });
-    html += '</div>';
-  }
-
-  // Staged servings panel — hidden until a recipe or freezer item is picked
-  html += '<div id="slotEditorServingsPanel" class="slot-servings-panel" style="display:none"></div>';
-
-  // Escape hatch — jump to Recipes tab to add something new
-  html += `<div class="slot-editor-escape"><a href="#" onclick="event.preventDefault();closeSlotEditor();switchTab('recipes')">Don't see it? Add a recipe →</a></div>`;
-  html += '</div>';
-
-  // Not cooking section — quick taps only
-  html += '<div class="slot-editor-section"><div class="slot-editor-section-label">Not cooking?</div>';
-  html += '<div class="slot-editor-quick">';
-  html += `<button type="button" class="slot-editor-quick-btn" onclick="_slotEditorQuickSkip('Leftovers')">Leftovers</button>`;
-  html += `<button type="button" class="slot-editor-quick-btn" onclick="_slotEditorQuickSkip('Eating out')">Eating out</button>`;
-  html += '</div>';
-  html += '</div>';
-
-  // Footer — Mark as skipped + Clear this slot side by side
-  html += '<div class="slot-editor-footer">';
-  html += '<button type="button" class="btn btn-secondary btn-sm" onclick="_slotEditorSkip()">Mark as skipped</button>';
-  if(cur){
-    html += '<button type="button" class="btn btn-danger btn-sm" onclick="_slotEditorClear()">Clear this slot</button>';
-  }
-  html += '</div>';
-
-  document.getElementById('slotEditorBody').innerHTML = html;
-  document.getElementById('slotEditor').classList.add('open');
-  // If we pre-staged an existing assignment, reveal the servings panel + highlight the button
-  if(_slotEditStaged){
-    _slotEditorUpdateSelection();
-    _slotEditorRenderServingsPanel();
-  }
-}
-function closeSlotEditor(){
-  const ov = document.getElementById('slotEditor');
-  if(ov) ov.classList.remove('open');
-  _slotEditCtx = null;
-  _slotEditStaged = null;
-}
-function _slotEditorStageRecipe(recipeId,name,servings){
-  if(!_slotEditCtx) return;
-  _slotEditStaged = {kind:'recipe', id:recipeId, name:name||'', servings:parseInt(servings)||2};
-  _slotEditorUpdateSelection();
-  _slotEditorRenderServingsPanel();
-}
-function _slotEditorStageFreezer(freezerId,name,servings){
-  if(!_slotEditCtx) return;
-  // Freezer meals are already portioned — commit directly, no servings step.
-  _slotEditStaged = {kind:'freezer', id:freezerId, name:name||'', servings:parseInt(servings)||2};
-  _slotEditorCommitStaged();
-}
-function _slotEditorUpdateSelection(){
-  // visually mark only the currently staged button
-  document.querySelectorAll('.slot-editor-recipe').forEach(b=>b.classList.remove('staged'));
-  if(!_slotEditStaged) return;
-  const attr = _slotEditStaged.kind==='recipe' ? 'rid' : 'fid';
-  const el = document.querySelector(`.slot-editor-recipe[data-${attr}="${_slotEditStaged.id}"]`);
-  if(el) el.classList.add('staged');
-}
-function _slotEditorRenderServingsPanel(){
-  const panel = document.getElementById('slotEditorServingsPanel');
-  if(!panel) return;
-  if(!_slotEditStaged){ panel.style.display='none'; panel.innerHTML=''; return; }
-  const s = _slotEditStaged;
-  panel.style.display='block';
-  panel.innerHTML = `
-    <div class="slot-servings-title">Cooking: <strong>${_esc(s.name)}</strong></div>
-    <div class="slot-servings-row">
-      <label for="slotEditServings">Servings</label>
-      <button type="button" class="slot-servings-step" onclick="_slotEditorBumpServings(-1)">−</button>
-      <input type="number" id="slotEditServings" inputmode="numeric" min="1" max="50" value="${s.servings}" oninput="if(_slotEditStaged){_slotEditStaged.servings=parseInt(this.value)||1;}">
-      <button type="button" class="slot-servings-step" onclick="_slotEditorBumpServings(1)">+</button>
-    </div>
-    <div class="slot-servings-hint">💡 Your grocery list scales automatically.</div>
-    <button type="button" class="btn btn-primary slot-servings-save" onclick="_slotEditorCommitStaged()">Save Meal →</button>
-  `;
-}
-function _slotEditorBumpServings(delta){
-  if(!_slotEditStaged) return;
-  const next = Math.max(1, Math.min(50, (_slotEditStaged.servings||2)+delta));
-  _slotEditStaged.servings = next;
-  const el = document.getElementById('slotEditServings');
-  if(el) el.value = next;
-}
-function _slotEditorCommitStaged(){
-  if(!_slotEditCtx || !_slotEditStaged) return;
-  const {day,meal} = _slotEditCtx;
-  const inputEl = document.getElementById('slotEditServings');
-  const srv = inputEl ? (parseInt(inputEl.value)||_slotEditStaged.servings||2) : (_slotEditStaged.servings||2);
-  // Only preserve notes across cook→cook transitions. If the previous slot was skipped
-  // (Leftovers / Eating out / schedule-conflict note), that note belonged to the skip
-  // reason and must not carry over to the new cook assignment.
-  const _prevSlot = mealPlan[day]&&mealPlan[day][meal];
-  const prevNote = (_prevSlot && _prevSlot.state==='cook' && _prevSlot.note) ? _prevSlot.note : '';
-
-  if(_slotEditStaged.kind==='recipe'){
-    const r = recipes.find(x=>x.id===_slotEditStaged.id);
-    if(!r) return;
-    // If swapping recipes, clear previous recipe's grocery checks
-    const prevRecipeId = mealPlan[day]&&mealPlan[day][meal]&&mealPlan[day][meal].recipeId;
-    if(prevRecipeId && prevRecipeId!==r.id){
-      const pr = recipes.find(x=>x.id===prevRecipeId);
-      if(pr && pr.ingredients){
-        pr.ingredients.forEach(ing=>{
-          const cat=ing.category||'Pantry & Seasonings';
-          const k=(ing.name||'').toLowerCase().trim();
-          delete checks[cat+'|'+k];
-        });
-        save(K.checks,checks);
-      }
-    }
-    setSlotCook(day,meal);
-    mealPlan[day][meal].recipeId = r.id;
-    mealPlan[day][meal].name = r.name;
-    mealPlan[day][meal].servings = srv;
-    mealPlan[day][meal].mealType = r.type;
-    mealPlan[day][meal].freezerId = null;
-    mealPlan[day][meal].freezerItem = false;
-    mealPlan[day][meal].note = prevNote;
-  } else {
-    const f = freezer.find(x=>x.id===_slotEditStaged.id);
-    if(!f) return;
-    setSlotCook(day,meal);
-    mealPlan[day][meal] = {state:'cook', name:f.name, servings:srv, mealType:'freezer', freezerItem:true, freezerId:f.id, recipeId:null, note:prevNote};
-  }
-  save(K.mealPlan, mealPlan);
-  _slotEditStaged = null;
-  closeSlotEditor();
-  renderDashboard();
-  renderOnboardingUI();
-}
-function _slotEditorSkip(){
-  if(!_slotEditCtx) return;
-  const {day,meal} = _slotEditCtx;
-  // Custom reason field removed — Mark as skipped is a blunt "not eating" toggle.
-  setSlotSkipped(day,meal,'');
-  save(K.mealPlan, mealPlan);
-  closeSlotEditor();
-  renderDashboard();
-  renderOnboardingUI();
-}
-function _slotEditorQuickSkip(label){
-  if(!_slotEditCtx) return;
-  const {day,meal} = _slotEditCtx;
-  setSlotSkipped(day,meal,label||'');
-  save(K.mealPlan, mealPlan);
-  closeSlotEditor();
-  renderDashboard();
-  renderOnboardingUI();
-}
-function _slotEditorClear(){
-  if(!_slotEditCtx) return;
-  const {day,meal} = _slotEditCtx;
-  clearSlot(day,meal);
-  save(K.mealPlan, mealPlan);
-  closeSlotEditor();
-  renderDashboard();
-  renderOnboardingUI();
+  html+='</div>'; // /grid
+  body.innerHTML=html;
 }
 
 // ╔═══════════════════════════════════════╗
@@ -1705,13 +1003,13 @@ function renderMealSections(){
     list.forEach(r=>{
       const card=document.createElement('div');
       card.className='recipe-card';
-      const ingPreviewRaw=r.ingredients.slice(0,3).map(i=>i.name||'').join(', ')+(r.ingredients.length>3?` +${r.ingredients.length-3} more`:'');
-      const tagHtml=r.tags&&r.tags.length>0?`<div class="recipe-card-tags">${r.tags.map(t=>`<span class="recipe-tag">${_esc(t)}</span>`).join('')}</div>`:'';
+      const ingPreview=r.ingredients.slice(0,3).map(i=>i.name).join(', ')+(r.ingredients.length>3?` +${r.ingredients.length-3} more`:'');
+      const tagHtml=r.tags&&r.tags.length>0?`<div class="recipe-card-tags">${r.tags.map(t=>`<span class="recipe-tag">${t}</span>`).join('')}</div>`:'';
       card.innerHTML=`
-        <div class="recipe-card-name">${_esc(r.name)}</div>
+        <div class="recipe-card-name">${r.name}</div>
         <div class="recipe-card-servings">${r.servings} serving${r.servings!==1?'s':''} per batch</div>
         ${tagHtml}
-        <div class="recipe-card-ings">${_esc(ingPreviewRaw)||'No ingredients yet'}</div>
+        <div class="recipe-card-ings">${ingPreview||'No ingredients yet'}</div>
         <div class="recipe-card-actions">
           <button class="btn btn-secondary btn-sm" onclick="openRecipeModal('${r.id}')">Edit</button>
           <button class="btn btn-danger btn-sm" onclick="removeFromMenu('${r.id}')">Remove from Menu</button>
@@ -1964,7 +1262,6 @@ function deleteRecipe(id){
 // ╚═══════════════════════════════════════╝
 function renderMealPlan(){
   const tbl=document.getElementById('mealPlanTable');
-  if(!tbl) return; // legacy Meals tab removed — no-op
   tbl.innerHTML='';
   // Header
   const thead=document.createElement('thead');
@@ -1988,7 +1285,7 @@ function renderMealPlan(){
       dinner:`background:var(--accent-light);border-right:3px solid var(--accent)`
     }[meal];
     const rowNameColor={breakfast:'var(--yellow)',lunch:'var(--green)',dinner:'var(--accent)'}[meal];
-    let row=`<td style="${rowStyle};padding:0"><div class="row-label"><div class="row-label-name" style="color:${rowNameColor}">${meal}</div></div></td>`;
+    let row=`<td style="${rowStyle};padding:0"><div class="row-label"><div class="row-label-icon">${MEAL_ICON[meal]}</div><div class="row-label-name" style="color:${rowNameColor}">${meal}</div></div></td>`;
     DAYS.forEach(d=>{
       const asgn=mealPlan[d]&&mealPlan[d][meal];
       row+=`<td>`;
@@ -1996,7 +1293,7 @@ function renderMealPlan(){
         const cls=getCellClass(meal,asgn);
         const tag=getCellTag(meal,asgn);
         // Recipe names on Meal Plan are plain text — cook mode lives on the Dashboard now.
-        const nameEl=`<div class="cell-meal-name">${_esc(asgn.name||'')}</div>`;
+        const nameEl=`<div class="cell-meal-name">${asgn.name}</div>`;
         row+=`<div class="cell-filled ${cls}" onclick="openAssignModal('${d}','${meal}')">
           <button class="cell-remove" onclick="event.stopPropagation();removeCell('${d}','${meal}')">✕</button>
           ${nameEl}
@@ -2033,13 +1330,13 @@ function renderMealPlan(){
         const rowColorBg={breakfast:'var(--yellow-light)',lunch:'var(--green-light)',dinner:'var(--accent-light)'}[meal];
         const rowColorAccent={breakfast:'var(--yellow)',lunch:'var(--green)',dinner:'var(--accent)'}[meal];
         mh+=`<div class="mpm-meal-row" style="background:${rowColorBg};border-left:3px solid ${rowColorAccent}">
-          <div class="mpm-meal-label" style="color:${rowColorAccent}">${meal}</div>`;
+          <div class="mpm-meal-label" style="color:${rowColorAccent}">${MEAL_ICON[meal]} ${meal}</div>`;
         if(asgn){
           const cls=getCellClass(meal,asgn);
           const tag=getCellTag(meal,asgn);
           mh+=`<div class="mpm-meal-cell ${cls}" onclick="openAssignModal('${d}','${meal}')">
             <button class="cell-remove" onclick="event.stopPropagation();removeCell('${d}','${meal}')">✕</button>
-            <div class="mpm-meal-name">${_esc(asgn.name||'')}</div>
+            <div class="mpm-meal-name">${asgn.name}</div>
             <div class="mpm-meal-servings">${asgn.servings} serving${asgn.servings!==1?'s':''}</div>
             ${tag}
           </div>`;
@@ -2075,15 +1372,15 @@ function getCellTag(meal,a){
     goto:'<span class="cell-tag tag-goto">⚡ Go-To</span>',
     experimental:'<span class="cell-tag tag-experimental">✨ Experimental</span>',
     freezer:'<span class="cell-tag tag-freezer">❄️ Freezer</span>',
-    leftovers:'<span class="cell-tag tag-leftovers">Leftovers</span>',
-    eatingout:'<span class="cell-tag tag-eatingout">Eating Out</span>',
+    leftovers:'<span class="cell-tag tag-leftovers">🍱 Leftovers</span>',
+    eatingout:'<span class="cell-tag tag-eatingout">🥡 Eating Out</span>',
     // legacy values — map gracefully
     easy:'<span class="cell-tag tag-goto">⚡ Go-To</span>',
     prep:'<span class="cell-tag tag-goto">⚡ Go-To</span>',
     quick:'<span class="cell-tag tag-goto">⚡ Go-To</span>',
-    out:'<span class="cell-tag tag-eatingout">Eating Out</span>',
-    lunchout:'<span class="cell-tag tag-eatingout">Eating Out</span>',
-    takeout:'<span class="cell-tag tag-eatingout">Eating Out</span>',
+    out:'<span class="cell-tag tag-eatingout">🥡 Eating Out</span>',
+    lunchout:'<span class="cell-tag tag-eatingout">🥡 Eating Out</span>',
+    takeout:'<span class="cell-tag tag-eatingout">🥡 Eating Out</span>',
     fun:'<span class="cell-tag tag-experimental">✨ Experimental</span>',
   };
   return map[t]||'';
@@ -2138,12 +1435,12 @@ function renderCookingBody(){
       <div class="cook-ing-cat">${CAT_ICON[cat]||'📦'} ${cat}</div>
       ${grouped[cat].map(ing=>{
         const scaledQty=scaleQty(ing.qty,scale);
-        return `<div class="cook-ing-row"><span class="cook-ing-qty">${_esc(scaledQty)}</span><span class="cook-ing-name">${_esc(ing.name||'')}</span></div>`;
+        return `<div class="cook-ing-row"><span class="cook-ing-qty">${scaledQty}</span><span class="cook-ing-name">${ing.name}</span></div>`;
       }).join('')}
     </div>`;
   });
   const steps=r.notes?r.notes.split('\n').filter(s=>s.trim()):[];
-  const stepsHtml=steps.length>0?`<div class="cook-section-title">Steps</div><ol class="cook-steps">${steps.map(s=>`<li>${_esc(s)}</li>`).join('')}</ol>`:'';
+  const stepsHtml=steps.length>0?`<div class="cook-section-title">Steps</div><ol class="cook-steps">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>`:'';
   document.getElementById('cookingModalBody').innerHTML=`
     ${stepperHtml}
     ${r.ingredients.length>0?`<div class="cook-section-title">Ingredients</div>${ingHtml}`:''}
@@ -2180,7 +1477,7 @@ function openAssignModal(day,meal){
   _aC={day,meal,name:'',servings:2,mealType:null,recipeId:null,freezerId:null,freezerItem:false};
   const existing=mealPlan[day]&&mealPlan[day][meal];
   if(existing){ _aC={..._aC,...existing}; }
-  document.getElementById('assignModalTitle').textContent=DAY_FULL[day]+' — '+meal.charAt(0).toUpperCase()+meal.slice(1);
+  document.getElementById('assignModalTitle').textContent=MEAL_ICON[meal]+' '+DAY_FULL[day]+' — '+meal.charAt(0).toUpperCase()+meal.slice(1);
 
   let html='';
   // ── Category selector ─────────────────────────────────────────────────
@@ -2254,10 +1551,9 @@ function openAssignModal(day,meal){
   html+='</div>';
 
   // ── Servings ──────────────────────────────────────────────────────────
-  html+=`<div class="a-servings-block">
-    <label class="a-servings-label" for="a_servings">How many servings?</label>
-    <input type="number" id="a_servings" inputmode="numeric" min="1" max="50" value="${existing?existing.servings:2}">
-    <div class="a-servings-hint">💡 Bump this up for bigger appetites, leftovers, or feeding the family — your <strong>grocery list quantities scale automatically</strong>.</div>
+  html+=`<div style="margin-top:14px">
+    <label style="display:block;margin-bottom:6px;font-weight:700">Servings <span style="font-size:11px;font-weight:400;color:var(--text-3)">— update per meal, this affects your grocery list</span></label>
+    <input type="number" id="a_servings" inputmode="numeric" min="1" max="50" value="${existing?existing.servings:2}" style="width:80px">
   </div>`;
 
   document.getElementById('assignModalBody').innerHTML=html;
@@ -2533,9 +1829,7 @@ function renderGrocery(){
     const srv=a.servings||r.servings||1;
     r.ingredients.forEach(ing=>{
       if(!ing.name) return;
-      // Remap any legacy categories that no longer exist (e.g. 'Freezer / Flex', 'Snacks / Extras') to Pantry & Seasonings
-      const rawCat = ing.category || 'Pantry & Seasonings';
-      const cat = CATS.includes(rawCat) ? rawCat : 'Pantry & Seasonings';
+      const cat=ing.category||'Pantry & Seasonings';
       if(!agg[cat]) agg[cat]={};
       const k=ing.name.toLowerCase().trim();
       if(!agg[cat][k]) agg[cat][k]={name:ing.name,qtys:[],rawQty:ing.qty};
@@ -2554,23 +1848,11 @@ function renderGrocery(){
   categoryItems.forEach(ci=>{ if(!catsWithUserItems[ci.category]) catsWithUserItems[ci.category]=[]; catsWithUserItems[ci.category].push(ci); });
   const hasAnyContent=Object.keys(agg).length>0||categoryItems.length>0;
 
-  // Unified add-item bar (always visible at top)
-  const addBar=document.createElement('div');
-  addBar.className='grocery-add-bar';
-  const mainOptions=CATS.map(c=>`<option value="${_esc(c)}">${CAT_ICON[c]||'📦'} ${_esc(c)}</option>`).join('');
-  const extraOptions=`<option value="__staples__">📌 Weekly Staples</option><option value="__flex__">🛟 Flex & Backup</option><option value="__adhoc__">🛍️ Misc</option>`;
-  const catOptions=mainOptions+extraOptions;
-  addBar.innerHTML=`<input type="text" id="new-grocery-input" placeholder="+ Add item…" onkeydown="if(event.key==='Enter')addGroceryItemUnified()">
-    <select id="new-grocery-cat" aria-label="Category">${catOptions}</select>
-    <button class="btn btn-primary btn-sm" onclick="addGroceryItemUnified()">Add</button>`;
-  container.appendChild(addBar);
-
   if(!hasAnyContent){
-    const empty=document.createElement('div');
-    empty.className='grocery-empty';
-    empty.innerHTML=`<div class="empty-icon">🛒</div>
-      <p>Assign recipes to your meal plan and your list will build itself — sorted by store section, quantities already calculated.</p>`;
-    container.appendChild(empty);
+    container.innerHTML=`<div class="grocery-empty">
+      <div class="empty-icon">🛒</div>
+      <p>Assign recipes to your meal plan and your list will build itself — sorted by store section, quantities already calculated.</p>
+    </div>`;
   } else {
     CATS.forEach(cat=>{
       const items=agg[cat];
@@ -2596,102 +1878,79 @@ function renderGrocery(){
             qty=wholeRound?wholeRound.qty+(unit?' '+unit:''):toFrac(total)+(unit?' '+unit:'');
             hint=shoppingHint(item.name,total,unit);
           } else if(item.rawQty){ qty=item.rawQty; }
-          rows+=`<label class="grocery-item${done?' done':''}">
+          rows+=`<div class="grocery-item">
             <input type="checkbox" ${done?'checked':''} onchange="toggleCheck('${cat}','${k}',this.checked)">
-            <span class="grocery-item-name">${_esc(item.name)}</span>
-            ${qty?`<span class="grocery-item-qty">${_esc(qty)}${hint?` <span class="hint">(${_esc(hint)})</span>`:''}</span>`:''}
-          </label>`;
+            <span class="grocery-item-name${done?' done':''}" id="gn-${cat}-${k}">${item.name}</span>
+            ${qty?`<span class="grocery-item-qty">${qty}${hint?` <span class="hint">(${hint})</span>`:''}</span>`:''}
+          </div>`;
         });
       }
       // User-added category items
       userItems.forEach(ci=>{
         const ck='__catitem__|'+ci.id;
         const done=checks[ck]||false;
-        rows+=`<label class="grocery-item${done?' done':''}">
+        rows+=`<div class="grocery-item">
           <input type="checkbox" ${done?'checked':''} onchange="toggleCheck('__catitem__','${ci.id}',this.checked)">
-          <span class="grocery-item-name">${_esc(ci.name)}</span>
-          <button class="item-remove" onclick="event.preventDefault();event.stopPropagation();removeCategoryItem('${ci.id}')">✕</button>
-        </label>`;
+          <span class="grocery-item-name${done?' done':''}" id="gn-__catitem__-${ci.id}">${ci.name}</span>
+          <button class="item-remove" onclick="removeCategoryItem('${ci.id}')">✕</button>
+        </div>`;
       });
+      // Inline add input
+      const inputId='catitem-'+cat.replace(/[^a-zA-Z]/g,'');
+      rows+=`<div class="add-list-item" style="margin-top:6px">
+        <input type="text" id="${inputId}" placeholder="+ Add item…" onkeydown="if(event.key==='Enter')addCategoryItem('${cat}','${inputId}')">
+        <button class="btn btn-secondary btn-sm" onclick="addCategoryItem('${cat}','${inputId}')">Add</button>
+      </div>`;
       sec.innerHTML=`<div class="category-header">
         <span class="category-icon">${CAT_ICON[cat]||'📦'}</span>
-        <span class="category-name">${_esc(cat)}</span>
+        <span class="category-name">${cat}</span>
         <span class="category-count">${totalCount} item${totalCount!==1?'s':''}</span>
       </div>${rows}`;
       container.appendChild(sec);
     });
   }
 
-  // Unified extra sections: Weekly Staples, Flex & Backup, Misc.
-  // Same rounded-card format as the categories above.
-  // Flex & Backup ALWAYS renders (even empty) so users learn to use it.
-  // Staples and Misc hide when empty.
-  const extras = [
-    {type:'staples', icon:'📌', title:'Weekly Staples', tipKey:'groc_staples', items:staples,    removeFn:'removeStaple',     alwaysShow:false, emptyHint:''},
-    {type:'flex',    icon:'🛟', title:'Flex & Backup',   tipKey:'groc_flex',    items:flexItems,  removeFn:'removeFlexItem',   alwaysShow:true,  emptyHint:'Add backup meals for nights when cooking falls apart — frozen pizza, canned soup, sandwich fixings. Your safety net.'},
-    {type:'adhoc',   icon:'🛍️', title:'Misc',            tipKey:'groc_adhoc',   items:adhocItems, removeFn:'removeAdhocItem',  alwaysShow:false, emptyHint:''},
-  ];
-  extras.forEach(ex=>{
-    const isEmpty = !ex.items || ex.items.length===0;
-    if(isEmpty && !ex.alwaysShow) return;
-    const sec=document.createElement('div');
-    sec.className='grocery-category';
-    let rows='';
-    (ex.items||[]).forEach(item=>{
-      const ck='__'+ex.type+'__|'+item.id;
-      const done=checks[ck]||false;
-      rows+=`<label class="grocery-item${done?' done':''}">
-        <input type="checkbox" ${done?'checked':''} onchange="toggleCheck('__${ex.type}__','${item.id}',this.checked)">
-        <span class="grocery-item-name">${_esc(item.name)}</span>
-        <button class="item-remove" onclick="event.preventDefault();event.stopPropagation();${ex.removeFn}('${item.id}')">✕</button>
-      </label>`;
-    });
-    if(isEmpty && ex.emptyHint){
-      rows+=`<div class="grocery-empty-hint">${_esc(ex.emptyHint)}</div>`;
-    }
-    const count = (ex.items||[]).length;
-    sec.innerHTML=`<div class="category-header">
-      <span class="category-icon">${ex.icon}</span>
-      <span class="category-name">${ex.title}</span>
-      <span class="category-count">${count} item${count!==1?'s':''}</span>
-      ${infoTipHtml(ex.tipKey)}
-    </div>${rows}`;
-    container.appendChild(sec);
+  // Weekly Staples — no checkboxes, list style
+  renderListSection(container,'📌 Weekly Staples','groc_staples',staples,'staples',()=>renderGrocery(),true);
+  // Flex & Backup
+  renderListSection(container,'🛟 Flex & Backup Items','groc_flex',flexItems,'flex',()=>renderGrocery(),false);
+  // Ad-Hoc — catch-all at the bottom
+  renderListSection(container,'🛍️ Ad-Hoc Items','groc_adhoc',adhocItems,'adhoc',()=>renderGrocery(),false);
+}
+
+function renderListSection(container,title,tipKey,items,type,refresh,isStaples){
+  const sec=document.createElement('div');
+  sec.className='list-only-section';
+  const inputId='new-'+type+'-input';
+  const ckPrefix='__'+type+'__|';
+  let rows='';
+  items.forEach(item=>{
+    const ck=ckPrefix+item.id;
+    const done=checks[ck]||false;
+    rows+=`<div class="list-item-row">
+      <input type="checkbox" ${done?'checked':''} onchange="toggleCheck('${ckPrefix.slice(0,-1)}','${item.id}',this.checked)">
+      <span class="item-name${done?' done':''}" id="gn-${ckPrefix.slice(0,-1)}-${item.id}">${item.name}</span>
+      <button class="item-remove" onclick="${type==='staples'?'removeStaple':type==='adhoc'?'removeAdhocItem':'removeFlexItem'}('${item.id}')">✕</button>
+    </div>`;
   });
+  const addFn=type==='staples'?'addStaple':type==='adhoc'?'addAdhocItem':'addFlexItem';
+  sec.innerHTML=`<div class="category-header" style="margin-top:10px;margin-bottom:10px">
+    <span class="category-icon">${title.split(' ')[0]}</span>
+    <span class="category-name">${title.replace(/^[^\s]+\s/,'')}</span>
+    ${infoTipHtml(tipKey)}
+  </div>
+  <div class="list-only-items" id="list-${type}">${rows}</div>
+  <div class="add-list-item" style="margin-top:8px">
+    <input type="text" id="${inputId}" placeholder="Add item…" onkeydown="if(event.key==='Enter')${addFn}()">
+    <button class="btn btn-secondary btn-sm" onclick="${addFn}()">Add</button>
+  </div>`;
+  container.appendChild(sec);
 }
 
 function toggleCheck(cat,k,done){
   const ck=cat+'|'+k; checks[ck]=done; save(K.checks,checks);
-  renderGrocery();
-}
-function addGroceryItemUnified(){
-  const el=document.getElementById('new-grocery-input');
-  const sel=document.getElementById('new-grocery-cat');
-  if(!el||!sel) return;
-  const name=el.value.trim(); if(!name) return;
-  const cat=sel.value;
-  if(cat==='__adhoc__'){
-    adhocItems.push({id:uid(),name});
-    save(K.adhocItems,adhocItems);
-  } else if(cat==='__staples__'){
-    staples.push({id:uid(),name});
-    save(K.staples,staples);
-  } else if(cat==='__flex__'){
-    flexItems.push({id:uid(),name});
-    save(K.flexItems,flexItems);
-  } else {
-    categoryItems.push({id:uid(),name,category:cat});
-    save(K.categoryItems,categoryItems);
-  }
-  el.value='';
-  renderGrocery();
-  setTimeout(()=>{
-    const e=document.getElementById('new-grocery-input');
-    const s=document.getElementById('new-grocery-cat');
-    if(e) e.focus();
-    // Preserve the last-used category so user can add several items to the same section quickly
-    if(s) s.value=cat;
-  },0);
+  const el=document.getElementById('gn-'+cat+'-'+k);
+  if(el) el.classList.toggle('done',done);
 }
 function uncheckAll(){ checks={}; save(K.checks,checks); renderGrocery(); }
 function addStaple(){
@@ -2764,9 +2023,9 @@ function renderFreezer(){
     card.innerHTML=`
       <div class="freezer-icon">🧊</div>
       <div class="freezer-body">
-        <div class="freezer-name">${_esc(f.name||'')}${i===0?'<span class="fifo-badge">USE FIRST</span>':''}</div>
+        <div class="freezer-name">${f.name}${i===0?'<span class="fifo-badge">USE FIRST</span>':''}</div>
         <div class="freezer-meta">Made ${fmtDate(f.dateMade)} · ${f.servings} serving${f.servings!==1?'s':''}</div>
-        ${f.notes?`<div class="freezer-note">${_esc(f.notes)}</div>`:''}
+        ${f.notes?`<div class="freezer-note">${f.notes}</div>`:''}
         <div class="freezer-exp ${cls}">${txt}</div>
       </div>
       <div class="freezer-actions">
@@ -2784,10 +2043,10 @@ function confirmFzPlan(){
   const f=freezer.find(x=>x.id===_fzPlanId);
   if(!f){closeModal('fzPlanModal');return;}
   if(!mealPlan[day]) mealPlan[day]={};
-  mealPlan[day][meal]={state:'cook',name:f.name,servings:f.servings,mealType:'freezer',freezerItem:true,freezerId:f.id,recipeId:null,note:''};
+  mealPlan[day][meal]={name:f.name,servings:f.servings,mealType:'freezer',freezerItem:true,freezerId:f.id};
   save(K.mealPlan,mealPlan);
   closeModal('fzPlanModal');
-  switchTab('dashboard');
+  switchTab('mealplan');
 }
 function removeFreezerItem(id){
   if(!confirm('Remove this meal from your freezer?')) return;
@@ -2809,7 +2068,6 @@ function removeFreezerItem(id){
 //   UTILS
 // ╚═══════════════════════════════════════╝
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-function openModal(id){ const el = document.getElementById(id); if(el) el.classList.add('open'); }
 function toDateInput(d){ return d.toISOString().split('T')[0]; }
 function fmtDate(s){
   if(!s) return '';
@@ -2969,9 +2227,9 @@ function showApp(user, skipTabSwitch) {
   if (skipTabSwitch) return; // loading overlay is visible — don't render stale data yet
   // Restore last active tab (map old IDs to new ones for returning users)
   let savedTab = localStorage.getItem('mpos_active_tab');
-  const tabMigration = {step1:'recipes',step2:'menu',step3:'dashboard',step4:'dashboard',library:'recipes',weeksetup:'dashboard',mealplan:'dashboard'};
+  const tabMigration = {step1:'recipes',step2:'menu',step3:'weeksetup',step4:'mealplan',library:'recipes'};
   if(savedTab && tabMigration[savedTab]) savedTab=tabMigration[savedTab];
-  const validTabs = ['dashboard','recipes','menu','grocerylist','freezer'];
+  const validTabs = ['dashboard','recipes','menu','weeksetup','mealplan','grocerylist','freezer'];
   // Returning users with an onboarded account land on the Dashboard;
   // brand-new users still start at Recipes so the guided onboarding flow is preserved.
   const defaultTab = isOnboardingComplete() ? 'dashboard' : 'recipes';
@@ -3300,13 +2558,6 @@ function applyCloudData(data) {
     if (data.onboarding && typeof data.onboarding === 'object') {
       onboardingState = data.onboarding;
     }
-    _migrateOnboardingState();
-    // Mirror cloud onboarding state to localStorage so offline reloads don't lose it.
-    save(K.onboarding, onboardingState);
-    // Re-run slot-schema migration after cloud pull: legacy cloud data
-    // (plan entries without a .state field) must be stamped as 'cook' so
-    // they render on the dashboard instead of collapsing to "N/A".
-    try { migrateSlotSchema(); } catch(e) {}
   } finally {
     _applyingCloud = false;
     // Clear the dirty flag that save() set during cloud application.
@@ -3439,9 +2690,10 @@ async function loadAndRender(userId) {
     recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))}));
     save(K.recipes, recipes);
   }
-  // Ensure onboarding state matches the current guide version; users on an
-  // older version get reset so they see the new walkthrough exactly once.
-  _migrateOnboardingState();
+  // Detect onboarding completion for existing users
+  if (!onboardingState.firstRunComplete) {
+    detectOnboardingCompletion();
+  }
 
   // ── Cloud load failure recovery ────────────────────────────
   // If the initial cloud load failed (network hiccup), schedule retries so
@@ -3477,9 +2729,9 @@ async function loadAndRender(userId) {
   hideLoadingOverlay();
   _startPeriodicSync();
   let savedTab = localStorage.getItem('mpos_active_tab');
-  const tabMigration = {step1:'recipes',step2:'menu',step3:'dashboard',step4:'dashboard',library:'recipes',weeksetup:'dashboard',mealplan:'dashboard'};
+  const tabMigration = {step1:'recipes',step2:'menu',step3:'weeksetup',step4:'mealplan',library:'recipes'};
   if(savedTab && tabMigration[savedTab]) savedTab=tabMigration[savedTab];
-  const validTabs = ['dashboard','recipes','menu','grocerylist','freezer'];
+  const validTabs = ['dashboard','recipes','menu','weeksetup','mealplan','grocerylist','freezer'];
   // New users (onboarding not complete) start at Recipes; returning users default to Dashboard
   const defaultTab = isOnboardingComplete() ? 'dashboard' : 'recipes';
   switchTab(savedTab && validTabs.includes(savedTab) ? savedTab : defaultTab);

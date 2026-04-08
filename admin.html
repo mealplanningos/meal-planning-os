@@ -192,6 +192,69 @@
     }
     .roster-legend .pill { font-size: 9px; padding: 2px 7px; }
 
+    /* ── Roster: mobile card layout ────────────────────────────── */
+    /* On narrow screens the table becomes a stack of cards: each row is a
+       self-contained block with the column name shown as a label. */
+    @media (max-width: 720px) {
+      .roster-table { display: block; }
+      .roster-table thead { display: none; }
+      .roster-table tbody { display: block; }
+      .roster-table tr {
+        display: block;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .roster-table tr:last-child { border-bottom: none; }
+      .roster-table tr.status-active,
+      .roster-table tr.status-slipping,
+      .roster-table tr.status-drifted,
+      .roster-table tr.status-never { background: transparent; }
+      .roster-table tr.status-active   { border-left: 3px solid var(--green); }
+      .roster-table tr.status-slipping { border-left: 3px solid var(--yellow); }
+      .roster-table tr.status-drifted  { border-left: 3px solid var(--red); }
+      .roster-table tr.status-never    { border-left: 3px solid var(--border); }
+      .roster-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0 !important;
+        border-bottom: none;
+        font-size: 13px;
+        text-align: left !important;
+      }
+      .roster-table td::before {
+        content: attr(data-label);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-3);
+        margin-right: 12px;
+      }
+      /* Email is the "title" of each card — no label, full width, bold. */
+      .roster-table td.email {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+        padding: 0 0 6px 0 !important;
+        display: block;
+        word-break: break-all;
+      }
+      .roster-table td.email::before { display: none; }
+      /* Status pill sits on its own row right under the email. */
+      .roster-table td[data-label="Status"] { padding-bottom: 8px !important; }
+      .roster-table td[data-label="Status"]::before { display: none; }
+      .roster-table td[data-label="Status"] { justify-content: flex-start; }
+      /* Onboarded cell: show tick/dash inline with the label. */
+      .roster-table td.center { text-align: left !important; }
+      .roster-legend { padding: 12px 16px !important; font-size: 10px; }
+      .roster-legend span { white-space: nowrap; }
+      main { padding: 20px 14px 60px; }
+      .card { padding: 14px; }
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+      .kpi .value { font-size: 22px; }
+    }
+
     /* ── CHANGELOG (accordion) ── */
     .changelog { display: flex; flex-direction: column; gap: 8px; }
     .changelog-entry {
@@ -495,14 +558,14 @@
                 ${roster.length ? roster.map(u => `
                   <tr class="status-${u.status}">
                     <td class="email" style="padding-left:18px">${escapeHtml(u.email || '(no email)')}</td>
-                    <td><span class="pill ${u.status}">${u.status}</span></td>
-                    <td class="num" style="color:var(--text-2)">${u.lastLogin ? relativeTime(u.lastLogin) : '<span class="dash">never</span>'}</td>
-                    <td class="num" style="color:var(--text-3)">${relativeTime(u.signedUpAt)}</td>
-                    <td class="num">${u.loginDays}</td>
-                    <td class="num">${u.recipes}</td>
-                    <td class="num">${u.assignments}</td>
-                    <td class="num">${u.groceries ?? 0}</td>
-                    <td class="center">${u.onboarded ? '<span class="tick">✓</span>' : '<span class="dash">—</span>'}</td>
+                    <td data-label="Status"><span class="pill ${u.status}">${u.status}</span></td>
+                    <td class="num" data-label="Last seen" style="color:var(--text-2)">${u.lastLogin ? relativeTime(u.lastLogin) : '<span class="dash">never</span>'}</td>
+                    <td class="num" data-label="Signed up" style="color:var(--text-3)">${relativeTime(u.signedUpAt)}</td>
+                    <td class="num" data-label="Login days">${u.loginDays}</td>
+                    <td class="num" data-label="Own recipes">${u.recipes}</td>
+                    <td class="num" data-label="Meals planned">${u.assignments}</td>
+                    <td class="num" data-label="Groceries">${u.groceries ?? 0}</td>
+                    <td class="center" data-label="Onboarded">${u.onboarded ? '<span class="tick">✓</span>' : '<span class="dash">—</span>'}</td>
                   </tr>
                 `).join('') : '<tr><td colspan="9" style="color:var(--text-3);text-align:center;padding:24px">No users yet.</td></tr>'}
               </tbody>

@@ -159,21 +159,22 @@
 <!-- NAV -->
 <div class="nav">
   <div class="nav-inner">
-    <div class="nav-tab nav-tab-primary active" data-tab="dashboard" onclick="switchTab('dashboard')">Home</div>
-    <div class="nav-tab nav-tab-primary" data-tab="grocerylist" onclick="switchTab('grocerylist')">Groceries</div>
+    <div class="nav-tab nav-tab-dashboard" onclick="switchTab('dashboard')">🏠 Dashboard</div>
     <span class="nav-divider"></span>
-    <div class="nav-tab nav-tab-secondary" data-tab="recipes" onclick="switchTab('recipes')">Recipes</div>
-    <div class="nav-tab nav-tab-secondary" data-tab="menu" onclick="switchTab('menu')">Menu</div>
-    <div class="nav-tab nav-tab-secondary" data-tab="freezer" onclick="switchTab('freezer')">Freezer</div>
+    <div class="nav-tab active" onclick="switchTab('weeksetup')"><div class="step-num">1</div> Schedule</div>
+    <div class="nav-tab" onclick="switchTab('mealplan')"><div class="step-num">2</div> Meals</div>
+    <div class="nav-tab" onclick="switchTab('grocerylist')"><div class="step-num">3</div> Groceries</div>
+    <span class="nav-divider"></span>
+    <div class="nav-tab nav-tab-secondary" onclick="switchTab('menu')">Menu</div>
+    <div class="nav-tab nav-tab-secondary" onclick="switchTab('recipes')">Recipes</div>
+    <div class="nav-tab nav-tab-secondary" onclick="switchTab('freezer')">Freezer</div>
   </div>
 </div>
 
 <!-- MAIN -->
 <div class="main">
-  <!-- DASHBOARD — single source of truth for the week -->
-  <div id="dashboard" class="section active">
-    <div id="softGate-dashboard"></div>
-    <div id="onboardingBanner-dash"></div>
+  <!-- DASHBOARD — the "final result" of Steps 1-3 -->
+  <div id="dashboard" class="section">
     <div class="dash-header">
       <div>
         <div class="dash-title">This Week's Plan <span id="infoTip-dashboard"></span></div>
@@ -184,8 +185,39 @@
       </button>
     </div>
     <div class="dash-body" id="dashBody"></div>
+    <div class="dash-footer">
+      <a href="#" class="dash-edit-link" onclick="event.preventDefault();switchTab('mealplan')">Edit this week's plan →</a>
+    </div>
   </div>
-  <!-- (Legacy Schedule/Meals tabs removed — replaced by Plan This Week modal flow) -->
+  <!-- TAB 1 — SCHEDULE -->
+  <div id="weeksetup" class="section active">
+    <div id="onboardingBanner-3"></div>
+    <div id="weekSetupCTA"></div>
+    <div id="softGate-weeksetup"></div>
+    <div class="section-header">
+      <div class="section-title">What Does Your Week Look Like? <span id="infoTip-weeksetup"></span></div>
+      <div class="section-subtitle">Map your schedule so your plan fits your reality — not the other way around.</div>
+    </div>
+    <div class="week-grid" id="weekGrid"></div>
+    <div id="weekStarterNote"></div>
+  </div>
+  <!-- TAB 2 — MEALS -->
+  <div id="mealplan" class="section">
+    <div id="onboardingBanner-4"></div>
+    <div id="mealPlanCTA"></div>
+    <div id="softGate-mealplan"></div>
+    <div class="section-header">
+      <div class="section-title">Fill In Your Meal Plan <span id="infoTip-mealplan"></span></div>
+      <div class="section-subtitle">Assign a meal to each day. The hard decisions are already made — this should be fast.</div>
+    </div>
+    <div class="meal-plan-wrap">
+      <table class="meal-plan-table" id="mealPlanTable"></table>
+    </div>
+    <div class="meal-plan-mobile" id="mealPlanMobile"></div>
+    <div style="margin-top:14px;font-size:12px;color:var(--text-3);text-align:center">
+      Once your plan is set, head to the Dashboard to view cooking instructions for each meal.
+    </div>
+  </div>
   <!-- TAB 3 — GROCERIES -->
   <div id="grocerylist" class="section">
     <div id="onboardingBanner-5"></div>
@@ -199,6 +231,7 @@
       <div style="font-size:13px;color:var(--text-2)" id="groceryMeta"></div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-secondary btn-sm" onclick="uncheckAll()">Uncheck All</button>
+        <button class="btn btn-primary btn-sm" onclick="renderGrocery()">↻ Rebuild List</button>
       </div>
     </div>
     <div class="grocery-main" id="groceryMain"></div>
@@ -214,6 +247,10 @@
     </div>
     <div id="menuSavedRecipes"></div>
     <div class="meal-sections" id="mealSections"></div>
+    <div class="starter-note">
+      <span>💾</span>
+      <span>Everything automatically saves. This is what your weekly plan will be built from.</span>
+    </div>
   </div>
   <!-- RECIPES -->
   <div id="recipes" class="section">
@@ -225,7 +262,7 @@
         <div class="section-title">Recipe Library <span id="infoTip-recipes"></span></div>
         <div class="section-subtitle">Browse tested recipes or add your own. Save what fits your life.</div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="openRecipeModal(null,null,'recipes')" style="white-space:nowrap;margin-top:2px">+ Custom Recipe</button>
+      <button class="btn-footer-action" onclick="openRecipeModal(null,null,'recipes')" style="white-space:nowrap;margin-top:2px">+ Custom Recipe</button>
     </div>
     <div class="lib-filters" id="libFilters"></div>
     <div class="lib-grid" id="libGrid"></div>
@@ -427,11 +464,14 @@
     <div class="modal-body">
       <div class="whats-new-date">April 8, 2026</div>
       <ul class="whats-new-list">
-        <li><strong>🏠 Meet your new Home tab.</strong> This is your main page now — where you plan the week, see what's on deck today, and tap into cooking mode. Everything you need day-to-day lives here. You shouldn't have to hop around tabs to run your week.</li>
-        <li><strong>Simpler navigation, fewer tabs.</strong> Two primary tabs up top — <em>Home</em> and <em>Groceries</em> — because those are the two places you'll live most of the time. Everything else (Recipes, Menu, Freezer) is still there as supporting tabs, just pulled back so they're not in your face.</li>
-        <li><strong>Plan your week from Home in ~30 seconds.</strong> Tap the <em>Plan This Week →</em> button on Home, pick which meals you're cooking, add any schedule notes, done. No tab-hopping.</li>
-        <li><strong>Tap any slot on Home to edit it.</strong> Swap a recipe, pick from the freezer, mark it as Leftovers or Eating out, or clear it entirely — all from Home. No jumping around to tweak things.</li>
-        <li><strong>Your data is safe.</strong> Any meals you already had planned carry over and show up automatically on the new Home tab.</li>
+        <li><strong>New Dashboard tab</strong> — your week at a glance, auto-built from Steps 1–3. Tap any recipe name to open cooking instructions. It's now your home base once setup is done. <em>thanks Ryan!</em></li>
+        <li><strong>Freezer added to Setup</strong> — now Setup Step 3 of 3 so you don't miss it. Log frozen meals once and drop them into any day of your plan.</li>
+        <li><strong>Bigger nav on mobile</strong> — tab labels are easier to read on a phone.</li>
+        <li><strong>Cleaner grocery sections</strong> — Weekly Staples, Flex & Backup, and Ad-Hoc now use ⓘ info tooltips instead of wordy subheadings.</li>
+        <li><strong>Tooltips that fit</strong> — info bubbles no longer run off-screen on phones.</li>
+        <li><strong>Multi-select tags in the recipe library</strong> — stack filters like <em>Breakfast + Under 30 Min</em> to narrow things down fast.</li>
+        <li><strong>Freezer sync fix (mobile)</strong> — removing a freezer meal on your phone now syncs immediately instead of getting lost when you switch apps.</li>
+        <li><strong>URL import is tougher</strong> — works on more recipe sites and gives clearer error messages when one blocks us.</li>
       </ul>
       <!-- Previous Updates (collapsible) -->
       <div id="prevUpdatesSection" style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
@@ -439,14 +479,7 @@
           <span id="prevUpdatesArrow" style="transition:transform 0.2s;display:inline-block">▸</span> Previous updates
         </a>
         <div id="prevUpdatesBody" style="display:none;margin-top:10px">
-          <div class="whats-new-date">April 8, 2026 — earlier</div>
-          <ul class="whats-new-list">
-            <li><strong>"Plan This Week" in 30 seconds</strong> — the old Schedule and Meals tabs were replaced with a quick grid: pick which meals you're cooking, add optional notes, done.</li>
-            <li><strong>Editable Home slots</strong> — tap any slot to change the recipe, mark it skipped, or add a note.</li>
-            <li><strong>Saturday & Sunday slots</strong> — weekends now show on your plan, visually de-emphasized so weekdays stay the focus.</li>
-            <li><strong>Red dot on empty cook slots</strong> — tells you at a glance which meals still need a recipe picked.</li>
-          </ul>
-          <div class="whats-new-date" style="margin-top:12px">April 6, 2026</div>
+          <div class="whats-new-date">April 6, 2026</div>
           <ul class="whats-new-list">
             <li><strong>Redesigned startup guide</strong> — onboarding split into a one-time <em>Setup</em> and a repeating <em>Weekly Workflow</em>.</li>
             <li><strong>Better step descriptions</strong> — every step now explains what to do, why it matters, and how long it takes.</li>
@@ -470,61 +503,11 @@
   </div>
 </div>
 
-<!-- MODAL: Plan This Week — Step 1 (Meal selection) -->
-<div class="modal-overlay plan-modal-overlay" id="planModal1">
-  <div class="modal plan-modal">
-    <div class="modal-header">
-      <div class="modal-title">Plan This Week <span class="plan-modal-step">Step 1 of 2</span></div>
-      <button class="modal-close" onclick="closePlanModal1()">✕</button>
-    </div>
-    <div class="modal-body" id="planModal1Body"></div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closePlanModal1()">Cancel</button>
-      <button class="btn btn-primary" onclick="planModal1Next()">Next →</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: Plan This Week — Step 2 (Optional notes) -->
-<div class="modal-overlay plan-modal-overlay" id="planModal2">
-  <div class="modal plan-modal">
-    <div class="modal-header">
-      <div class="modal-title">Plan This Week <span class="plan-modal-step">Step 2 of 2</span></div>
-      <button class="modal-close" onclick="closePlanModal2()">✕</button>
-    </div>
-    <div class="modal-body" id="planModal2Body"></div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="planModal2Back()">← Back</button>
-      <button class="btn btn-primary" onclick="planModal2Save()">Done — View My Week →</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: Slot Editor (Dashboard tap-to-edit) -->
-<div class="modal-overlay slot-editor-overlay" id="slotEditor">
-  <div class="modal slot-editor-modal">
-    <div class="modal-header">
-      <div class="modal-title">Edit Meal</div>
-      <button class="modal-close" onclick="closeSlotEditor()">✕</button>
-    </div>
-    <div class="modal-body" id="slotEditorBody"></div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeSlotEditor()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- FAB: Plan This Week -->
-<button type="button" id="planFab" class="plan-fab" onclick="openPlanWeekModal1()" style="display:none">
-  <div class="fab-label">Plan This Week →</div>
-  <div class="fab-sub">Takes about 30 seconds</div>
-</button>
-
 <!-- MODAL: Account Settings -->
 <div class="modal-overlay" id="accountSettingsModal">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
-      <div class="modal-title">Email & Password</div>
+      <div class="modal-title">Account Settings</div>
       <button class="modal-close" onclick="closeModal('accountSettingsModal')">✕</button>
     </div>
     <div class="modal-body">
@@ -555,44 +538,25 @@
   </div>
 </div>
 
-<!-- MODAL: Settings (umbrella for account / setup guide / testimonial) -->
-<div class="modal-overlay" id="settingsModal">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <div class="modal-title">Settings</div>
-      <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <button class="settings-row" onclick="closeModal('settingsModal');openAccountSettings()">
-        <div class="settings-row-main">
-          <div class="settings-row-title">🔑 Email & Password</div>
-          <div class="settings-row-sub">Update your login credentials</div>
-        </div>
-        <div class="settings-row-arrow">›</div>
-      </button>
-      <button class="settings-row" id="settingsGuideRow" onclick="closeModal('settingsModal');toggleSetupGuide()">
-        <div class="settings-row-main">
-          <div class="settings-row-title">📖 Show Setup Guide</div>
-          <div class="settings-row-sub">Reopen the 5-step walkthrough</div>
-        </div>
-        <div class="settings-row-arrow">›</div>
-      </button>
-      <a href="https://testimonial.to/meal-planning-os" target="_blank" rel="noopener" class="settings-row" onclick="closeModal('settingsModal')">
-        <div class="settings-row-main">
-          <div class="settings-row-title">💬 Leave a Testimonial</div>
-          <div class="settings-row-sub">Tell us what you think</div>
-        </div>
-        <div class="settings-row-arrow">›</div>
-      </a>
-    </div>
-  </div>
-</div>
-
 <!-- FOOTER -->
 <div class="app-footer">
-  <div class="footer-primary-row">
-    <button class="btn btn-primary btn-reset-week" onclick="startFreshWeek()">↻ Reset Week</button>
-    <button class="btn btn-secondary btn-settings" onclick="openModal('settingsModal')">⚙️ Settings</button>
+  <div class="footer-actions">
+    <div class="footer-action">
+      <button class="btn-footer-action" onclick="startFreshWeek()">↻ Start Fresh Week</button>
+      <div class="footer-action-desc">Resets your plan. Recipes stay.</div>
+    </div>
+    <div class="footer-action" id="setupGuideAction">
+      <button class="btn-footer-action" id="setupGuideBtn" onclick="toggleSetupGuide()">📖 Show Setup Guide</button>
+      <div class="footer-action-desc">Reopen the 5-step walkthrough.</div>
+    </div>
+    <div class="footer-action">
+      <button class="btn-footer-action" onclick="openAccountSettings()">⚙️ Account Settings</button>
+      <div class="footer-action-desc">Change email or password.</div>
+    </div>
+    <div class="footer-action">
+      <a href="https://testimonial.to/meal-planning-os" target="_blank" rel="noopener" class="btn-footer-action" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;width:100%;height:32px">💬 Leave a Testimonial</a>
+      <div class="footer-action-desc">Tell us what you think!</div>
+    </div>
   </div>
   <div style="font-size:11px;color:var(--text-3);margin-bottom:5px">
     Questions or feedback? <a href="mailto:steven@mealplanningos.com" style="color:var(--accent);text-decoration:none;font-weight:600">steven@mealplanningos.com</a>

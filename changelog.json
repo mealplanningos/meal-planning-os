@@ -1,6 +1,22 @@
 [
   {
     "date": "2026-04-06",
+    "version": "2026-04-06-4",
+    "type": "admin",
+    "title": "Admin dashboard: roster view + counting fixes",
+    "items": [
+      "<strong>User Roster</strong> — collapsed loyal, drifting, recent signups, and recent logins into one table showing every user with a color-coded health pill (active / slipping / drifted / never). Sorted by most recent login so the top is 'who's using it now' and the bottom is 'who to email today'",
+      "<strong>Fixed recipe count</strong> — the 3 auto-seeded starter recipes (Overnight Oatmeal, Spaghetti, Chicken &amp; Bean Burrito) no longer count toward a user's 'own recipes' metric or the activation funnel",
+      "<strong>Fixed grocery count</strong> — was counting <code>Object.keys()</code> on the groceries wrapper object, giving every user the same bogus number. Now sums real user-added items only (staples + flex + ad-hoc + category), and excludes the 3 default staples and 3 default flex items",
+      "<strong>Fixed meals-planned count</strong> — only counts meal plan slots that are actually filled, not empty keys left over from clears",
+      "<strong>Funnel steps renamed</strong> to be explicit: 'Added own recipe', 'Planned a meal', 'Added grocery items'",
+      "<strong>Changelog collapsed</strong> into an accordion with only the latest entry open, to save vertical space",
+      "<strong>Chart fixes</strong> — gradient now matches canvas height, charts properly destroy on Refresh (no memory leak), line-chart x-axis shows <code>M/D</code> instead of ISO strings, tooltip shows full day-of-week",
+      "Retention card shows '—' when no users are eligible yet (instead of a misleading 0%)"
+    ]
+  },
+  {
+    "date": "2026-04-06",
     "version": "2026-04-06-3",
     "type": "admin",
     "title": "Admin dashboard: honest login metrics",
