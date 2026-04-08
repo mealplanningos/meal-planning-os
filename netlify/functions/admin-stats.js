@@ -232,6 +232,15 @@ exports.handler = async (event) => {
       }).length;
     };
 
+    // Onboarded = has completed the CURRENT onboarding walkthrough (V3).
+    // Bumped whenever the onboarding experience materially changes so existing
+    // users get re-prompted and the metric only reflects people who've seen
+    // the latest guide. Keep in sync with ONBOARDING_VERSION in app.js.
+    const CURRENT_ONBOARDING_VERSION = 3;
+    const _isOnboardedStrict = (ud) =>
+      ud?.onboarding?.firstRunComplete === true &&
+      (ud?.onboarding?.version || 0) >= CURRENT_ONBOARDING_VERSION;
+
     let totalRecipes = 0, totalFreezerItems = 0, totalGroceryItems = 0, totalAssignments = 0;
     let usersWithRecipes = 0, usersWithFreezer = 0, usersWithGroceries = 0, usersWithAssignments = 0;
     let usersOnboarded = 0;
@@ -259,19 +268,8 @@ exports.handler = async (event) => {
       if (f > 0) usersWithFreezer++;
       if (g > 0) usersWithGroceries++;
       if (a > 0) usersWithAssignments++;
-      // Onboarded = the user has reached the core "aha" of planning their week.
-      // We no longer trust `firstRunComplete` alone: the onboarding guide is now
-      // optional/soft, and a version bump resets the flag, so long-time users can
-      // end up marked "not onboarded" even after heavy use. Behavioral definition:
-      //   - explicit firstRunComplete === true, OR
-      //   - has planned at least one meal, OR
-      //   - has added at least one of their own recipes
-      // Any of those signals = this person has used the core loop.
-      const _isOnboarded =
-        (u.onboarding?.firstRunComplete === true) ||
-        (a > 0) ||
-        (r > 0);
-      if (_isOnboarded) usersOnboarded++;
+      // Strict: only counts users who have finished the CURRENT walkthrough (V3).
+      if (_isOnboardedStrict(u)) usersOnboarded++;
     }
 
     const avg = (num, den) => den ? +(num / den).toFixed(1) : 0;
@@ -310,12 +308,7 @@ exports.handler = async (event) => {
       const ud = userDataMap[u.id];
       const loggedIn = !!loginsByUser[u.id];
       if (loggedIn) funnelLoggedIn++;
-      // Same behavioral definition as summary counter above.
-      const _onboardedFunnel =
-        (ud?.onboarding?.firstRunComplete === true) ||
-        ((realAssignmentsByUser[u.id] || 0) > 0) ||
-        ((realRecipesByUser[u.id] || 0) > 0);
-      if (_onboardedFunnel) funnelOnboarded++;
+      if (_isOnboardedStrict(ud)) funnelOnboarded++;
       if ((realRecipesByUser[u.id]    || 0) > 0) funnelHasRecipe++;
       if ((realAssignmentsByUser[u.id] || 0) > 0) funnelHasAssignment++;
       if ((realGroceriesByUser[u.id]  || 0) > 0) funnelHasGrocery++;
@@ -407,10 +400,7 @@ exports.handler = async (event) => {
           recipes:     realRecipesByUser[u.id]    || 0,
           assignments: realAssignmentsByUser[u.id] || 0,
           groceries:   realGroceriesByUser[u.id]  || 0,
-          onboarded:
-            (ud?.onboarding?.firstRunComplete === true) ||
-            ((realAssignmentsByUser[u.id] || 0) > 0) ||
-            ((realRecipesByUser[u.id] || 0) > 0),
+          onboarded:  _isOnboardedStrict(ud),
           status:      statusFor(ageDays, daysSince, hasLogin),
         };
       })

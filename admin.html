@@ -195,7 +195,21 @@
     /* ── Roster: mobile card layout ────────────────────────────── */
     /* On narrow screens the table becomes a stack of cards: each row is a
        self-contained block with the column name shown as a label. */
+    .mobile-refresh-wrap { display: none; }
     @media (max-width: 720px) {
+      .header-actions #refreshBtn { display: none; }
+      .mobile-refresh-wrap {
+        display: flex;
+        justify-content: center;
+        margin-top: 24px;
+        padding-bottom: 20px;
+      }
+      .mobile-refresh-wrap .btn {
+        width: 100%;
+        max-width: 320px;
+        padding: 14px 18px;
+        font-size: 15px;
+      }
       .roster-table { display: block; }
       .roster-table thead { display: none; }
       .roster-table tbody { display: block; }
@@ -632,13 +646,20 @@
           <div style="font-size:11px;color:var(--text-3);margin-top:30px;text-align:center;line-height:1.6">
             ${fmt(s.totalBackups)} auto-backups saved across all users (safety net, not an engagement signal)
           </div>
+
+          <div class="mobile-refresh-wrap">
+            <button class="btn" id="refreshBtnBottom">↻ Refresh</button>
+          </div>
         </main>
       `;
 
-      document.getElementById('refreshBtn').addEventListener('click', async () => {
+      const _refreshHandler = async () => {
         const { data: { session } } = await _sb.auth.getSession();
         if (session) loadDashboard(session);
-      });
+      };
+      document.getElementById('refreshBtn').addEventListener('click', _refreshHandler);
+      const _bottomRefresh = document.getElementById('refreshBtnBottom');
+      if (_bottomRefresh) _bottomRefresh.addEventListener('click', _refreshHandler);
       document.getElementById('signOutBtn').addEventListener('click', async () => {
         await _sb.auth.signOut();
         renderLogin();
