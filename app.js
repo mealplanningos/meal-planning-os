@@ -371,10 +371,15 @@ function isSlotSkipped(day,meal){ const s=getSlot(day,meal); return !s || s.stat
 function setSlotCook(day,meal){
   if(!mealPlan[day]) mealPlan[day]={};
   const existing = mealPlan[day][meal] || {};
-  // If we're transitioning FROM a skipped state, the existing note was the skip
-  // reason ("Leftovers", "Eating out", etc.) — don't carry it into the cook slot.
-  const carryNote = (existing.state==='cook') ? (existing.note||'') : '';
+  // Event/schedule notes live in `note` and are preserved across state transitions.
+  // Legacy data may have a skip reason (Leftovers/Eating out) stored in `note` —
+  // detect and drop those so they don't leak into cook assignments.
+  let carryNote = existing.note || '';
+  if(/^(leftovers?|eating out)$/i.test(carryNote.trim())) carryNote = '';
   mealPlan[day][meal] = Object.assign({}, existing, {state:'cook', note:carryNote});
+  // skipLabel / skipDetail belong to skipped state only — drop on cook transition.
+  delete mealPlan[day][meal].skipLabel;
+  delete mealPlan[day][meal].skipDetail;
   if(!('recipeId' in mealPlan[day][meal])) mealPlan[day][meal].recipeId = null;
 }
 function setSlotSkipped(day,meal,note){
@@ -610,8 +615,15 @@ function planModal2Save(){
       }
     } else {
       // Skipped
-      if(note || (existing && existing.state==='skipped')){
+      const prevSkipLabel = existing && existing.skipLabel ? existing.skipLabel : '';
+      const prevSkipDetail = existing && existing.skipDetail ? existing.skipDetail : '';
+      if(note || prevSkipLabel || (existing && existing.state==='skipped')){
         setSlotSkipped(d,m,note);
+        // Preserve any existing skipLabel + skipDetail across plan-modal saves.
+        if(prevSkipLabel && mealPlan[d] && mealPlan[d][m]){
+          mealPlan[d][m].skipLabel = prevSkipLabel;
+          if(prevSkipDetail) mealPlan[d][m].skipDetail = prevSkipDetail;
+        }
       } else {
         // No note, no prior skipped state → clear the slot entirely
         clearSlot(d,m);
@@ -1358,12 +1370,21 @@ function renderDashboard(){
     MEALS.forEach(meal=>{
       const a = mealPlan[day]&&mealPlan[day][meal];
       const state = a && a.state ? a.state : 'skipped';
-      // For cook states we render the note as a sub-line; for skipped states the note IS the label, so don't double-print it.
-      const noteHtml = (state==='cook' && a && a.note) ? `<div class="dash-meal-sub">${_esc(a.note)}</div>` : '';
-      // A "noted" skipped slot (Leftovers / Eating out / anything with a note) is still an intentional plan —
-      // treat it visually like a planned meal so users see what they committed to.
+      // Event/schedule note renders as a sub-line only when the primary label is
+      // something else — otherwise we'd double-print the note.
+      //   - cook state       → primary is recipe/freezer/custom name; note is a sub
+      //   - skipped+skipLbl  → primary is "Leftovers"/"Eating out"; note is a sub
+      //   - skipped, no lbl  → note IS the primary (plain event like "kid's soccer")
+      const _showNoteSub = a && a.note && (
+        state==='cook' ||
+        (state==='skipped' && a.skipLabel && String(a.skipLabel).trim())
+      );
+      const noteHtml = _showNoteSub ? `<div class="dash-meal-sub">${_esc(a.note)}</div>` : '';
+      // A skipped slot with a skipLabel, an event note, or a legacy label-as-note is still
+      // an intentional plan — treat it visually like a planned meal.
+      const hasSkipLabel = (state==='skipped' && a && a.skipLabel && String(a.skipLabel).trim().length>0);
       const hasSkipNote = (state==='skipped' && a && a.note && String(a.note).trim().length>0);
-      const isPlanned = (state==='cook') || hasSkipNote;
+      const isPlanned = (state==='cook') || hasSkipLabel || hasSkipNote;
       const _rowCls = isPlanned ? 'dash-meal-row is-cook' : 'dash-meal-row is-skip';
       const _lblCls = isPlanned ? 'dash-meal-label is-cook' : 'dash-meal-label is-skip';
       html += `<div class="${_rowCls}" onclick="openSlotEditor('${day}','${meal}')" title="Click to edit">`;
@@ -1393,15 +1414,28 @@ function renderDashboard(){
         // Freezer pull — row click opens slot editor
         const _nm = a.name || 'Freezer meal';
         html += `<div class="dash-meal-name freezer">❄ ${_esc(_nm)}</div>`;
+      } else if(state==='cook' && a && a.name){
+        // Custom text entry (no recipe card, no freezer link) — just show the name.
+        html += `<div class="dash-meal-name custom">${_esc(a.name)}</div>`;
       } else if(state==='cook'){
         // Cook but no recipe picked — row click opens slot editor
         html += `<div class="dash-meal-name empty-cook">Pick one <span class="dash-slot-dot"></span></div>`;
       } else {
-        // Skipped with a note (Leftovers / Eating out / custom) → render as a planned alt meal in dark text.
-        // Skipped with no note → leave blank and muted.
-        if(a && a.note){
-          const _n = String(a.note).trim();
-          html += `<div class="dash-meal-name planned-alt">${_esc(_n)}</div>`;
+        // Skipped. Primary label priority:
+        //   1. skipLabel + optional skipDetail (e.g. "Eating out: Sushi")
+        //   2. note (legacy data, or plain skip with just an event note)
+        //   3. blank (no info at all → muted placeholder)
+        // The event note renders separately as a sub-line via noteHtml below.
+        const _skipLbl = a && a.skipLabel ? String(a.skipLabel).trim() : '';
+        const _skipDtl = a && a.skipDetail ? String(a.skipDetail).trim() : '';
+        const _legacyNote = a && a.note ? String(a.note).trim() : '';
+        if(_skipLbl){
+          const _primary = _skipDtl ? `${_skipLbl}: ${_skipDtl}` : _skipLbl;
+          html += `<div class="dash-meal-name planned-alt">${_esc(_primary)}</div>`;
+        } else if(_legacyNote){
+          // No skipLabel — fall back to note as the primary (covers legacy "note=Leftovers"
+          // data AND plain skips where the only info is an event like "kid's soccer").
+          html += `<div class="dash-meal-name planned-alt">${_esc(_legacyNote)}</div>`;
         } else {
           html += `<div class="dash-meal-empty">&nbsp;</div>`;
         }
@@ -1438,6 +1472,7 @@ function _updatePlanFab(hasPlan){
 // ── Slot Editor popover (tap-to-edit on Dashboard) ──────────────────────
 let _slotEditCtx = null;
 let _slotEditStaged = null; // {kind:'recipe'|'freezer', id, name, servings}
+let _slotEditSkipStaged = null; // {label:'Leftovers'|'Eating out', detail:string}
 function openSlotEditor(day,meal){
   _slotEditCtx = {day,meal};
   const cur = getSlot(day,meal);
@@ -1501,16 +1536,41 @@ function openSlotEditor(day,meal){
   // Staged servings panel — hidden until a recipe or freezer item is picked
   html += '<div id="slotEditorServingsPanel" class="slot-servings-panel" style="display:none"></div>';
 
+  // Quick text entry — plan something without creating a whole recipe card
+  // (e.g. "PB&J sandwich", "Cereal", "Mom's lasagna leftovers").
+  const _curCustomName = (cur && cur.state==='cook' && !cur.recipeId && !cur.freezerId && cur.name) ? cur.name : '';
+  html += '<div class="slot-editor-sub-label">or just type it</div>';
+  html += `<div class="slot-editor-custom">
+    <input type="text" id="slotEditorCustomInput" placeholder="e.g. PB&amp;J sandwich, cereal, taco night…" value="${_esc(_curCustomName)}" maxlength="80" onkeydown="if(event.key==='Enter'){event.preventDefault();_slotEditorSaveCustom();}">
+    <button type="button" class="btn btn-primary btn-sm" onclick="_slotEditorSaveCustom()">Save</button>
+  </div>`;
+
   // Escape hatch — jump to Recipes tab to add something new
-  html += `<div class="slot-editor-escape"><a href="#" onclick="event.preventDefault();closeSlotEditor();switchTab('recipes')">Don't see it? Add a recipe →</a></div>`;
+  html += `<div class="slot-editor-escape"><a href="#" onclick="event.preventDefault();closeSlotEditor();switchTab('recipes')">Want a full recipe card? Add one →</a></div>`;
   html += '</div>';
 
-  // Not cooking section — quick taps only
+  // Not cooking section — pick a reason, optionally add a detail, then save.
+  const _curSkipLabel = (cur && cur.state==='skipped' && cur.skipLabel) ? String(cur.skipLabel) : '';
+  const _curSkipDetail = (cur && cur.state==='skipped' && cur.skipDetail) ? String(cur.skipDetail) : '';
+  if(_curSkipLabel){
+    _slotEditSkipStaged = {label:_curSkipLabel, detail:_curSkipDetail};
+  } else {
+    _slotEditSkipStaged = null;
+  }
+  const _lftActive = _curSkipLabel==='Leftovers' ? ' active' : '';
+  const _eoActive  = _curSkipLabel==='Eating out' ? ' active' : '';
   html += '<div class="slot-editor-section"><div class="slot-editor-section-label">Not cooking?</div>';
   html += '<div class="slot-editor-quick">';
-  html += `<button type="button" class="slot-editor-quick-btn" onclick="_slotEditorQuickSkip('Leftovers')">Leftovers</button>`;
-  html += `<button type="button" class="slot-editor-quick-btn" onclick="_slotEditorQuickSkip('Eating out')">Eating out</button>`;
+  html += `<button type="button" class="slot-editor-quick-btn${_lftActive}" data-skip="Leftovers" onclick="_slotEditorStageSkip('Leftovers')">Leftovers</button>`;
+  html += `<button type="button" class="slot-editor-quick-btn${_eoActive}" data-skip="Eating out" onclick="_slotEditorStageSkip('Eating out')">Eating out</button>`;
   html += '</div>';
+  // Detail panel — hidden until a reason is picked. Lets the user specify what
+  // e.g. "Sushi" (eating out) or "Thursday's pasta" (leftovers).
+  const _skipPanelHidden = _curSkipLabel ? '' : ' style="display:none"';
+  html += `<div id="slotEditorSkipPanel" class="slot-skip-panel"${_skipPanelHidden}>
+    <input type="text" id="slotEditorSkipDetail" placeholder="Optional — what exactly?" value="${_esc(_curSkipDetail)}" maxlength="80" onkeydown="if(event.key==='Enter'){event.preventDefault();_slotEditorCommitSkip();}">
+    <button type="button" class="btn btn-primary btn-sm" onclick="_slotEditorCommitSkip()">Save</button>
+  </div>`;
   html += '</div>';
 
   // Footer — Mark as skipped + Clear this slot side by side
@@ -1533,6 +1593,7 @@ function closeSlotEditor(){
   const ov = document.getElementById('slotEditor');
   if(ov) ov.classList.remove('open');
   _slotEditCtx = null;
+  _slotEditSkipStaged = null;
   _slotEditStaged = null;
 }
 function _slotEditorStageRecipe(recipeId,name,servings){
@@ -1546,6 +1607,22 @@ function _slotEditorStageFreezer(freezerId,name,servings){
   // Freezer meals are already portioned — commit directly, no servings step.
   _slotEditStaged = {kind:'freezer', id:freezerId, name:name||'', servings:parseInt(servings)||2};
   _slotEditorCommitStaged();
+}
+function _slotEditorSaveCustom(){
+  if(!_slotEditCtx) return;
+  const input = document.getElementById('slotEditorCustomInput');
+  const name = (input && input.value || '').trim();
+  if(!name) return;
+  const {day,meal} = _slotEditCtx;
+  if(!mealPlan[day]) mealPlan[day] = {};
+  // Custom text entry: cook state, no recipe/freezer link, just a name.
+  // Clear any previous skip note since this is a fresh cook assignment.
+  mealPlan[day][meal] = {state:'cook', name:name, servings:1, mealType:'custom', recipeId:null, freezerId:null, freezerItem:false, note:''};
+  save(K.mealPlan, mealPlan);
+  _slotEditStaged = null;
+  closeSlotEditor();
+  renderDashboard();
+  renderOnboardingUI();
 }
 function _slotEditorUpdateSelection(){
   // visually mark only the currently staged button
@@ -1630,18 +1707,56 @@ function _slotEditorCommitStaged(){
 function _slotEditorSkip(){
   if(!_slotEditCtx) return;
   const {day,meal} = _slotEditCtx;
-  // Custom reason field removed — Mark as skipped is a blunt "not eating" toggle.
-  setSlotSkipped(day,meal,'');
+  // Preserve event note, drop any skipLabel. This is a plain skip, not leftovers/eating out.
+  const existing = mealPlan[day]&&mealPlan[day][meal];
+  let eventNote = existing && existing.note ? String(existing.note).trim() : '';
+  if(/^(leftovers?|eating out)$/i.test(eventNote)) eventNote = '';
+  setSlotSkipped(day,meal,eventNote);
+  if(mealPlan[day] && mealPlan[day][meal]) delete mealPlan[day][meal].skipLabel;
   save(K.mealPlan, mealPlan);
   closeSlotEditor();
   renderDashboard();
   renderOnboardingUI();
 }
-function _slotEditorQuickSkip(label){
+function _slotEditorStageSkip(label){
   if(!_slotEditCtx) return;
+  // Stage the reason, keep any existing detail the user already typed.
+  const existingDetail = _slotEditSkipStaged ? _slotEditSkipStaged.detail : '';
+  _slotEditSkipStaged = {label: label, detail: existingDetail};
+  // Visually highlight the active reason
+  document.querySelectorAll('.slot-editor-quick-btn').forEach(b=>{
+    b.classList.toggle('active', b.getAttribute('data-skip')===label);
+  });
+  // Reveal the detail panel and focus the input
+  const panel = document.getElementById('slotEditorSkipPanel');
+  if(panel){
+    panel.style.display = '';
+    const input = document.getElementById('slotEditorSkipDetail');
+    if(input){
+      setTimeout(()=>{ try { input.focus(); input.select(); } catch(e){} }, 0);
+    }
+  }
+}
+function _slotEditorCommitSkip(){
+  if(!_slotEditCtx || !_slotEditSkipStaged) return;
   const {day,meal} = _slotEditCtx;
-  setSlotSkipped(day,meal,label||'');
+  const input = document.getElementById('slotEditorSkipDetail');
+  const detail = input ? (input.value||'').trim() : (_slotEditSkipStaged.detail||'');
+  // Preserve any event/schedule note already on this slot. If the previous note
+  // was actually a legacy skip label (pre-skipLabel data), drop it.
+  const existing = mealPlan[day]&&mealPlan[day][meal];
+  let eventNote = existing && existing.note ? String(existing.note).trim() : '';
+  if(/^(leftovers?|eating out)$/i.test(eventNote)) eventNote = '';
+  if(!mealPlan[day]) mealPlan[day] = {};
+  mealPlan[day][meal] = {
+    state:'skipped',
+    recipeId:null,
+    note: eventNote,
+    skipLabel: _slotEditSkipStaged.label || '',
+    skipDetail: detail
+  };
   save(K.mealPlan, mealPlan);
+  _slotEditSkipStaged = null;
   closeSlotEditor();
   renderDashboard();
   renderOnboardingUI();

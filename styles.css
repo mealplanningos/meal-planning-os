@@ -2286,6 +2286,39 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   background: #FFFBEB;
   border-color: #F3D88B;
 }
+/* Quick free-text entry inside slot editor (e.g. "PB&J sandwich") */
+.slot-editor-custom {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+.slot-editor-custom input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+.slot-editor-custom input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(30,94,255,0.12);
+}
+.slot-editor-custom .btn {
+  flex-shrink: 0;
+}
+
+/* Custom-text meal on the dashboard (no recipe card backing it) */
+.dash-meal-name.custom {
+  color: var(--text);
+  font-weight: 600;
+}
+
 /* Escape hatch link inside slot editor */
 .slot-editor-escape {
   margin-top: 14px;
@@ -2321,6 +2354,39 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 .slot-editor-quick-btn:hover {
   background: #EEF3FA;
   border-color: var(--accent);
+}
+.slot-editor-quick-btn.active {
+  background: #E8F0FF;
+  border-color: var(--accent);
+  color: #1a1a1a;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(30,94,255,0.18);
+}
+
+/* Skip detail panel — reveals after tapping Leftovers / Eating out */
+.slot-skip-panel {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.slot-skip-panel input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+.slot-skip-panel input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(30,94,255,0.12);
+}
+.slot-skip-panel .btn {
+  flex-shrink: 0;
 }
 
 /* Plan Modal 2: day-grouped note rows */
