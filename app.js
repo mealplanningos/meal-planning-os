@@ -642,7 +642,7 @@ function planModal2Save(){
 // ╚═══════════════════════════════════════╝
 // version: bumped when we materially change the guide. Users at an older
 // version are walked through the new guide exactly once.
-const ONBOARDING_VERSION = 2;
+const ONBOARDING_VERSION = 3;
 // Loaded from localStorage on boot; falls back to defaults for first-time users.
 // Also gets overwritten by cloud sync (applyCloudData) when Supabase has a more recent copy.
 let onboardingState = load(K.onboarding, { firstRunComplete: false, guideSeen: false, version: ONBOARDING_VERSION });
