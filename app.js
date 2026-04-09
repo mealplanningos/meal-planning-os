@@ -712,7 +712,7 @@ function _renderPlanModal1(){
   const closeBtn = document.getElementById('planModal1Close');
   const nextBtn = document.getElementById('planModal1Next');
   if(_isQuickStart){
-    if(titleEl) titleEl.textContent = 'Any obligations this week?';
+    if(titleEl) titleEl.textContent = 'Plan your week in 60 seconds';
     if(stepEl)  stepEl.textContent = 'Step 2 of 2';
     if(backBtn)   backBtn.style.display = 'none';
     if(closeBtn)  closeBtn.style.display = 'none';
@@ -879,7 +879,7 @@ function _renderPlanModal2(){
   const closeBtn  = document.getElementById('planModal2Close');
   const nextBtn   = document.getElementById('planModal2Next');
   if(_isQuickStart){
-    if(titleEl) titleEl.textContent = 'Any obligations this week?';
+    if(titleEl) titleEl.textContent = 'Plan your week in 60 seconds';
     if(stepEl)  stepEl.textContent = 'Step 1 of 2';
     if(cancelBtn) cancelBtn.style.display = 'none';
     if(closeBtn)  closeBtn.style.display = 'none';
