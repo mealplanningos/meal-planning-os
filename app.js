@@ -62,31 +62,18 @@ const STARTER_RECIPES = [
      {name:'Salt & Pepper',   qty:'to taste',category:'Pantry & Seasonings'},
      {name:'Oil',             qty:'1 tsp',   category:'Pantry & Seasonings'},
    ]},
-  // ── V4 onboarding demo recipes (single-serving, easy-wins energy) ──
-  {id:'sr4', libraryId:'lb_sr4', type:'goto', onMenu:false, name:'PB&J Upgrade', servings:1,
-   notes:'Toast bread lightly.\nSpread peanut butter on one slice.\nSpread jelly on the other.\nAdd banana slices on top of the peanut butter.\nDrizzle honey over the banana.\nClose it up, cut in half.',
+  {id:'sr4', libraryId:'lb22', type:'experimental', onMenu:false, name:'Beef & Broccoli', servings:1,
+   notes:'Cook rice according to package instructions.\nSlice flank steak thin against the grain. Toss with cornstarch, salt, and pepper.\nSear beef in sesame oil over high heat 2–3 minutes until browned. Set aside.\nStir-fry broccoli in the same pan for 3 minutes.\nReturn beef to the pan. Add soy sauce, minced garlic, and ginger. Toss and cook for 1–2 minutes.\nServe over rice.',
    ingredients:[
-     {name:'Bread',          qty:'2 slices', category:'Grains & Breads'},
-     {name:'Peanut Butter',  qty:'2 TBSP',   category:'Pantry & Seasonings'},
-     {name:'Jelly',          qty:'1 TBSP',   category:'Pantry & Seasonings'},
-     {name:'Banana',         qty:'1',         category:'Produce'},
-     {name:'Honey',          qty:'1 tsp',     category:'Pantry & Seasonings'},
-   ]},
-  {id:'sr5', libraryId:'lb_sr5', type:'goto', onMenu:false, name:'Quesadilla', servings:1,
-   notes:'Heat a pan over medium heat.\nPlace tortilla in pan, sprinkle cheese on one half.\nFold tortilla in half, press gently.\nCook 2 minutes per side until golden and cheese is melted.\nSlice into wedges.\nServe with salsa and sour cream.',
-   ingredients:[
-     {name:'Large Tortilla',  qty:'1',       category:'Grains & Breads'},
-     {name:'Shredded Cheese', qty:'¼ cup',   category:'Dairy / Dairy-Free'},
-     {name:'Salsa',           qty:'2 TBSP',  category:'Pantry & Seasonings'},
-     {name:'Sour Cream',      qty:'1 TBSP',  category:'Dairy / Dairy-Free'},
-   ]},
-  {id:'sr6', libraryId:'lb_sr6', type:'goto', onMenu:false, name:'Tomato Soup + Grilled Cheese', servings:1,
-   notes:'Heat tomato soup in a pot over medium heat.\nButter two slices of bread on one side each.\nPlace one slice butter-side down in a pan. Add cheese, top with second slice butter-side up.\nCook 2-3 minutes per side until golden and cheese melts.\nCut sandwich in half. Serve with soup.',
-   ingredients:[
-     {name:'Tomato Soup',     qty:'1 can',    category:'Pantry & Seasonings'},
-     {name:'Bread',           qty:'2 slices', category:'Grains & Breads'},
-     {name:'Butter',          qty:'1 TBSP',   category:'Dairy / Dairy-Free'},
-     {name:'Sliced Cheese',   qty:'2 slices', category:'Dairy / Dairy-Free'},
+     {name:'Flank Steak',    qty:'8 oz',    category:'Protein'},
+     {name:'Broccoli Florets',qty:'2 cups',  category:'Produce'},
+     {name:'Soy Sauce',      qty:'3 TBSP',  category:'Pantry & Seasonings'},
+     {name:'Sesame Oil',     qty:'1 TBSP',  category:'Pantry & Seasonings'},
+     {name:'Garlic',         qty:'3 cloves',category:'Produce'},
+     {name:'Ginger',         qty:'1 tsp',   category:'Produce'},
+     {name:'Cornstarch',     qty:'1 TBSP',  category:'Pantry & Seasonings'},
+     {name:'Rice',           qty:'2 cups',  category:'Grains & Breads'},
+     {name:'Salt & Pepper',  qty:'to taste',category:'Pantry & Seasonings'},
    ]},
 ];
 
@@ -96,11 +83,11 @@ const STARTER_RECIPES = [
 // Demo meal plan distribution — maps starter recipe IDs to weekday slots.
 // Friday dinner = Eating Out, Wednesday lunch = Leftovers.
 const _DEMO_PLAN_MAP = {
-  monday:    { breakfast:'sr1', lunch:'sr4', dinner:'sr2' },
-  tuesday:   { breakfast:'sr1', lunch:'sr5', dinner:'sr3' },
-  wednesday: { breakfast:'sr1', lunch:'_leftovers', dinner:'sr6' },
-  thursday:  { breakfast:'sr1', lunch:'sr4', dinner:'sr2' },
-  friday:    { breakfast:'sr1', lunch:'sr5', dinner:'_eatingout' },
+  monday:    { breakfast:'sr1', lunch:'sr3', dinner:'sr2' },
+  tuesday:   { breakfast:'sr1', lunch:'sr4', dinner:'sr3' },
+  wednesday: { breakfast:'sr1', lunch:'_leftovers', dinner:'sr4' },
+  thursday:  { breakfast:'sr1', lunch:'sr2', dinner:'sr3' },
+  friday:    { breakfast:'sr1', lunch:'sr4', dinner:'_eatingout' },
 };
 
 // Generates a fully populated demo meal plan using starter recipes.
@@ -121,7 +108,7 @@ function generateDemoMealPlan(draft){
         // Weekend slots or unmapped — only fill if user toggled ON
         if(draft && draft.cook[key]){
           // User opted in a weekend slot — assign a rotating recipe
-          const rotateIds = ['sr1','sr4','sr5','sr2','sr6','sr3'];
+          const rotateIds = ['sr1','sr2','sr3','sr4'];
           const idx = (DAYS.indexOf(d)*3 + MEALS.indexOf(m)) % rotateIds.length;
           plan[d][m] = { state:'cook', recipeId:rotateIds[idx], servings:1, note:'' };
         }
@@ -549,8 +536,24 @@ let checks     = load(K.checks, {});
 let adhocItems = load(K.adhocItems, []);
 let categoryItems = load(K.categoryItems, []);
 
-// First visit — seed with 3 starter meals so the app feels alive immediately
+// First visit — seed with starter meals so the app feels alive immediately
 if (recipes === null) { recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.ingredients.map(i=>({...i}))})); save(K.recipes, recipes); }
+
+// ── Clean up retired demo recipes from previous versions ─────────────
+// Old sr4 (PB&J Upgrade), sr5 (Quesadilla), sr6 (Tomato Soup + Grilled Cheese)
+// were removed in V4. Strip them from saved data so they stop appearing.
+(function _cleanRetiredStarters(){
+  const retired = new Set(['lb_sr4','lb_sr5','lb_sr6']);
+  const before = recipes.length;
+  recipes = recipes.filter(r => !retired.has(r.libraryId));
+  // Also ensure new sr4 (Beef & Broccoli) exists if missing
+  const hasSr4 = recipes.some(r => r.id === 'sr4');
+  if(!hasSr4){
+    const sr4 = STARTER_RECIPES.find(r => r.id === 'sr4');
+    if(sr4) recipes.push({...sr4, ingredients: sr4.ingredients.map(i=>({...i}))});
+  }
+  if(recipes.length !== before || !hasSr4) save(K.recipes, recipes);
+})();
 
 // ╔═══════════════════════════════════════╗
 //   SLOT SCHEMA MIGRATION (non-destructive)
@@ -1019,7 +1022,7 @@ function _migrateOnboardingState(){
   if(ver < ONBOARDING_VERSION){
     // V4: If user has more than just starter recipes, they're an existing user
     // — auto-complete onboarding so the quick-start modal doesn't fire.
-    const starterIds = new Set(['sr1','sr2','sr3','sr4','sr5','sr6']);
+    const starterIds = new Set(['sr1','sr2','sr3','sr4']);
     const hasRealRecipes = recipes.some(r => !starterIds.has(r.id));
     if(hasRealRecipes || (recipes.length > 6)){
       onboardingState.firstRunComplete = true;
@@ -1724,6 +1727,7 @@ function renderDashboard(){
         }
       }
       html += noteHtml;
+      if(isPlanned) html += `<button class="cell-edit-btn dash-edit-dot" onclick="event.stopPropagation();openSlotEditor('${day}','${meal}')" title="Edit meal"></button>`;
       html += '</div>';
     });
     if(isToday) html += '<div class="dash-today-footer">Today</div>';
@@ -1775,9 +1779,9 @@ function openSlotEditor(day,meal){
   const note = cur && cur.note ? cur.note : '';
   const recipeId = cur && cur.recipeId ? cur.recipeId : '';
   const title = `${DAY_FULL[day]} ${MEAL_LABEL[meal]}`;
-  const menuRecipes = recipes.filter(r=>r.onMenu);
+  const menuRecipes = recipes.filter(r=>r.onMenu && r.type==='goto');
 
-  const experimentalRecipes = recipes.filter(r=>!r.onMenu);
+  const experimentalRecipes = recipes.filter(r=>r.onMenu && r.type==='experimental');
 
   let html = `<div class="slot-editor-title">${title}</div>`;
 
@@ -1796,9 +1800,9 @@ function openSlotEditor(day,meal){
     html += '</div>';
   }
 
-  // Experimental subheader + non-menu recipes
+  // Experimental subheader + menu experimental recipes
+  html += '<div class="slot-editor-sub-label">or try an experimental meal</div>';
   if(experimentalRecipes.length>0){
-    html += '<div class="slot-editor-sub-label">or try an experimental meal</div>';
     html += '<div class="slot-editor-recipes experimental">';
     experimentalRecipes.forEach(r=>{
       const sel = r.id===recipeId ? ' selected' : '';
@@ -1806,6 +1810,8 @@ function openSlotEditor(day,meal){
       html += `<button type="button" class="slot-editor-recipe${sel}" data-rid="${r.id}" onclick="_slotEditorStageRecipe('${r.id}','${_rn}',${r.servings||2})">✨ ${_esc(r.name)}</button>`;
     });
     html += '</div>';
+  } else {
+    html += '<div class="slot-editor-empty">No experimental meals on your menu yet.<br><a href="#" onclick="event.preventDefault();closeSlotEditor();_libFilter=\'experimental\';switchTab(\'recipes\')">Browse experimental recipes →</a></div>';
   }
 
   // Freezer option
@@ -2406,7 +2412,7 @@ function renderMealPlan(){
           ${nameEl}
           <div class="cell-servings">${asgn.servings} serving${asgn.servings!==1?'s':''}</div>
           ${tag}
-          <button class="cell-edit-btn" onclick="event.stopPropagation();openAssignModal('${d}','${meal}')" title="Edit meal">✎</button>
+          <button class="cell-edit-btn" onclick="event.stopPropagation();openAssignModal('${d}','${meal}')" title="Edit meal"></button>
         </div>`;
       } else {
         row+=`<div class="plan-cell empty" onclick="openAssignModal('${d}','${meal}')"><span class="cell-empty-label">+ Add</span></div>`;
@@ -2452,7 +2458,7 @@ function renderMealPlan(){
             ${mNameEl}
             <div class="mpm-meal-servings">${asgn.servings} serving${asgn.servings!==1?'s':''}</div>
             ${tag}
-            <button class="cell-edit-btn" onclick="event.stopPropagation();openAssignModal('${d}','${meal}')" title="Edit meal">✎</button>
+            <button class="cell-edit-btn" onclick="event.stopPropagation();openAssignModal('${d}','${meal}')" title="Edit meal"></button>
           </div>`;
         } else {
           mh+=`<div class="mpm-meal-cell empty" onclick="openAssignModal('${d}','${meal}')"><span class="mpm-meal-empty-label">+ Add a meal</span></div>`;

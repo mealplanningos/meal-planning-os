@@ -618,27 +618,21 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   position: absolute;
   bottom: 8px;
   right: 8px;
-  width: 24px;
-  height: 24px;
-  background: rgba(30, 94, 255, 0.08);
-  border: 1.5px solid rgba(30, 94, 255, 0.25);
+  width: 18px;
+  height: 18px;
+  background: rgba(30, 94, 255, 0.12);
+  border: none;
   border-radius: 50%;
-  font-size: 12px;
-  color: var(--accent);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   transition: all 0.15s;
-  line-height: 1;
   padding: 0;
+  flex-shrink: 0;
 }
 .cell-edit-btn:hover {
-  background: rgba(30, 94, 255, 0.15);
-  border-color: var(--accent);
+  background: rgba(30, 94, 255, 0.3);
 }
 @media (max-width: 600px) {
-  .cell-edit-btn { width: 28px; height: 28px; font-size: 14px; }
+  .cell-edit-btn { width: 22px; height: 22px; }
 }
 
 /* Clickable recipe name — shows cooking instructions on tap */
@@ -1831,6 +1825,7 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   cursor: pointer;
   padding: 4px 0;
   margin: 0;
+  position: relative;
 }
 /* Hover highlight is tight around the meal name/label, not the full row */
 .dash-meal-row .dash-meal-name,
@@ -1845,6 +1840,17 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 .dash-meal-row:hover .dash-meal-name,
 .dash-meal-row:hover .dash-meal-empty { background: rgba(30,94,255,0.08); }
 .dash-meal-name, .dash-meal-empty { cursor: pointer; }
+
+/* Blue edit dot on dashboard meal rows */
+.dash-edit-dot {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  bottom: auto;
+  width: 6px;
+  height: 6px;
+  background: rgba(30, 94, 255, 0.22);
+}
 
 /* Weekend days — subtle de-emphasis */
 .dash-day-card.weekend {
