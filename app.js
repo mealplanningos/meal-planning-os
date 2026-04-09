@@ -1140,6 +1140,10 @@ function startFreshWeek(){
   mealPlan={};
   checks={};
   adhocItems=[];
+  // Reset starter/demo recipes off the No-Decision Menu
+  const starterIds = new Set(STARTER_RECIPES.map(r=>r.id));
+  recipes.forEach(r=>{ if(starterIds.has(r.id)) r.onMenu = false; });
+  save(K.recipes, recipes);
   save(K.weekNotes,weekNotes);
   save(K.mealPlan,mealPlan);
   save(K.checks,checks);
@@ -2148,7 +2152,7 @@ const AVAILABLE_TAGS=['Breakfast','Lunch','Dinner','Under 15 Min','Under 30 Min'
 let _editId=null, _editType='goto', _modalContext='menu';
 function openRecipeModal(id,type,context){
   _editId=id;
-  _modalContext=context||_addContext||'menu';
+  _modalContext=context||_addContext||'recipes';
   const r=id?recipes.find(x=>x.id===id):null;
   _editType=type||(r?r.type:null);
   document.getElementById('recipeModalTitle').textContent=id?'Edit Recipe':'Add Recipe';
@@ -2392,13 +2396,17 @@ function renderMealPlan(){
       if(asgn){
         const cls=getCellClass(meal,asgn);
         const tag=getCellTag(meal,asgn);
-        // Recipe names on Meal Plan are plain text — cook mode lives on the Dashboard now.
-        const nameEl=`<div class="cell-meal-name">${_esc(asgn.name||'')}</div>`;
-        row+=`<div class="cell-filled ${cls}" onclick="openAssignModal('${d}','${meal}')">
+        const _recipe=asgn.recipeId?recipes.find(x=>x.id===asgn.recipeId):null;
+        const _hasNotes=_recipe&&_recipe.notes&&_recipe.notes.trim();
+        const nameEl=_hasNotes
+          ?`<div class="cell-meal-name cell-has-notes" onclick="event.stopPropagation();showCellNotes('${d}','${meal}')">${_esc(asgn.name||'')}</div>`
+          :`<div class="cell-meal-name">${_esc(asgn.name||'')}</div>`;
+        row+=`<div class="cell-filled ${cls}">
           <button class="cell-remove" onclick="event.stopPropagation();removeCell('${d}','${meal}')">✕</button>
           ${nameEl}
           <div class="cell-servings">${asgn.servings} serving${asgn.servings!==1?'s':''}</div>
           ${tag}
+          <button class="cell-edit-btn" onclick="event.stopPropagation();openAssignModal('${d}','${meal}')" title="Edit meal">✎</button>
         </div>`;
       } else {
         row+=`<div class="plan-cell empty" onclick="openAssignModal('${d}','${meal}')"><span class="cell-empty-label">+ Add</span></div>`;
@@ -2434,11 +2442,17 @@ function renderMealPlan(){
         if(asgn){
           const cls=getCellClass(meal,asgn);
           const tag=getCellTag(meal,asgn);
-          mh+=`<div class="mpm-meal-cell ${cls}" onclick="openAssignModal('${d}','${meal}')">
+          const _recipe=asgn.recipeId?recipes.find(x=>x.id===asgn.recipeId):null;
+          const _hasNotes=_recipe&&_recipe.notes&&_recipe.notes.trim();
+          const mNameEl=_hasNotes
+            ?`<div class="mpm-meal-name cell-has-notes" onclick="event.stopPropagation();showCellNotes('${d}','${meal}')">${_esc(asgn.name||'')}</div>`
+            :`<div class="mpm-meal-name">${_esc(asgn.name||'')}</div>`;
+          mh+=`<div class="mpm-meal-cell ${cls}">
             <button class="cell-remove" onclick="event.stopPropagation();removeCell('${d}','${meal}')">✕</button>
-            <div class="mpm-meal-name">${_esc(asgn.name||'')}</div>
+            ${mNameEl}
             <div class="mpm-meal-servings">${asgn.servings} serving${asgn.servings!==1?'s':''}</div>
             ${tag}
+            <button class="cell-edit-btn" onclick="event.stopPropagation();openAssignModal('${d}','${meal}')" title="Edit meal">✎</button>
           </div>`;
         } else {
           mh+=`<div class="mpm-meal-cell empty" onclick="openAssignModal('${d}','${meal}')"><span class="mpm-meal-empty-label">+ Add a meal</span></div>`;
@@ -2484,6 +2498,31 @@ function getCellTag(meal,a){
     fun:'<span class="cell-tag tag-experimental">✨ Experimental</span>',
   };
   return map[t]||'';
+}
+
+// Show cooking instructions popover for a filled meal cell
+function showCellNotes(day,meal){
+  const asgn=mealPlan[day]&&mealPlan[day][meal];
+  if(!asgn||!asgn.recipeId) return;
+  const r=recipes.find(x=>x.id===asgn.recipeId);
+  if(!r||!r.notes) return;
+  // Remove any existing popover
+  const prev=document.getElementById('cellNotesPopover');
+  if(prev) prev.remove();
+  const steps=r.notes.split('\n').filter(s=>s.trim());
+  const popover=document.createElement('div');
+  popover.id='cellNotesPopover';
+  popover.className='cell-notes-popover';
+  popover.innerHTML=`
+    <div class="cell-notes-card">
+      <div class="cell-notes-header">
+        <div class="cell-notes-title">${_esc(r.name)}</div>
+        <button class="cell-notes-close" onclick="document.getElementById('cellNotesPopover').remove()">✕</button>
+      </div>
+      <ol class="cell-notes-steps">${steps.map(s=>`<li>${_esc(s)}</li>`).join('')}</ol>
+    </div>`;
+  popover.addEventListener('click',e=>{ if(e.target===popover) popover.remove(); });
+  document.getElementById('appRoot').appendChild(popover);
 }
 function removeCell(d,m){if(mealPlan[d])delete mealPlan[d][m];save(K.mealPlan,mealPlan);renderMealPlan();renderOnboardingUI();}
 
