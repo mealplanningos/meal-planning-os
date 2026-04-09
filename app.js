@@ -542,6 +542,8 @@ if (recipes === null) { recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.in
 // ── Clean up retired demo recipes from previous versions ─────────────
 // Old sr4 (PB&J Upgrade), sr5 (Quesadilla), sr6 (Tomato Soup + Grilled Cheese)
 // were removed in V4. Strip them from saved data so they stop appearing.
+// SAFETY: only removes recipes with EXACT retired libraryIds — custom recipes
+// (no libraryId) and user-added library recipes are NEVER touched.
 (function _cleanRetiredStarters(){
   const retired = new Set(['lb_sr4','lb_sr5','lb_sr6']);
   const before = recipes.length;
@@ -1138,12 +1140,13 @@ function replayQuickStart(){
 
 // ── Reset Logic ─────────────────────────────────────────────────────────
 function startFreshWeek(){
-  if(!confirm('Start a fresh week? This will clear your Schedule, Meal Plan, and Grocery List. Your recipes and No-Decision Menu will stay.')) return;
+  if(!confirm('Start a fresh week? This will clear your Schedule, Meal Plan, and Grocery List. Your recipes, freezer meals, and No-Decision Menu will stay.')) return;
   weekNotes={};
   mealPlan={};
   checks={};
   adhocItems=[];
   // Reset starter/demo recipes off the No-Decision Menu
+  // IMPORTANT: custom recipes, freezer meals, and user-added recipes are NEVER touched here.
   const starterIds = new Set(STARTER_RECIPES.map(r=>r.id));
   recipes.forEach(r=>{ if(starterIds.has(r.id)) r.onMenu = false; });
   save(K.recipes, recipes);
@@ -1156,7 +1159,9 @@ function startFreshWeek(){
 }
 
 function resetEverything(){
-  if(!confirm('Reset everything? This will clear ALL your data — recipes, menu, meal plan, grocery list, and onboarding progress. This cannot be undone.')) return;
+  if(!confirm('Reset everything? This will clear ALL your data — recipes, menu, meal plan, grocery list, freezer meals, and onboarding progress. This cannot be undone.')) return;
+  const typed = prompt('Type RESET to confirm. This will permanently delete all your recipes, freezer meals, and meal plans.');
+  if(!typed || typed.trim().toUpperCase() !== 'RESET') return;
   recipes=[];
   weekNotes={};
   mealPlan={};
@@ -1789,7 +1794,7 @@ function openSlotEditor(day,meal){
   html += '<div class="slot-editor-section"><div class="slot-editor-section-label">Cook this meal:</div>';
 
   if(menuRecipes.length===0){
-    html += '<div class="slot-editor-empty" style="margin-bottom:10px">No recipes on your No-Decision Menu yet. <a href="#" onclick="event.preventDefault();closeSlotEditor();switchTab(\'menu\')">Build your menu →</a></div>';
+    html += '<div class="slot-editor-empty" style="margin-bottom:10px">No recipes on your No-Decision Menu yet.<br><a href="#" onclick="event.preventDefault();closeSlotEditor();switchTab(\'menu\')">Build your menu →</a></div>';
   } else {
     html += '<div class="slot-editor-recipes">';
     menuRecipes.forEach(r=>{
