@@ -232,18 +232,21 @@ exports.handler = async (event) => {
       }).length;
     };
 
-    // Onboarded = has completed the CURRENT onboarding walkthrough (V3).
+    // Onboarded = has completed the CURRENT onboarding walkthrough (V4).
     // Bumped whenever the onboarding experience materially changes so existing
     // users get re-prompted and the metric only reflects people who've seen
     // the latest guide. Keep in sync with ONBOARDING_VERSION in app.js.
-    const CURRENT_ONBOARDING_VERSION = 3;
+    const CURRENT_ONBOARDING_VERSION = 4;
     const _isOnboardedStrict = (ud) =>
       ud?.onboarding?.firstRunComplete === true &&
       (ud?.onboarding?.version || 0) >= CURRENT_ONBOARDING_VERSION;
+    // V4.5: Learn More completion (post-onboarding guided tour)
+    const _isLearnMoreComplete = (ud) =>
+      ud?.onboarding?.learnMoreComplete === true;
 
     let totalRecipes = 0, totalFreezerItems = 0, totalGroceryItems = 0, totalAssignments = 0;
     let usersWithRecipes = 0, usersWithFreezer = 0, usersWithGroceries = 0, usersWithAssignments = 0;
-    let usersOnboarded = 0;
+    let usersOnboarded = 0, usersLearnMoreComplete = 0;
 
     // Keep a lookup so we can build the activation funnel below.
     // Also precompute per-user "real" counts (seed data excluded).
@@ -268,8 +271,9 @@ exports.handler = async (event) => {
       if (f > 0) usersWithFreezer++;
       if (g > 0) usersWithGroceries++;
       if (a > 0) usersWithAssignments++;
-      // Strict: only counts users who have finished the CURRENT walkthrough (V3).
+      // Strict: only counts users who have finished the CURRENT walkthrough (V4).
       if (_isOnboardedStrict(u)) usersOnboarded++;
+      if (_isLearnMoreComplete(u)) usersLearnMoreComplete++;
     }
 
     const avg = (num, den) => den ? +(num / den).toFixed(1) : 0;
@@ -294,13 +298,15 @@ exports.handler = async (event) => {
     // Sequential steps, each a subset of the previous.
     //  1. Signed up
     //  2. Logged in at least once (post-signup session)
-    //  3. Completed onboarding (firstRunComplete === true)
-    //  4. Created at least one recipe
-    //  5. Assigned at least one meal to a slot
-    //  6. Generated a grocery list
+    //  3. Completed V4 Quick Start (firstRunComplete === true, version >= 4)
+    //  4. Completed V4.5 Learn More (learnMoreComplete === true)
+    //  5. Created at least one recipe
+    //  6. Assigned at least one meal to a slot
+    //  7. Generated a grocery list
     let funnelSignedUp = authUsers.length;
     let funnelLoggedIn = 0;
     let funnelOnboarded = 0;
+    let funnelLearnMore = 0;
     let funnelHasRecipe = 0;
     let funnelHasAssignment = 0;
     let funnelHasGrocery = 0;
@@ -309,6 +315,7 @@ exports.handler = async (event) => {
       const loggedIn = !!loginsByUser[u.id];
       if (loggedIn) funnelLoggedIn++;
       if (_isOnboardedStrict(ud)) funnelOnboarded++;
+      if (_isLearnMoreComplete(ud)) funnelLearnMore++;
       if ((realRecipesByUser[u.id]    || 0) > 0) funnelHasRecipe++;
       if ((realAssignmentsByUser[u.id] || 0) > 0) funnelHasAssignment++;
       if ((realGroceriesByUser[u.id]  || 0) > 0) funnelHasGrocery++;
@@ -318,7 +325,8 @@ exports.handler = async (event) => {
     // pass the total separately so % calculations use it as the denominator.
     const funnel = [
       { step: 'Logged in',            count: funnelLoggedIn },
-      { step: 'Onboarded',            count: funnelOnboarded },
+      { step: 'V4 Quick Start',       count: funnelOnboarded },
+      { step: 'V4.5 Learn More',      count: funnelLearnMore },
       { step: 'Added own recipe',     count: funnelHasRecipe },
       { step: 'Planned a meal',       count: funnelHasAssignment },
       { step: 'Added grocery items',  count: funnelHasGrocery },
@@ -400,8 +408,9 @@ exports.handler = async (event) => {
           recipes:     realRecipesByUser[u.id]    || 0,
           assignments: realAssignmentsByUser[u.id] || 0,
           groceries:   realGroceriesByUser[u.id]  || 0,
-          onboarded:  _isOnboardedStrict(ud),
-          status:      statusFor(ageDays, daysSince, hasLogin),
+          onboarded:      _isOnboardedStrict(ud),
+          learnMoreDone:  _isLearnMoreComplete(ud),
+          status:         statusFor(ageDays, daysSince, hasLogin),
         };
       })
       .sort((a, b) => {
@@ -440,6 +449,7 @@ exports.handler = async (event) => {
         usersWithGroceries,
         usersWithAssignments,
         usersOnboarded,
+        usersLearnMoreComplete,
         avgRecipesPerUser: avg(totalRecipes,      userData.length),
         avgFreezerPerUser: avg(totalFreezerItems, userData.length),
         avgGroceryPerUser: avg(totalGroceryItems, userData.length),

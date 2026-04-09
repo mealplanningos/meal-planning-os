@@ -17,7 +17,7 @@ const WEEKEND = ['saturday','sunday'];
 const MEALS = ['breakfast','lunch','dinner'];
 const MEAL_LABEL = {breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner'};
 // ── What's New version (change this + modal content to trigger a new popup) ──
-const CURRENT_UPDATE_VERSION = '2026-04-09-v4';
+const CURRENT_UPDATE_VERSION = '2026-04-08-3';
 
 const CATS = ['Produce','Protein','Grains & Breads','Dairy / Dairy-Free','Pantry & Seasonings'];
 const CAT_ICON = {'Produce':'🥬','Protein':'🍗','Grains & Breads':'🌾','Dairy / Dairy-Free':'🥛','Pantry & Seasonings':'🧂'};
@@ -147,45 +147,21 @@ let _quickStartStep = 0; // 0=not started, 1=meal grid, 2+=tooltips
 function openQuickStartModal(){
   _isQuickStart = true;
   _quickStartStep = 1;
-  // Pre-fill draft: Mon-Fri B/L/D ON, weekends OFF + 3 demo obligations
+  // Pre-fill draft: Mon-Fri B/L/D ON, weekends OFF
   _planDraft = { cook: {}, notes: {} };
   const weekdays = ['monday','tuesday','wednesday','thursday','friday'];
   weekdays.forEach(d=>MEALS.forEach(m=>{
     _planDraft.cook[d+'_'+m] = true;
   }));
-  // Demo obligations — shows the user what this feature is for
-  _planDraft.notes.tuesday  = 'Working late';
-  _planDraft.notes.thursday = 'Early Doctor\'s Appt';
-  _planDraft.notes.friday   = 'Date Night';
-  // Step 1: show obligations modal (pre-filled)
-  _renderPlanModal2();
-  const ov = document.getElementById('planModal2');
-  if(ov) ov.classList.add('open');
-}
-
-function quickStartNextToMeals(){
-  // Quick-start Step 1 → Step 2: close obligations, open meal grid
-  // Temporarily save and restore _isQuickStart since closePlanModal2 resets it
-  const wasQS = _isQuickStart;
-  closePlanModal2();
-  _isQuickStart = wasQS;
   _renderPlanModal1();
   const ov = document.getElementById('planModal1');
   if(ov) ov.classList.add('open');
 }
 
 function quickStartNext(){
-  // Quick-start Step 2: user tapped "Next" on the meal grid
-  // Auto-fill demo plan + write obligations to weekNotes
+  // User tapped "Next" on the quick-start meal grid
+  // Skip planModal2 (schedule notes) — go straight to auto-fill
   closePlanModal1();
-  DAYS.forEach(d=>{
-    const obligation = (_planDraft.notes[d]||'').trim();
-    if(obligation){
-      if(!weekNotes[d]) weekNotes[d] = {am:'', pm:''};
-      weekNotes[d].am = obligation;
-    }
-  });
-  save(K.weekNotes, weekNotes);
   generateDemoMealPlan(_planDraft);
   _planDraft = null;
   _isQuickStart = false;
@@ -212,7 +188,7 @@ function _showQuickStartTooltip(step){
       tooltip.innerHTML = `
         <div class="qs-tooltip-card">
           <div class="qs-tooltip-title">Your week is planned.</div>
-          <div class="qs-tooltip-body">Ready to go. Now let's see the best part.</div>
+          <div class="qs-tooltip-body">Every meal filled in, ready to go. Now let's see the best part.</div>
           <button class="btn btn-primary qs-tooltip-btn" onclick="_qsNext(3)">View Grocery List →</button>
         </div>`;
       document.getElementById('appRoot').appendChild(tooltip);
@@ -319,7 +295,7 @@ function _renderLearnMoreBanner(){
   if(_learnMoreStep === 1){
     const el = document.getElementById('onboardingBanner-1');
     if(el) el.innerHTML = lmBanner(1, 'Your Recipe Library',
-      'This is where all your meals live. Paste a URL from any recipe blog, or build your own from scratch. Once a recipe is saved, you can add it to your No-Decision Menu with one click.',
+      'This is where all your meals live. Browse our library to find recipes, or add your own from scratch. The more you add here, the more variety you\'ll have when planning your week.',
       `<button class="btn btn-primary btn-next" onclick="_learnMoreNext(2)">Next →</button>`);
   } else if(_learnMoreStep === 2){
     const el = document.getElementById('onboardingBanner-2');
@@ -344,9 +320,6 @@ function _learnMoreNext(step){
 function _learnMoreDone(){
   _learnMoreActive = false;
   _learnMoreStep = 0;
-  // Persist V4.5 completion
-  onboardingState.learnMoreComplete = true;
-  _persistOnboardingState();
   // Clear banners
   _renderLearnMoreBanner();
   switchTab('dashboard');
@@ -625,8 +598,24 @@ function migrateSlotSchema(){
         });
       }
     });
-    // Legacy AM/PM-to-slot migration removed — obligations now live in weekNotes
-    // and render on the dashboard day card, not inside individual meal slots.
+    // Carry legacy AM/PM notes to breakfast/dinner slot notes (lossless, additive).
+    if(weekNotes && typeof weekNotes === 'object'){
+      DAYS.forEach(d=>{
+        const wn = weekNotes[d];
+        if(!wn || typeof wn !== 'object') return;
+        if(!mealPlan[d]) mealPlan[d] = {};
+        if(wn.am && (!mealPlan[d].breakfast || !mealPlan[d].breakfast.note)){
+          if(!mealPlan[d].breakfast) mealPlan[d].breakfast = {state:'skipped', recipeId:null, note:''};
+          if(!mealPlan[d].breakfast.note) mealPlan[d].breakfast.note = String(wn.am);
+          touched = true;
+        }
+        if(wn.pm && (!mealPlan[d].dinner || !mealPlan[d].dinner.note)){
+          if(!mealPlan[d].dinner) mealPlan[d].dinner = {state:'skipped', recipeId:null, note:''};
+          if(!mealPlan[d].dinner.note) mealPlan[d].dinner.note = String(wn.pm);
+          touched = true;
+        }
+      });
+    }
     if(touched){
       // Persist the stamped shape but DO NOT touch the legacy weekNotes key (safety net).
       try { localStorage.setItem(K.mealPlan, JSON.stringify(mealPlan)); } catch {}
@@ -673,21 +662,16 @@ function setSlotNote(day,meal,note){
 let _planDraft = null; // { cook: { 'monday_dinner': true, ... }, notes: { 'monday_dinner': 'text' } }
 
 function openPlanWeekModal1(){
-  // Entry point for "Plan This Week" — opens obligations (Step 1) first.
-  // Seed the draft from current mealPlan + weekNotes.
+  // Seed the draft from current mealPlan so "Adjust" feels like editing, not restarting.
   _planDraft = { cook: {}, notes: {} };
-  DAYS.forEach(d=>{
-    // Seed cook toggles from existing meal plan
-    MEALS.forEach(m=>{
-      const s = getSlot(d,m);
-      if(s && s.state==='cook') _planDraft.cook[d+'_'+m] = true;
-    });
-    // Seed per-day obligation from weekNotes (am field)
-    const wn = weekNotes[d];
-    if(wn && wn.am) _planDraft.notes[d] = String(wn.am);
-  });
-  _renderPlanModal2();
-  const ov = document.getElementById('planModal2');
+  DAYS.forEach(d=>MEALS.forEach(m=>{
+    const s = getSlot(d,m);
+    const key = d+'_'+m;
+    if(s && s.state==='cook') _planDraft.cook[key] = true;
+    if(s && s.note) _planDraft.notes[key] = s.note;
+  }));
+  _renderPlanModal1();
+  const ov = document.getElementById('planModal1');
   if(ov) ov.classList.add('open');
 }
 
@@ -698,23 +682,21 @@ function _renderPlanModal1(){
   // Update modal header for quick-start vs normal mode
   const titleEl = document.getElementById('planModal1Title');
   const stepEl  = document.getElementById('planModal1Step');
-  const backBtn = document.getElementById('planModal1Back');
+  const cancelBtn = document.getElementById('planModal1Cancel');
   const closeBtn = document.getElementById('planModal1Close');
   const nextBtn = document.getElementById('planModal1Next');
   if(_isQuickStart){
     if(titleEl) titleEl.textContent = 'Plan your week in 30 seconds';
-    if(stepEl)  stepEl.textContent = 'Step 2 of 2';
-    if(backBtn)   backBtn.style.display = 'none';
+    if(stepEl)  stepEl.textContent = '';
+    if(cancelBtn) cancelBtn.style.display = 'none';
     if(closeBtn)  closeBtn.style.display = 'none';
     if(nextBtn) nextBtn.setAttribute('onclick','quickStartNext()');
-    if(nextBtn) nextBtn.textContent = 'Next →';
   } else {
     if(titleEl) titleEl.textContent = 'Plan This Week';
-    if(stepEl)  stepEl.textContent = 'Step 2 of 2';
-    if(backBtn)   backBtn.style.display = '';
+    if(stepEl)  stepEl.textContent = 'Step 1 of 2';
+    if(cancelBtn) cancelBtn.style.display = '';
     if(closeBtn)  closeBtn.style.display = '';
-    if(nextBtn) nextBtn.setAttribute('onclick','planModal1Done()');
-    if(nextBtn) nextBtn.textContent = 'Done — View My Week →';
+    if(nextBtn) nextBtn.setAttribute('onclick','planModal1Next()');
   }
 
   const countEl_id = 'planModal1Count';
@@ -811,91 +793,80 @@ function closePlanModal1(){
   }
 }
 
-// ── Swapped flow: planModal2 (obligations) = Step 1, planModal1 (meals) = Step 2 ──
-
-function planModal2Next(){
-  // Step 1 → Step 2: close obligations, open meal grid
-  closePlanModal2();
-  _openMealGridModal();
-}
-
-function _openMealGridModal(){
-  _renderPlanModal1();
-  const ov = document.getElementById('planModal1');
-  if(ov) ov.classList.add('open');
-}
-
-function planModal1Back(){
-  // Step 2 → Step 1: go back to obligations
+function planModal1Next(){
   closePlanModal1();
+  openPlanWeekModal2();
+}
+
+function openPlanWeekModal2(){
   _renderPlanModal2();
   const ov = document.getElementById('planModal2');
   if(ov) ov.classList.add('open');
 }
 
-function planModal1Done(){
-  // Final save — applies both obligations and meal selections
-  _savePlanDraft();
-  closePlanModal1();
-  _planDraft = null;
-  renderDashboard();
-  renderOnboardingUI();
+// Per-meal rotating placeholder prompts — real schedule-conflict examples only
+const _NOTE_PROMPTS = {
+  breakfast: [
+    'early meeting',
+    'commute to office',
+    'appointment',
+  ],
+  lunch: [
+    'work lunch',
+    "kid's field trip",
+    'meetings back-to-back',
+  ],
+  dinner: [
+    "kid's practice at 6",
+    'dinner party for 6',
+    'late night at office',
+    'family plans',
+  ],
+};
+function _notePlaceholder(meal, idx){
+  const arr = _NOTE_PROMPTS[meal] || ['add a note'];
+  return 'e.g. ' + arr[idx % arr.length];
 }
-
-// Legacy alias — kept so old references don't break
-function planModal1Next(){ planModal2Next(); }
-function openPlanWeekModal2(){ _openMealGridModal(); }
-
-// Per-day rotating placeholder prompts for obligations
-const _OBLIGATION_PROMPTS = [
-  'e.g. early meeting',
-  'e.g. working late',
-  'e.g. kids\' practice at 6',
-  'e.g. dinner out',
-  'e.g. gym at 5:30',
-  'e.g. travel day',
-  'e.g. family plans',
-];
 
 function _renderPlanModal2(){
   const body = document.getElementById('planModal2Body');
   if(!body) return;
-
-  // Update header for quick-start vs normal mode
-  const titleEl = document.getElementById('planModal2Title');
-  const stepEl  = document.getElementById('planModal2Step');
-  const cancelBtn = document.getElementById('planModal2Cancel');
-  const closeBtn  = document.getElementById('planModal2Close');
-  const nextBtn   = document.getElementById('planModal2Next');
-  if(_isQuickStart){
-    if(titleEl) titleEl.textContent = 'Plan your week in 30 seconds';
-    if(stepEl)  stepEl.textContent = 'Step 1 of 2';
-    if(cancelBtn) cancelBtn.style.display = 'none';
-    if(closeBtn)  closeBtn.style.display = 'none';
-    if(nextBtn) nextBtn.setAttribute('onclick','quickStartNextToMeals()');
-  } else {
-    if(titleEl) titleEl.textContent = 'Plan This Week';
-    if(stepEl)  stepEl.textContent = 'Step 1 of 2';
-    if(cancelBtn) cancelBtn.style.display = '';
-    if(closeBtn)  closeBtn.style.display = '';
-    if(nextBtn) nextBtn.setAttribute('onclick','planModal2Next()');
-  }
+  // Group by day: each day shows its cook slots (and optionally skipped slots).
+  const perDay = {};
+  let totalCook = 0, totalSkip = 0;
+  DAYS.forEach(d=>{
+    perDay[d] = { cook: [], skip: [] };
+    MEALS.forEach(m=>{
+      const key = d+'_'+m;
+      if(_planDraft.cook[key]){ perDay[d].cook.push({meal:m,key}); totalCook++; }
+      else { perDay[d].skip.push({meal:m,key}); totalSkip++; }
+    });
+  });
 
   let html = '';
-  html += '<div class="plan-modal-intro">Any obligations this week? <span style="color:var(--text-3);font-size:12px">(all optional — helps you plan smarter)</span></div>';
+  // V4: removed old "Step 2 of 4" banner label — no longer part of onboarding sequence
+  html += '<div class="plan-modal-intro">Anything to plan around? <span style="color:var(--text-3);font-size:12px">(all optional)</span></div>';
 
-  html += '<div class="plan-days-list">';
-  DAYS.forEach((d, i)=>{
-    const weekend = (d==='saturday'||d==='sunday');
-    const noteVal = _planDraft.notes[d] || '';
-    const ph = _OBLIGATION_PROMPTS[i % _OBLIGATION_PROMPTS.length];
-    html += `<div class="plan-day-group${weekend?' weekend':''}">`;
-    html += `<div class="plan-note-row" style="align-items:center">`;
-    html += `<div class="plan-day-head" style="min-width:90px;margin:0">${DAY_FULL[d]}</div>`;
-    html += `<input type="text" class="plan-note-input" data-day="${d}" value="${_esc(noteVal)}" placeholder="${_esc(ph)}" oninput="_planDraft.notes['${d}']=this.value">`;
-    html += `</div></div>`;
-  });
-  html += '</div>';
+  if(totalCook===0){
+    html += '<div style="padding:16px;text-align:center;color:var(--text-3);font-size:13px">No meals selected to cook this week. That\'s fine — tap <strong>Done</strong> to head Home.</div>';
+  } else {
+    html += '<div class="plan-days-list">';
+    let promptIdx = 0;
+    DAYS.forEach(d=>{
+      if(perDay[d].cook.length===0) return; // only days with cook slots
+      const weekend = (d==='saturday'||d==='sunday');
+      html += `<div class="plan-day-group${weekend?' weekend':''}">`;
+      html += `<div class="plan-day-head">${DAY_FULL[d]}</div>`;
+      html += '<div class="plan-day-meals">';
+      perDay[d].cook.forEach(({meal,key})=>{
+        const noteVal = _planDraft.notes[key] || '';
+        const ph = _notePlaceholder(meal, promptIdx++);
+        html += `<div class="plan-note-row"><div class="plan-note-label"><span class="plan-note-check">✓</span> ${MEAL_LABEL[meal]}</div><input type="text" class="plan-note-input" data-key="${key}" value="${_esc(noteVal)}" placeholder="${_esc(ph)}" oninput="_planDraft.notes['${key}']=this.value"></div>`;
+      });
+      html += '</div></div>';
+    });
+    html += '</div>';
+  }
   body.innerHTML = html;
 }
 
@@ -910,57 +881,35 @@ function _esc(s){
 function closePlanModal2(){
   const ov = document.getElementById('planModal2');
   if(ov) ov.classList.remove('open');
-  // If user closes during quick-start (via X button), reset the flag
-  if(_isQuickStart){
-    _isQuickStart = false;
-    _quickStartStep = 0;
-  }
 }
 
 function planModal2Back(){
-  // Step 1 has no "back" — this is a legacy stub.
   closePlanModal2();
+  openPlanWeekModal1();
 }
 
 function planModal2Save(){
-  // Legacy alias — final save now lives in planModal1Done() / _savePlanDraft()
-  _savePlanDraft();
-  closePlanModal2();
-  closePlanModal1();
-  _planDraft = null;
-  renderDashboard();
-  renderOnboardingUI();
-}
-
-function _savePlanDraft(){
-  if(!_planDraft) return;
-  // 1. Write per-day obligations into weekNotes
-  DAYS.forEach(d=>{
-    const obligation = (_planDraft.notes[d]||'').trim();
-    if(!weekNotes[d]) weekNotes[d] = {am:'', pm:''};
-    weekNotes[d].am = obligation;
-  });
-  save(K.weekNotes, weekNotes);
-
-  // 2. Apply cook/skip toggles into mealPlan (no per-slot notes from modal anymore)
+  // Apply the draft into mealPlan.
   DAYS.forEach(d=>MEALS.forEach(m=>{
     const key = d+'_'+m;
     const wantsCook = !!_planDraft.cook[key];
+    const note = (_planDraft.notes[key]||'').trim();
     const existing = getSlot(d,m);
     if(wantsCook){
       // Preserve existing recipe if already assigned.
-      setSlotCook(d,m);
-      // Preserve any existing note on the slot
-      if(existing && existing.note && mealPlan[d] && mealPlan[d][m]){
-        mealPlan[d][m].note = existing.note;
+      if(existing && existing.recipeId){
+        setSlotCook(d,m);
+        mealPlan[d][m].note = note;
+      } else {
+        setSlotCook(d,m);
+        mealPlan[d][m].note = note;
       }
     } else {
       // Skipped
       const prevSkipLabel = existing && existing.skipLabel ? existing.skipLabel : '';
       const prevSkipDetail = existing && existing.skipDetail ? existing.skipDetail : '';
-      const prevNote = existing && existing.note ? existing.note : '';
-      if(prevSkipLabel || prevNote || (existing && existing.state==='skipped')){
-        setSlotSkipped(d,m, prevNote);
+      if(note || prevSkipLabel || (existing && existing.state==='skipped')){
+        setSlotSkipped(d,m,note);
         // Preserve any existing skipLabel + skipDetail across plan-modal saves.
         if(prevSkipLabel && mealPlan[d] && mealPlan[d][m]){
           mealPlan[d][m].skipLabel = prevSkipLabel;
@@ -973,6 +922,10 @@ function _savePlanDraft(){
     }
   }));
   save(K.mealPlan, mealPlan);
+  closePlanModal2();
+  _planDraft = null;
+  renderDashboard();
+  renderOnboardingUI();
 }
 
 // ╔═══════════════════════════════════════╗
@@ -1182,8 +1135,8 @@ function buildSyncPayload() {
 //   INFO TOOLTIPS
 // ╚═══════════════════════════════════════╝
 const INFO_TIPS = {
-  dashboard:   'Your week at a glance. Tap \u0027Plan This Week\u0027 to fill in your meals in about 30 seconds. Tap any recipe name to open cooking instructions.',
-  recipes:     'Once a recipe is saved, you can add it to your No-Decision Menu with one click. Your Go-To meals should be recipes you can make half asleep. Experimental meals require more time in the kitchen.',
+  dashboard:   'Your week at a glance — auto-built from Steps 1-3 (Schedule → Meals → Groceries). Finish those steps first and your plan will show up here. Tap any recipe name to open cooking instructions.',
+  recipes:     'Add meals by pasting a URL or building from scratch. Filter by meal type — Breakfast, Lunch, Dinner — or by tags like Under 15 Min, Batch Cook, and Freezer Friendly to find what fits your night. Once a recipe is saved, you can add it to your No-Decision Menu with one click.',
   menu:        'This is the short list your entire meal plan is built from. Pick 3–5 Go-To meals you can repeat on autopilot and a few Experimental ones when you want variety. The smaller this menu is, the fewer decisions you make every week.',
   weeksetup:   'Add what\u0027s happening each day — busy nights, kids\u0027 activities, dinners out, late meetings. This shows up right in your meal plan so you can see your schedule while you\u0027re deciding what to eat. The more detail you add, the easier it is to assign the right meal to the right night.',
   mealplan:    'Tap any day to pick a meal from your No-Decision Menu. Busy night? Pick a 15-minute Go-To. Free evening? Try something Experimental. The goal is zero decisions at 5 PM — just open the plan and cook.',
@@ -1711,9 +1664,6 @@ function renderDashboard(){
       html += '</div>';
     });
     if(isToday) html += '<div class="dash-today-footer">Today</div>';
-    // Show per-day obligation from weekNotes (subtle red text at bottom of card)
-    const _obl = weekNotes[day] && weekNotes[day].am ? String(weekNotes[day].am).trim() : '';
-    if(_obl) html += `<div class="dash-obligation">${_esc(_obl)}</div>`;
     html += '</div>'; // /day-card
   });
   html += '</div>'; // /grid

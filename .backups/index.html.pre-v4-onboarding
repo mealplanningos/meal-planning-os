@@ -165,7 +165,6 @@
     <div class="nav-tab nav-tab-secondary" data-tab="recipes" onclick="switchTab('recipes')">Recipes</div>
     <div class="nav-tab nav-tab-secondary" data-tab="menu" onclick="switchTab('menu')">Menu</div>
     <div class="nav-tab nav-tab-secondary" data-tab="freezer" onclick="switchTab('freezer')">Freezer</div>
-    <button class="learn-more-btn" id="learnMoreBtn" onclick="startLearnMore()" style="display:none">Learn More</button>
   </div>
 </div>
 
@@ -224,7 +223,7 @@
     <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <div>
         <div class="section-title">Recipe Library <span id="infoTip-recipes"></span></div>
-        <div class="section-subtitle">Paste a URL from any recipe blog, or build your own from scratch.</div>
+        <div class="section-subtitle">Browse tested recipes or add your own. Save what fits your life.</div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="openRecipeModal(null,null,'recipes')" style="white-space:nowrap;margin-top:2px">+ Custom Recipe</button>
     </div>
@@ -426,13 +425,13 @@
       <button class="modal-close" onclick="dismissWhatsNew()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="whats-new-date">April 9, 2026</div>
+      <div class="whats-new-date">April 8, 2026</div>
       <ul class="whats-new-list">
-        <li><strong>New onboarding experience.</strong> First-time users now get a working meal plan + grocery list in under 60 seconds. No product tour — just a real plan you can use immediately.</li>
-        <li><strong>Plan your week smarter.</strong> "Plan This Week" now starts with your obligations (late meetings, appointments, date night) so you can see your real schedule before picking meals.</li>
-        <li><strong>Obligations on your dashboard.</strong> Any commitments you enter now show on your Home tab so you always know what's shaping each day.</li>
-        <li><strong>Learn More button.</strong> After onboarding, tap "Learn More" in the nav to get a quick walkthrough of Recipes, Menu, and Freezer — at your own pace.</li>
-        <li><strong>Paste a recipe URL.</strong> Add meals by pasting a link from any recipe blog. We'll pull in the name, ingredients, and instructions automatically.</li>
+        <li><strong>🏠 Meet your new Home tab.</strong> This is your main page now — where you plan the week, see what's on deck today, and tap into cooking mode. Everything you need day-to-day lives here. You shouldn't have to hop around tabs to run your week.</li>
+        <li><strong>Simpler navigation, fewer tabs.</strong> Two primary tabs up top — <em>Home</em> and <em>Groceries</em> — because those are the two places you'll live most of the time. Everything else (Recipes, Menu, Freezer) is still there as supporting tabs, just pulled back so they're not in your face.</li>
+        <li><strong>Plan your week from Home in ~30 seconds.</strong> Tap the <em>Plan This Week →</em> button on Home, pick which meals you're cooking, add any schedule notes, done. No tab-hopping.</li>
+        <li><strong>Tap any slot on Home to edit it.</strong> Swap a recipe, pick from the freezer, mark it as Leftovers or Eating out, or clear it entirely — all from Home. No jumping around to tweak things.</li>
+        <li><strong>Your data is safe.</strong> Any meals you already had planned carry over and show up automatically on the new Home tab.</li>
       </ul>
       <!-- Previous Updates (collapsible) -->
       <div id="prevUpdatesSection" style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
@@ -440,17 +439,27 @@
           <span id="prevUpdatesArrow" style="transition:transform 0.2s;display:inline-block">▸</span> Previous updates
         </a>
         <div id="prevUpdatesBody" style="display:none;margin-top:10px">
-          <div class="whats-new-date">April 8, 2026</div>
+          <div class="whats-new-date">April 8, 2026 — earlier</div>
           <ul class="whats-new-list">
-            <li><strong>🏠 New Home tab</strong> — your main page for planning, cooking, and managing your week. No more tab-hopping.</li>
-            <li><strong>Simpler navigation</strong> — Home and Groceries up front, everything else pulled back.</li>
-            <li><strong>Tap any slot to edit</strong> — swap recipes, mark Leftovers or Eating Out, all from Home.</li>
+            <li><strong>"Plan This Week" in 30 seconds</strong> — the old Schedule and Meals tabs were replaced with a quick grid: pick which meals you're cooking, add optional notes, done.</li>
+            <li><strong>Editable Home slots</strong> — tap any slot to change the recipe, mark it skipped, or add a note.</li>
+            <li><strong>Saturday & Sunday slots</strong> — weekends now show on your plan, visually de-emphasized so weekdays stay the focus.</li>
+            <li><strong>Red dot on empty cook slots</strong> — tells you at a glance which meals still need a recipe picked.</li>
+          </ul>
+          <div class="whats-new-date" style="margin-top:12px">April 6, 2026</div>
+          <ul class="whats-new-list">
+            <li><strong>Redesigned startup guide</strong> — onboarding split into a one-time <em>Setup</em> and a repeating <em>Weekly Workflow</em>.</li>
+            <li><strong>Better step descriptions</strong> — every step now explains what to do, why it matters, and how long it takes.</li>
+            <li><strong>Navigation fix</strong> — the "Next" button after assigning meals now always appears.</li>
+            <li><strong>Smarter grocery hints</strong> — more accurate package size estimates for parmesan, feta, berries, and small milk amounts.</li>
           </ul>
           <div class="whats-new-date" style="margin-top:12px">April 4, 2026</div>
           <ul class="whats-new-list">
-            <li><strong>Data loss fix</strong> — fixed a bug that could wipe your meal plan on refresh.</li>
-            <li><strong>Breakfast / Lunch / Dinner tags</strong> — filter recipes by meal time.</li>
-            <li><strong>Edit library recipes</strong> — customize ingredients and notes on built-in recipes.</li>
+            <li><strong>⚠️ Data loss fix</strong> — fixed a bug that could wipe your meal plan on refresh.</li>
+            <li><strong>Breakfast / Lunch / Dinner tags</strong> — tag recipes by meal time for easier filtering.</li>
+            <li><strong>Edit any library recipe</strong> — customize ingredients and notes on built-in recipes.</li>
+            <li><strong>Custom grocery items per category</strong> — add your own staples to any category.</li>
+            <li><strong>Settings moved to footer</strong> — account settings now live below the setup guide.</li>
           </ul>
         </div>
       </div>
@@ -461,32 +470,32 @@
   </div>
 </div>
 
-<!-- MODAL: Plan This Week — Step 1 (Obligations / schedule) -->
-<div class="modal-overlay plan-modal-overlay" id="planModal2">
+<!-- MODAL: Plan This Week — Step 1 (Meal selection) -->
+<div class="modal-overlay plan-modal-overlay" id="planModal1">
   <div class="modal plan-modal">
     <div class="modal-header">
-      <div class="modal-title" id="planModal2Title">Plan This Week <span class="plan-modal-step" id="planModal2Step">Step 1 of 2</span></div>
-      <button class="modal-close" id="planModal2Close" onclick="closePlanModal2()">✕</button>
+      <div class="modal-title">Plan This Week <span class="plan-modal-step">Step 1 of 2</span></div>
+      <button class="modal-close" onclick="closePlanModal1()">✕</button>
     </div>
-    <div class="modal-body" id="planModal2Body"></div>
+    <div class="modal-body" id="planModal1Body"></div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" id="planModal2Cancel" onclick="closePlanModal2()">Cancel</button>
-      <button class="btn btn-primary" id="planModal2Next" onclick="planModal2Next()">Next →</button>
+      <button class="btn btn-secondary" onclick="closePlanModal1()">Cancel</button>
+      <button class="btn btn-primary" onclick="planModal1Next()">Next →</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Plan This Week — Step 2 (Meal selection) -->
-<div class="modal-overlay plan-modal-overlay" id="planModal1">
+<!-- MODAL: Plan This Week — Step 2 (Optional notes) -->
+<div class="modal-overlay plan-modal-overlay" id="planModal2">
   <div class="modal plan-modal">
     <div class="modal-header">
-      <div class="modal-title" id="planModal1Title">Plan This Week <span class="plan-modal-step" id="planModal1Step">Step 2 of 2</span></div>
-      <button class="modal-close" id="planModal1Close" onclick="closePlanModal1()">✕</button>
+      <div class="modal-title">Plan This Week <span class="plan-modal-step">Step 2 of 2</span></div>
+      <button class="modal-close" onclick="closePlanModal2()">✕</button>
     </div>
-    <div class="modal-body" id="planModal1Body"></div>
+    <div class="modal-body" id="planModal2Body"></div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" id="planModal1Back" onclick="planModal1Back()">← Back</button>
-      <button class="btn btn-primary" id="planModal1Next" onclick="planModal1Done()">Done — View My Week →</button>
+      <button class="btn btn-secondary" onclick="planModal2Back()">← Back</button>
+      <button class="btn btn-primary" onclick="planModal2Save()">Done — View My Week →</button>
     </div>
   </div>
 </div>
@@ -561,10 +570,10 @@
         </div>
         <div class="settings-row-arrow">›</div>
       </button>
-      <button class="settings-row" id="settingsGuideRow" onclick="closeModal('settingsModal');replayQuickStart()">
+      <button class="settings-row" id="settingsGuideRow" onclick="closeModal('settingsModal');toggleSetupGuide()">
         <div class="settings-row-main">
-          <div class="settings-row-title">🚀 Replay Quick Start</div>
-          <div class="settings-row-sub">See the guided demo again</div>
+          <div class="settings-row-title">📖 Show Setup Guide</div>
+          <div class="settings-row-sub">Reopen the 5-step walkthrough</div>
         </div>
         <div class="settings-row-arrow">›</div>
       </button>

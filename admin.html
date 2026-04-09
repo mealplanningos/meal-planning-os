@@ -565,7 +565,8 @@
                   <th class="num" title="Recipes beyond the 3 auto-seeded starters">Own recipes</th>
                   <th class="num" title="Meal plan slots filled">Meals planned</th>
                   <th class="num" title="Groceries added beyond default staples/flex">Groceries</th>
-                  <th class="center">Onboarded</th>
+                  <th class="center" title="V4 Quick Start completed">V4</th>
+                  <th class="center" title="V4.5 Learn More completed">V4.5</th>
                 </tr>
               </thead>
               <tbody>
@@ -579,9 +580,10 @@
                     <td class="num" data-label="Own recipes">${u.recipes}</td>
                     <td class="num" data-label="Meals planned">${u.assignments}</td>
                     <td class="num" data-label="Groceries">${u.groceries ?? 0}</td>
-                    <td class="center" data-label="Onboarded">${u.onboarded ? '<span class="tick">✓</span>' : '<span class="dash">—</span>'}</td>
+                    <td class="center" data-label="V4">${u.onboarded ? '<span class="tick">✓</span>' : '<span class="dash">—</span>'}</td>
+                    <td class="center" data-label="V4.5">${u.learnMoreDone ? '<span class="tick">✓</span>' : '<span class="dash">—</span>'}</td>
                   </tr>
-                `).join('') : '<tr><td colspan="9" style="color:var(--text-3);text-align:center;padding:24px">No users yet.</td></tr>'}
+                `).join('') : '<tr><td colspan="10" style="color:var(--text-3);text-align:center;padding:24px">No users yet.</td></tr>'}
               </tbody>
             </table>
             <div class="roster-legend" style="padding:10px 18px 14px">

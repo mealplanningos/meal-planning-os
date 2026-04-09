@@ -17,7 +17,7 @@ const WEEKEND = ['saturday','sunday'];
 const MEALS = ['breakfast','lunch','dinner'];
 const MEAL_LABEL = {breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner'};
 // ── What's New version (change this + modal content to trigger a new popup) ──
-const CURRENT_UPDATE_VERSION = '2026-04-09-v4';
+const CURRENT_UPDATE_VERSION = '2026-04-08-3';
 
 const CATS = ['Produce','Protein','Grains & Breads','Dairy / Dairy-Free','Pantry & Seasonings'];
 const CAT_ICON = {'Produce':'🥬','Protein':'🍗','Grains & Breads':'🌾','Dairy / Dairy-Free':'🥛','Pantry & Seasonings':'🧂'};
@@ -40,317 +40,30 @@ const STARTER_RECIPES = [
      {name:'Milk',         qty:'1 cup', category:'Dairy / Dairy-Free'},
      {name:'Mixed Berries',qty:'½ cup', category:'Produce'},
    ]},
-  {id:'sr2', libraryId:'lb15', type:'goto', onMenu:false, name:'Spaghetti', servings:1,
+  {id:'sr2', libraryId:'lb15', type:'goto', onMenu:false, name:'Spaghetti', servings:4,
    notes:'Boil salted water and cook spaghetti until al dente. Drain and set aside.\nPour marinara sauce into a separate pot. Simmer for 5 minutes.\nToss with pasta.\nOptional – Top with parmesan and serve with warm bread.\nTip – Freeze leftover sauce for a future no-effort dinner. Use the "Freezer" tab to log it.',
    ingredients:[
-     {name:'Spaghetti',      qty:'3 oz', category:'Grains & Breads'},
-     {name:'Marinara Sauce', qty:'½ cup', category:'Pantry & Seasonings'},
-     {name:'(Optional) Parmesan',     qty:'1 TBSP', category:'Dairy / Dairy-Free'},
+     {name:'Spaghetti',      qty:'12 oz', category:'Grains & Breads'},
+     {name:'Marinara Sauce', qty:'1 jar', category:'Pantry & Seasonings'},
+     {name:'(Optional) Parmesan',     qty:'¼ cup', category:'Dairy / Dairy-Free'},
+     {name:'(Optional) Italian Bread',qty:'1 Loaf',category:'Grains & Breads'},
    ]},
-  {id:'sr3', libraryId:'lb21', type:'goto', onMenu:false, name:'Chicken & Bean Burrito', servings:1,
-   notes:'Cook rice according to package instructions.\nSeason chicken with seasonings. Cook in a pan with oil until done, then shred or chop.\nWarm drained black beans in a small pot with a pinch of seasonings.\nWarm a tortilla in a pan or microwave. Layer rice, chicken, beans, cheese, and salsa.\nFold and wrap tightly. Heat all sides in the same pan with oil or butter – until browned.\nEat immediately or wrap in foil for later.\nTips – Increase serving size to batch cook, and freeze for your busiest weeknights.',
+  {id:'sr3', libraryId:'lb21', type:'experimental', onMenu:false, name:'Chicken & Bean Burrito', servings:3,
+   notes:'Cook rice according to package instructions.\nSeason chicken with seasonings. Cook in a pan with oil until done, then shred or chop.\nWarm drained black beans in a small pot with a pinch of seasonings.\nWarm tortillas in a pan or microwave. Layer rice, chicken, beans, cheese, and salsa.\nFold and wrap tightly. Heat all sides in the same pan with oil or butter – until browned.\nEat immediately or wrap in foil for later.\nTips – Increase serving size to batch cook, and freeze for your busiest weeknights.',
    ingredients:[
-     {name:'Large Tortilla',  qty:'1',       category:'Grains & Breads'},
-     {name:'Chicken Breast',  qty:'4 oz',    category:'Protein'},
-     {name:'Black Beans',     qty:'¼ can',   category:'Protein'},
-     {name:'Rice',            qty:'⅓ cup',   category:'Grains & Breads'},
-     {name:'Shredded Cheese', qty:'2 TBSP',  category:'Dairy / Dairy-Free'},
-     {name:'Salsa',           qty:'2 TBSP',  category:'Pantry & Seasonings'},
-     {name:'Cumin',           qty:'½ tsp',   category:'Pantry & Seasonings'},
-     {name:'Paprika',         qty:'½ tsp',   category:'Pantry & Seasonings'},
-     {name:'Garlic Powder',   qty:'½ tsp',   category:'Pantry & Seasonings'},
+     {name:'Large Tortillas', qty:'3',      category:'Grains & Breads'},
+     {name:'Chicken Breast',  qty:'1 lb',   category:'Protein'},
+     {name:'Black Beans',     qty:'1 can',  category:'Protein'},
+     {name:'Rice',            qty:'1 cup',  category:'Grains & Breads'},
+     {name:'Shredded Cheese', qty:'½ cup',  category:'Dairy / Dairy-Free'},
+     {name:'Salsa',           qty:'½ cup',  category:'Pantry & Seasonings'},
+     {name:'Cumin',           qty:'1 tsp',  category:'Pantry & Seasonings'},
+     {name:'Paprika',         qty:'1 tsp',  category:'Pantry & Seasonings'},
+     {name:'Garlic Powder',   qty:'1 tsp',  category:'Pantry & Seasonings'},
      {name:'Salt & Pepper',   qty:'to taste',category:'Pantry & Seasonings'},
-     {name:'Oil',             qty:'1 tsp',   category:'Pantry & Seasonings'},
-   ]},
-  // ── V4 onboarding demo recipes (single-serving, easy-wins energy) ──
-  {id:'sr4', libraryId:'lb_sr4', type:'goto', onMenu:false, name:'PB&J Upgrade', servings:1,
-   notes:'Toast bread lightly.\nSpread peanut butter on one slice.\nSpread jelly on the other.\nAdd banana slices on top of the peanut butter.\nDrizzle honey over the banana.\nClose it up, cut in half.',
-   ingredients:[
-     {name:'Bread',          qty:'2 slices', category:'Grains & Breads'},
-     {name:'Peanut Butter',  qty:'2 TBSP',   category:'Pantry & Seasonings'},
-     {name:'Jelly',          qty:'1 TBSP',   category:'Pantry & Seasonings'},
-     {name:'Banana',         qty:'1',         category:'Produce'},
-     {name:'Honey',          qty:'1 tsp',     category:'Pantry & Seasonings'},
-   ]},
-  {id:'sr5', libraryId:'lb_sr5', type:'goto', onMenu:false, name:'Quesadilla', servings:1,
-   notes:'Heat a pan over medium heat.\nPlace tortilla in pan, sprinkle cheese on one half.\nFold tortilla in half, press gently.\nCook 2 minutes per side until golden and cheese is melted.\nSlice into wedges.\nServe with salsa and sour cream.',
-   ingredients:[
-     {name:'Large Tortilla',  qty:'1',       category:'Grains & Breads'},
-     {name:'Shredded Cheese', qty:'¼ cup',   category:'Dairy / Dairy-Free'},
-     {name:'Salsa',           qty:'2 TBSP',  category:'Pantry & Seasonings'},
-     {name:'Sour Cream',      qty:'1 TBSP',  category:'Dairy / Dairy-Free'},
-   ]},
-  {id:'sr6', libraryId:'lb_sr6', type:'goto', onMenu:false, name:'Tomato Soup + Grilled Cheese', servings:1,
-   notes:'Heat tomato soup in a pot over medium heat.\nButter two slices of bread on one side each.\nPlace one slice butter-side down in a pan. Add cheese, top with second slice butter-side up.\nCook 2-3 minutes per side until golden and cheese melts.\nCut sandwich in half. Serve with soup.',
-   ingredients:[
-     {name:'Tomato Soup',     qty:'1 can',    category:'Pantry & Seasonings'},
-     {name:'Bread',           qty:'2 slices', category:'Grains & Breads'},
-     {name:'Butter',          qty:'1 TBSP',   category:'Dairy / Dairy-Free'},
-     {name:'Sliced Cheese',   qty:'2 slices', category:'Dairy / Dairy-Free'},
+     {name:'Oil',             qty:'1 TBSP', category:'Pantry & Seasonings'},
    ]},
 ];
-
-// ╔═══════════════════════════════════════╗
-//   V4 QUICK-START ONBOARDING
-// ╚═══════════════════════════════════════╝
-// Demo meal plan distribution — maps starter recipe IDs to weekday slots.
-// Friday dinner = Eating Out, Wednesday lunch = Leftovers.
-const _DEMO_PLAN_MAP = {
-  monday:    { breakfast:'sr1', lunch:'sr4', dinner:'sr2' },
-  tuesday:   { breakfast:'sr1', lunch:'sr5', dinner:'sr3' },
-  wednesday: { breakfast:'sr1', lunch:'_leftovers', dinner:'sr6' },
-  thursday:  { breakfast:'sr1', lunch:'sr4', dinner:'sr2' },
-  friday:    { breakfast:'sr1', lunch:'sr5', dinner:'_eatingout' },
-};
-
-// Generates a fully populated demo meal plan using starter recipes.
-// Only runs for brand-new users — aborts if mealPlan already has data.
-function generateDemoMealPlan(draft){
-  // Use the draft from the quick-start modal to know which slots are ON
-  const plan = {};
-  DAYS.forEach(d=>{
-    plan[d] = {};
-    MEALS.forEach(m=>{
-      const key = d+'_'+m;
-      const demoSlot = _DEMO_PLAN_MAP[d] && _DEMO_PLAN_MAP[d][m];
-      if(draft && !draft.cook[key]){
-        // User toggled this slot OFF — skip it entirely
-        return;
-      }
-      if(!demoSlot){
-        // Weekend slots or unmapped — only fill if user toggled ON
-        if(draft && draft.cook[key]){
-          // User opted in a weekend slot — assign a rotating recipe
-          const rotateIds = ['sr1','sr4','sr5','sr2','sr6','sr3'];
-          const idx = (DAYS.indexOf(d)*3 + MEALS.indexOf(m)) % rotateIds.length;
-          plan[d][m] = { state:'cook', recipeId:rotateIds[idx], servings:1, note:'' };
-        }
-        return;
-      }
-      if(demoSlot === '_leftovers'){
-        plan[d][m] = { state:'skipped', skipLabel:'Leftovers', skipDetail:'Heat up yesterday\'s extra', note:'' };
-      } else if(demoSlot === '_eatingout'){
-        plan[d][m] = { state:'skipped', skipLabel:'Eating Out', skipDetail:'Sushi', note:'' };
-      } else {
-        plan[d][m] = { state:'cook', recipeId:demoSlot, servings:1, note:'' };
-      }
-    });
-  });
-  mealPlan = plan;
-  save(K.mealPlan, mealPlan);
-}
-
-// Quick-start state
-let _isQuickStart = false;
-let _quickStartStep = 0; // 0=not started, 1=meal grid, 2+=tooltips
-
-function openQuickStartModal(){
-  _isQuickStart = true;
-  _quickStartStep = 1;
-  // Pre-fill draft: Mon-Fri B/L/D ON, weekends OFF + 3 demo obligations
-  _planDraft = { cook: {}, notes: {} };
-  const weekdays = ['monday','tuesday','wednesday','thursday','friday'];
-  weekdays.forEach(d=>MEALS.forEach(m=>{
-    _planDraft.cook[d+'_'+m] = true;
-  }));
-  // Demo obligations — shows the user what this feature is for
-  _planDraft.notes.tuesday  = 'Working late';
-  _planDraft.notes.thursday = 'Early Doctor\'s Appt';
-  _planDraft.notes.friday   = 'Date Night';
-  // Step 1: show obligations modal (pre-filled)
-  _renderPlanModal2();
-  const ov = document.getElementById('planModal2');
-  if(ov) ov.classList.add('open');
-}
-
-function quickStartNextToMeals(){
-  // Quick-start Step 1 → Step 2: close obligations, open meal grid
-  // Temporarily save and restore _isQuickStart since closePlanModal2 resets it
-  const wasQS = _isQuickStart;
-  closePlanModal2();
-  _isQuickStart = wasQS;
-  _renderPlanModal1();
-  const ov = document.getElementById('planModal1');
-  if(ov) ov.classList.add('open');
-}
-
-function quickStartNext(){
-  // Quick-start Step 2: user tapped "Next" on the meal grid
-  // Auto-fill demo plan + write obligations to weekNotes
-  closePlanModal1();
-  DAYS.forEach(d=>{
-    const obligation = (_planDraft.notes[d]||'').trim();
-    if(obligation){
-      if(!weekNotes[d]) weekNotes[d] = {am:'', pm:''};
-      weekNotes[d].am = obligation;
-    }
-  });
-  save(K.weekNotes, weekNotes);
-  generateDemoMealPlan(_planDraft);
-  _planDraft = null;
-  _isQuickStart = false;
-  // Render the now-populated dashboard
-  renderAll();
-  // Start guided tooltip flow
-  _quickStartStep = 2;
-  setTimeout(()=> _showQuickStartTooltip(2), 400);
-}
-
-// ── Quick-Start Tooltip Flow (Steps 3-5 of onboarding) ────────────────
-function _showQuickStartTooltip(step){
-  // Remove any previous tooltip
-  const prev = document.getElementById('qs-tooltip');
-  if(prev) prev.remove();
-
-  if(step === 2){
-    // Step 3: Dashboard tooltip — "Your week is planned"
-    switchTab('dashboard');
-    setTimeout(()=>{
-      const tooltip = document.createElement('div');
-      tooltip.id = 'qs-tooltip';
-      tooltip.className = 'qs-tooltip-overlay';
-      tooltip.innerHTML = `
-        <div class="qs-tooltip-card">
-          <div class="qs-tooltip-title">Your week is planned.</div>
-          <div class="qs-tooltip-body">Ready to go. Now let's see the best part.</div>
-          <button class="btn btn-primary qs-tooltip-btn" onclick="_qsNext(3)">View Grocery List →</button>
-        </div>`;
-      document.getElementById('appRoot').appendChild(tooltip);
-    }, 200);
-  } else if(step === 3){
-    // Step 4: Grocery list tooltip
-    switchTab('grocerylist');
-    setTimeout(()=>{
-      const tooltip = document.createElement('div');
-      tooltip.id = 'qs-tooltip';
-      tooltip.className = 'qs-tooltip-overlay';
-      tooltip.innerHTML = `
-        <div class="qs-tooltip-card">
-          <div class="qs-tooltip-title">Your grocery list builds itself.</div>
-          <div class="qs-tooltip-body">Every ingredient from your meals, sorted by category. Change a meal, the list updates.</div>
-          <button class="btn btn-primary qs-tooltip-btn" onclick="_qsNext(4)">Got It →</button>
-        </div>`;
-      document.getElementById('appRoot').appendChild(tooltip);
-    }, 200);
-  } else if(step === 4){
-    // Step 5: Final screen — point at Reset Week
-    switchTab('dashboard');
-    setTimeout(()=>{
-      const tooltip = document.createElement('div');
-      tooltip.id = 'qs-tooltip';
-      tooltip.className = 'qs-tooltip-overlay qs-final';
-      tooltip.innerHTML = `
-        <div class="qs-tooltip-card qs-final-card">
-          <div class="qs-tooltip-title">Ready to make it yours?</div>
-          <div class="qs-tooltip-body">This is a demo plan with sample recipes. When you're ready, tap <strong>Reset Week</strong> below to clear it and start fresh.</div>
-          <div class="qs-tooltip-body" style="font-size:12px;color:var(--text-3);margin-top:4px">Tap <strong>Learn More</strong> in the nav bar to understand each section.</div>
-          <div class="qs-reset-arrow">↓ Reset Week is at the bottom of the page</div>
-          <button class="btn btn-primary qs-tooltip-btn" onclick="_qsFinish()">Start Planning</button>
-        </div>`;
-      document.getElementById('appRoot').appendChild(tooltip);
-      // Scroll to make footer visible
-      const footer = document.querySelector('.app-footer');
-      if(footer) footer.scrollIntoView({behavior:'smooth', block:'nearest'});
-    }, 200);
-  }
-}
-
-function _qsNext(nextStep){
-  const tt = document.getElementById('qs-tooltip');
-  if(tt) tt.remove();
-  _showQuickStartTooltip(nextStep);
-}
-
-function _qsFinish(){
-  const tt = document.getElementById('qs-tooltip');
-  if(tt) tt.remove();
-  _quickStartStep = 0;
-  // Mark onboarding complete
-  completeOnboarding();
-  // Show the Learn More button after quick start
-  _showLearnMoreBtn(true);
-}
-
-// ╔═══════════════════════════════════════╗
-//   LEARN MORE — Sequential Banner Walkthrough
-// ╚═══════════════════════════════════════╝
-// Activated after quick start completes. Walks through Recipes → Menu → Freezer
-// with informational banners. Persisted via onboardingState.learnMoreAvailable.
-let _learnMoreActive = false; // true when banners are showing
-let _learnMoreStep = 0;       // 1=Recipes, 2=Menu, 3=Freezer
-
-function _showLearnMoreBtn(show){
-  const btn = document.getElementById('learnMoreBtn');
-  if(btn) btn.style.display = show ? '' : 'none';
-  // Persist availability across sessions
-  onboardingState.learnMoreAvailable = !!show;
-  _persistOnboardingState();
-}
-
-function startLearnMore(){
-  _learnMoreActive = true;
-  _learnMoreStep = 1;
-  _showLearnMoreBtn(false); // hide the button once they tap it
-  switchTab('recipes');
-  _renderLearnMoreBanner();
-}
-
-function _renderLearnMoreBanner(){
-  // Clear all banner containers first
-  ['onboardingBanner-1','onboardingBanner-2','onboardingBanner-6','onboardingBanner-dash','onboardingBanner-5'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.innerHTML = '';
-  });
-  if(!_learnMoreActive) return;
-
-  function lmBanner(step, title, desc, nextBtn){
-    return `<div class="lm-banner">
-      <div class="lm-banner-row">
-        <div class="lm-banner-left">
-          <div class="lm-banner-step">Step ${step} of 3</div>
-          <div class="lm-banner-title">${title}</div>
-          <div class="lm-banner-desc">${desc}</div>
-        </div>
-        <div class="lm-banner-right">${nextBtn}</div>
-      </div>
-    </div>`;
-  }
-
-  if(_learnMoreStep === 1){
-    const el = document.getElementById('onboardingBanner-1');
-    if(el) el.innerHTML = lmBanner(1, 'Your Recipe Library',
-      'This is where all your meals live. Paste a URL from any recipe blog, or build your own from scratch. Once a recipe is saved, you can add it to your No-Decision Menu with one click.',
-      `<button class="btn btn-primary btn-next" onclick="_learnMoreNext(2)">Next →</button>`);
-  } else if(_learnMoreStep === 2){
-    const el = document.getElementById('onboardingBanner-2');
-    if(el) el.innerHTML = lmBanner(2, 'Your No-Decision Menu',
-      'Think of this as your rotation — the meals you actually make on repeat. When you plan your week, you pick from this list. Fewer choices, less thinking.',
-      `<button class="btn btn-primary btn-next" onclick="_learnMoreNext(3)">Next →</button>`);
-  } else if(_learnMoreStep === 3){
-    const el = document.getElementById('onboardingBanner-6');
-    if(el) el.innerHTML = lmBanner(3, 'Your Freezer',
-      'Log frozen meals here so you never forget what\'s buried in the back. When planning your week, freezer meals show up as options — zero effort dinners on your busiest nights.',
-      `<button class="btn btn-primary btn-next" onclick="_learnMoreDone()">Done →</button>`);
-  }
-}
-
-function _learnMoreNext(step){
-  _learnMoreStep = step;
-  const tabMap = {1:'recipes', 2:'menu', 3:'freezer'};
-  switchTab(tabMap[step] || 'dashboard');
-  _renderLearnMoreBanner();
-}
-
-function _learnMoreDone(){
-  _learnMoreActive = false;
-  _learnMoreStep = 0;
-  // Persist V4.5 completion
-  onboardingState.learnMoreComplete = true;
-  _persistOnboardingState();
-  // Clear banners
-  _renderLearnMoreBanner();
-  switchTab('dashboard');
-}
 
 // ── RECIPE LIBRARY ─────────────────────────────────────────────────────────
 // Curated by Meal Planning OS. These are read-only — users copy them into
@@ -625,8 +338,24 @@ function migrateSlotSchema(){
         });
       }
     });
-    // Legacy AM/PM-to-slot migration removed — obligations now live in weekNotes
-    // and render on the dashboard day card, not inside individual meal slots.
+    // Carry legacy AM/PM notes to breakfast/dinner slot notes (lossless, additive).
+    if(weekNotes && typeof weekNotes === 'object'){
+      DAYS.forEach(d=>{
+        const wn = weekNotes[d];
+        if(!wn || typeof wn !== 'object') return;
+        if(!mealPlan[d]) mealPlan[d] = {};
+        if(wn.am && (!mealPlan[d].breakfast || !mealPlan[d].breakfast.note)){
+          if(!mealPlan[d].breakfast) mealPlan[d].breakfast = {state:'skipped', recipeId:null, note:''};
+          if(!mealPlan[d].breakfast.note) mealPlan[d].breakfast.note = String(wn.am);
+          touched = true;
+        }
+        if(wn.pm && (!mealPlan[d].dinner || !mealPlan[d].dinner.note)){
+          if(!mealPlan[d].dinner) mealPlan[d].dinner = {state:'skipped', recipeId:null, note:''};
+          if(!mealPlan[d].dinner.note) mealPlan[d].dinner.note = String(wn.pm);
+          touched = true;
+        }
+      });
+    }
     if(touched){
       // Persist the stamped shape but DO NOT touch the legacy weekNotes key (safety net).
       try { localStorage.setItem(K.mealPlan, JSON.stringify(mealPlan)); } catch {}
@@ -673,57 +402,25 @@ function setSlotNote(day,meal,note){
 let _planDraft = null; // { cook: { 'monday_dinner': true, ... }, notes: { 'monday_dinner': 'text' } }
 
 function openPlanWeekModal1(){
-  // Entry point for "Plan This Week" — opens obligations (Step 1) first.
-  // Seed the draft from current mealPlan + weekNotes.
+  // Seed the draft from current mealPlan so "Adjust" feels like editing, not restarting.
   _planDraft = { cook: {}, notes: {} };
-  DAYS.forEach(d=>{
-    // Seed cook toggles from existing meal plan
-    MEALS.forEach(m=>{
-      const s = getSlot(d,m);
-      if(s && s.state==='cook') _planDraft.cook[d+'_'+m] = true;
-    });
-    // Seed per-day obligation from weekNotes (am field)
-    const wn = weekNotes[d];
-    if(wn && wn.am) _planDraft.notes[d] = String(wn.am);
-  });
-  _renderPlanModal2();
-  const ov = document.getElementById('planModal2');
+  DAYS.forEach(d=>MEALS.forEach(m=>{
+    const s = getSlot(d,m);
+    const key = d+'_'+m;
+    if(s && s.state==='cook') _planDraft.cook[key] = true;
+    if(s && s.note) _planDraft.notes[key] = s.note;
+  }));
+  _renderPlanModal1();
+  const ov = document.getElementById('planModal1');
   if(ov) ov.classList.add('open');
 }
 
 function _renderPlanModal1(){
   const body = document.getElementById('planModal1Body');
   if(!body) return;
-
-  // Update modal header for quick-start vs normal mode
-  const titleEl = document.getElementById('planModal1Title');
-  const stepEl  = document.getElementById('planModal1Step');
-  const backBtn = document.getElementById('planModal1Back');
-  const closeBtn = document.getElementById('planModal1Close');
-  const nextBtn = document.getElementById('planModal1Next');
-  if(_isQuickStart){
-    if(titleEl) titleEl.textContent = 'Plan your week in 30 seconds';
-    if(stepEl)  stepEl.textContent = 'Step 2 of 2';
-    if(backBtn)   backBtn.style.display = 'none';
-    if(closeBtn)  closeBtn.style.display = 'none';
-    if(nextBtn) nextBtn.setAttribute('onclick','quickStartNext()');
-    if(nextBtn) nextBtn.textContent = 'Next →';
-  } else {
-    if(titleEl) titleEl.textContent = 'Plan This Week';
-    if(stepEl)  stepEl.textContent = 'Step 2 of 2';
-    if(backBtn)   backBtn.style.display = '';
-    if(closeBtn)  closeBtn.style.display = '';
-    if(nextBtn) nextBtn.setAttribute('onclick','planModal1Done()');
-    if(nextBtn) nextBtn.textContent = 'Done — View My Week →';
-  }
-
   const countEl_id = 'planModal1Count';
   let html = '';
-  if(_isQuickStart){
-    html += '<div class="plan-modal-intro">Tap any meal you need to plan.<br><span style="color:var(--text-3);font-size:12px">Skip meals you don\'t need to worry about — like work lunches or dining out.</span></div>';
-  } else {
-    html += '<div class="plan-modal-intro">Tap the meals you\'re cooking.<br><span style="color:var(--text-3);font-size:12px">Leave the rest — we\'ll handle those.</span></div>';
-  }
+  html += '<div class="plan-modal-intro">Tap the meals you\'re cooking.<br><span style="color:var(--text-3);font-size:12px">Leave the rest — we\'ll handle those.</span></div>';
   // Column header pills
   html += '<div class="plan-grid-wrap"><div class="plan-grid">';
   html += '<div class="plan-grid-corner"></div>';
@@ -741,13 +438,10 @@ function _renderPlanModal1(){
   });
   html += '</div></div>';
   html += `<div class="plan-counter" id="${countEl_id}"></div>`;
-  // Hide quick-select buttons during quick start — keep it dead simple
-  if(!_isQuickStart){
-    html += '<div class="plan-quick-row">';
-    html += '<button type="button" class="btn btn-secondary btn-sm" onclick="_planQuickAllDinners()">All weekday dinners</button>';
-    html += '<button type="button" class="btn btn-secondary btn-sm" onclick="_planQuickClear()">Clear all</button>';
-    html += '</div>';
-  }
+  html += '<div class="plan-quick-row">';
+  html += '<button type="button" class="btn btn-secondary btn-sm" onclick="_planQuickAllDinners()">All weekday dinners</button>';
+  html += '<button type="button" class="btn btn-secondary btn-sm" onclick="_planQuickClear()">Clear all</button>';
+  html += '</div>';
   body.innerHTML = html;
   _updatePlanCounter();
   _updatePlanColumnHeads();
@@ -803,99 +497,85 @@ function _planQuickClear(){
 function closePlanModal1(){
   const ov = document.getElementById('planModal1');
   if(ov) ov.classList.remove('open');
-  // If user closes during quick-start (via X button), reset the flag
-  // so normal Plan This Week works correctly going forward.
-  if(_isQuickStart){
-    _isQuickStart = false;
-    _quickStartStep = 0;
-  }
 }
 
-// ── Swapped flow: planModal2 (obligations) = Step 1, planModal1 (meals) = Step 2 ──
-
-function planModal2Next(){
-  // Step 1 → Step 2: close obligations, open meal grid
-  closePlanModal2();
-  _openMealGridModal();
-}
-
-function _openMealGridModal(){
-  _renderPlanModal1();
-  const ov = document.getElementById('planModal1');
-  if(ov) ov.classList.add('open');
-}
-
-function planModal1Back(){
-  // Step 2 → Step 1: go back to obligations
+function planModal1Next(){
   closePlanModal1();
+  openPlanWeekModal2();
+}
+
+function openPlanWeekModal2(){
   _renderPlanModal2();
   const ov = document.getElementById('planModal2');
   if(ov) ov.classList.add('open');
 }
 
-function planModal1Done(){
-  // Final save — applies both obligations and meal selections
-  _savePlanDraft();
-  closePlanModal1();
-  _planDraft = null;
-  renderDashboard();
-  renderOnboardingUI();
+// Per-meal rotating placeholder prompts — real schedule-conflict examples only
+const _NOTE_PROMPTS = {
+  breakfast: [
+    'early meeting',
+    'commute to office',
+    'appointment',
+  ],
+  lunch: [
+    'work lunch',
+    "kid's field trip",
+    'meetings back-to-back',
+  ],
+  dinner: [
+    "kid's practice at 6",
+    'dinner party for 6',
+    'late night at office',
+    'family plans',
+  ],
+};
+function _notePlaceholder(meal, idx){
+  const arr = _NOTE_PROMPTS[meal] || ['add a note'];
+  return 'e.g. ' + arr[idx % arr.length];
 }
-
-// Legacy alias — kept so old references don't break
-function planModal1Next(){ planModal2Next(); }
-function openPlanWeekModal2(){ _openMealGridModal(); }
-
-// Per-day rotating placeholder prompts for obligations
-const _OBLIGATION_PROMPTS = [
-  'e.g. early meeting',
-  'e.g. working late',
-  'e.g. kids\' practice at 6',
-  'e.g. dinner out',
-  'e.g. gym at 5:30',
-  'e.g. travel day',
-  'e.g. family plans',
-];
 
 function _renderPlanModal2(){
   const body = document.getElementById('planModal2Body');
   if(!body) return;
-
-  // Update header for quick-start vs normal mode
-  const titleEl = document.getElementById('planModal2Title');
-  const stepEl  = document.getElementById('planModal2Step');
-  const cancelBtn = document.getElementById('planModal2Cancel');
-  const closeBtn  = document.getElementById('planModal2Close');
-  const nextBtn   = document.getElementById('planModal2Next');
-  if(_isQuickStart){
-    if(titleEl) titleEl.textContent = 'Plan your week in 30 seconds';
-    if(stepEl)  stepEl.textContent = 'Step 1 of 2';
-    if(cancelBtn) cancelBtn.style.display = 'none';
-    if(closeBtn)  closeBtn.style.display = 'none';
-    if(nextBtn) nextBtn.setAttribute('onclick','quickStartNextToMeals()');
-  } else {
-    if(titleEl) titleEl.textContent = 'Plan This Week';
-    if(stepEl)  stepEl.textContent = 'Step 1 of 2';
-    if(cancelBtn) cancelBtn.style.display = '';
-    if(closeBtn)  closeBtn.style.display = '';
-    if(nextBtn) nextBtn.setAttribute('onclick','planModal2Next()');
-  }
+  // Group by day: each day shows its cook slots (and optionally skipped slots).
+  const perDay = {};
+  let totalCook = 0, totalSkip = 0;
+  DAYS.forEach(d=>{
+    perDay[d] = { cook: [], skip: [] };
+    MEALS.forEach(m=>{
+      const key = d+'_'+m;
+      if(_planDraft.cook[key]){ perDay[d].cook.push({meal:m,key}); totalCook++; }
+      else { perDay[d].skip.push({meal:m,key}); totalSkip++; }
+    });
+  });
 
   let html = '';
-  html += '<div class="plan-modal-intro">Any obligations this week? <span style="color:var(--text-3);font-size:12px">(all optional — helps you plan smarter)</span></div>';
+  const _guideActive = !isOnboardingComplete() || _guideMode || !hasSeenGuide();
+  if(_guideActive){
+    html += '<div class="plan-modal-step-label">Step 2 of 4</div>';
+  }
+  html += '<div class="plan-modal-intro">Anything to plan around? <span style="color:var(--text-3);font-size:12px">(all optional)</span></div>';
 
-  html += '<div class="plan-days-list">';
-  DAYS.forEach((d, i)=>{
-    const weekend = (d==='saturday'||d==='sunday');
-    const noteVal = _planDraft.notes[d] || '';
-    const ph = _OBLIGATION_PROMPTS[i % _OBLIGATION_PROMPTS.length];
-    html += `<div class="plan-day-group${weekend?' weekend':''}">`;
-    html += `<div class="plan-note-row" style="align-items:center">`;
-    html += `<div class="plan-day-head" style="min-width:90px;margin:0">${DAY_FULL[d]}</div>`;
-    html += `<input type="text" class="plan-note-input" data-day="${d}" value="${_esc(noteVal)}" placeholder="${_esc(ph)}" oninput="_planDraft.notes['${d}']=this.value">`;
-    html += `</div></div>`;
-  });
-  html += '</div>';
+  if(totalCook===0){
+    html += '<div style="padding:16px;text-align:center;color:var(--text-3);font-size:13px">No meals selected to cook this week. That\'s fine — tap <strong>Done</strong> to head Home.</div>';
+  } else {
+    html += '<div class="plan-days-list">';
+    let promptIdx = 0;
+    DAYS.forEach(d=>{
+      if(perDay[d].cook.length===0) return; // only days with cook slots
+      const weekend = (d==='saturday'||d==='sunday');
+      html += `<div class="plan-day-group${weekend?' weekend':''}">`;
+      html += `<div class="plan-day-head">${DAY_FULL[d]}</div>`;
+      html += '<div class="plan-day-meals">';
+      perDay[d].cook.forEach(({meal,key})=>{
+        const noteVal = _planDraft.notes[key] || '';
+        const ph = _notePlaceholder(meal, promptIdx++);
+        html += `<div class="plan-note-row"><div class="plan-note-label"><span class="plan-note-check">✓</span> ${MEAL_LABEL[meal]}</div><input type="text" class="plan-note-input" data-key="${key}" value="${_esc(noteVal)}" placeholder="${_esc(ph)}" oninput="_planDraft.notes['${key}']=this.value"></div>`;
+      });
+      html += '</div></div>';
+    });
+    html += '</div>';
+  }
   body.innerHTML = html;
 }
 
@@ -910,57 +590,35 @@ function _esc(s){
 function closePlanModal2(){
   const ov = document.getElementById('planModal2');
   if(ov) ov.classList.remove('open');
-  // If user closes during quick-start (via X button), reset the flag
-  if(_isQuickStart){
-    _isQuickStart = false;
-    _quickStartStep = 0;
-  }
 }
 
 function planModal2Back(){
-  // Step 1 has no "back" — this is a legacy stub.
   closePlanModal2();
+  openPlanWeekModal1();
 }
 
 function planModal2Save(){
-  // Legacy alias — final save now lives in planModal1Done() / _savePlanDraft()
-  _savePlanDraft();
-  closePlanModal2();
-  closePlanModal1();
-  _planDraft = null;
-  renderDashboard();
-  renderOnboardingUI();
-}
-
-function _savePlanDraft(){
-  if(!_planDraft) return;
-  // 1. Write per-day obligations into weekNotes
-  DAYS.forEach(d=>{
-    const obligation = (_planDraft.notes[d]||'').trim();
-    if(!weekNotes[d]) weekNotes[d] = {am:'', pm:''};
-    weekNotes[d].am = obligation;
-  });
-  save(K.weekNotes, weekNotes);
-
-  // 2. Apply cook/skip toggles into mealPlan (no per-slot notes from modal anymore)
+  // Apply the draft into mealPlan.
   DAYS.forEach(d=>MEALS.forEach(m=>{
     const key = d+'_'+m;
     const wantsCook = !!_planDraft.cook[key];
+    const note = (_planDraft.notes[key]||'').trim();
     const existing = getSlot(d,m);
     if(wantsCook){
       // Preserve existing recipe if already assigned.
-      setSlotCook(d,m);
-      // Preserve any existing note on the slot
-      if(existing && existing.note && mealPlan[d] && mealPlan[d][m]){
-        mealPlan[d][m].note = existing.note;
+      if(existing && existing.recipeId){
+        setSlotCook(d,m);
+        mealPlan[d][m].note = note;
+      } else {
+        setSlotCook(d,m);
+        mealPlan[d][m].note = note;
       }
     } else {
       // Skipped
       const prevSkipLabel = existing && existing.skipLabel ? existing.skipLabel : '';
       const prevSkipDetail = existing && existing.skipDetail ? existing.skipDetail : '';
-      const prevNote = existing && existing.note ? existing.note : '';
-      if(prevSkipLabel || prevNote || (existing && existing.state==='skipped')){
-        setSlotSkipped(d,m, prevNote);
+      if(note || prevSkipLabel || (existing && existing.state==='skipped')){
+        setSlotSkipped(d,m,note);
         // Preserve any existing skipLabel + skipDetail across plan-modal saves.
         if(prevSkipLabel && mealPlan[d] && mealPlan[d][m]){
           mealPlan[d][m].skipLabel = prevSkipLabel;
@@ -973,6 +631,10 @@ function _savePlanDraft(){
     }
   }));
   save(K.mealPlan, mealPlan);
+  closePlanModal2();
+  _planDraft = null;
+  renderDashboard();
+  renderOnboardingUI();
 }
 
 // ╔═══════════════════════════════════════╗
@@ -980,7 +642,7 @@ function _savePlanDraft(){
 // ╚═══════════════════════════════════════╝
 // version: bumped when we materially change the guide. Users at an older
 // version are walked through the new guide exactly once.
-const ONBOARDING_VERSION = 4;
+const ONBOARDING_VERSION = 3;
 // Loaded from localStorage on boot; falls back to defaults for first-time users.
 // Also gets overwritten by cloud sync (applyCloudData) when Supabase has a more recent copy.
 let onboardingState = load(K.onboarding, { firstRunComplete: false, guideSeen: false, version: ONBOARDING_VERSION });
@@ -996,8 +658,6 @@ function _persistOnboardingState(){
 // Normalizes state after loading from storage or cloud sync. If the user
 // hasn't seen the current guide version, reset the completion flags so the
 // new walkthrough shows up exactly once.
-// V4 GUARD: Existing users with real data (more than starter recipes) skip
-// the quick-start and get auto-completed so the modal doesn't interrupt them.
 function _migrateOnboardingState(){
   if(!onboardingState || typeof onboardingState !== 'object'){
     onboardingState = { firstRunComplete:false, guideSeen:false, version:ONBOARDING_VERSION };
@@ -1005,17 +665,8 @@ function _migrateOnboardingState(){
   }
   const ver = onboardingState.version || 1;
   if(ver < ONBOARDING_VERSION){
-    // V4: If user has more than just starter recipes, they're an existing user
-    // — auto-complete onboarding so the quick-start modal doesn't fire.
-    const starterIds = new Set(['sr1','sr2','sr3','sr4','sr5','sr6']);
-    const hasRealRecipes = recipes.some(r => !starterIds.has(r.id));
-    if(hasRealRecipes || (recipes.length > 6)){
-      onboardingState.firstRunComplete = true;
-      onboardingState.guideSeen = true;
-    } else {
-      onboardingState.firstRunComplete = false;
-      onboardingState.guideSeen = false;
-    }
+    onboardingState.firstRunComplete = false;
+    onboardingState.guideSeen = false;
     onboardingState.version = ONBOARDING_VERSION;
   }
 }
@@ -1053,34 +704,128 @@ function checkOnboardingGate(targetTab){
 }
 
 // ── Onboarding Banners & CTAs ────────────────────────────────────────────
-// V4: Old banner system removed. Quick-start modal + tooltips handle onboarding.
-// renderOnboardingUI() is kept as a function because renderAll() calls it —
-// it now just clears any stale banner HTML and manages the Settings guide toggle.
-let _guideMode = false;
+let _guideMode = false; // true = user re-enabled guide after completion
 
 function renderOnboardingUI(){
-  // Clear all legacy gates
+  // Clear all gates on render (they're re-evaluated on tab switch)
   ['recipes','menu','grocerylist','dashboard'].forEach(id=>{
     const gate=document.getElementById('softGate-'+id);
     if(gate) gate.innerHTML='';
   });
-  // Clear legacy banner containers — but only if Learn More banners aren't active
-  if(!_learnMoreActive){
-    const ALL_BANNER_IDS = ['onboardingBanner-1','onboardingBanner-2','onboardingBanner-3','onboardingBanner-4','onboardingBanner-5','onboardingBanner-6','onboardingBanner-dash'];
-    ALL_BANNER_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
-  }
-  const ALL_CTA_IDS = ['recipesCTA','menuCTA','weekSetupCTA','mealPlanCTA','groceryCTA'];
-  ALL_CTA_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
 
-  // V4: Guide row is now "Replay Quick Start" — always visible
+  // Toggle setup guide row inside Settings modal based on onboarding state
   const guideRow=document.getElementById('settingsGuideRow');
-  if(guideRow) guideRow.style.display='';
-
-  // V4: Restore Learn More button if it was available (persisted across sessions)
-  if(onboardingState.learnMoreAvailable && !_learnMoreActive){
-    const btn = document.getElementById('learnMoreBtn');
-    if(btn) btn.style.display = '';
+  if(guideRow){
+    guideRow.style.display=isOnboardingComplete()?'':'none';
+    const titleEl = guideRow.querySelector('.settings-row-title');
+    if(titleEl) titleEl.textContent=(_guideMode||!hasSeenGuide())?'📖 Hide Setup Guide':'📖 Show Setup Guide';
   }
+
+  const showGuide = !isOnboardingComplete() || _guideMode || !hasSeenGuide();
+
+  // IDs that may hold onboarding content — cleared on every render
+  const ALL_BANNER_IDS = ['onboardingBanner-1','onboardingBanner-2','onboardingBanner-3','onboardingBanner-4','onboardingBanner-5','onboardingBanner-6','onboardingBanner-dash'];
+  const ALL_CTA_IDS = ['recipesCTA','menuCTA','weekSetupCTA','mealPlanCTA','groceryCTA'];
+  const clearAllBanners = () => {
+    ALL_BANNER_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
+    ALL_CTA_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
+  };
+
+  if(!showGuide){
+    clearAllBanners();
+    return;
+  }
+
+  // Reset before re-rendering so stale banners (e.g. Step 1 when we should now show Step 3) don't linger
+  clearAllBanners();
+
+  // Helper: build a banner with optional Next button on the right
+  // phaseLabel = e.g. "Setup 1 of 3" or "Step 1 of 4"
+  function obBanner(phaseLabel, title, desc, nextBtn){
+    return `<div class="onboarding-banner">
+      <div class="ob-banner-row">
+        <div class="ob-banner-left">
+          <div class="ob-step">${phaseLabel}</div>
+          <div class="ob-title">${title}</div>
+          <div class="ob-desc">${desc}</div>
+        </div>
+        ${nextBtn?`<div class="ob-banner-right">${nextBtn}</div>`:''}
+      </div>
+    </div>`;
+  }
+
+  // ─── SETUP PHASE (1–3): one-time foundation ───
+  // Setup 1 of 3 — Recipes
+  const next1=recipes.length>=1?`<button class="btn btn-primary btn-next" onclick="switchTab('menu')">Next →</button>`:'';
+  const b1=document.getElementById('onboardingBanner-1');
+  if(b1) b1.innerHTML=obBanner('Setup 1 of 3','Build Your Recipe Library','Browse the recipe library or add your own meals — anything you already cook and enjoy. These are the building blocks for your entire plan. You only need to do this once; come back and add more anytime.', next1);
+
+  // Setup 2 of 3 — No-Decision Menu
+  const menuRecipes=recipes.filter(r=>r.onMenu);
+  const next2=menuRecipes.length>=1?`<button class="btn btn-primary btn-next" onclick="switchTab('freezer')">Next →</button>`:'';
+  const b2=document.getElementById('onboardingBanner-2');
+  if(b2) b2.innerHTML=obBanner('Setup 2 of 3','Fill Your No-Decision Menu','Pick the meals you want on rotation this week from your recipe library. This becomes your short list — the only options you choose from when planning. Fewer choices means zero decision fatigue.', next2);
+
+  // Setup 3 of 3 — Freezer (optional). Advances to Step 1 on Home, does NOT complete onboarding.
+  const next6=`<button class="btn btn-primary btn-next" onclick="switchTab('dashboard')">Next →</button>`;
+  const b6=document.getElementById('onboardingBanner-6');
+  if(b6) b6.innerHTML=obBanner('Setup 3 of 3','Stock Your Freezer (Optional)','Already have meals in the freezer? Log them here so you can drop them into any day of your plan. Totally optional — skip if your freezer is empty and come back anytime you batch cook.', next6);
+
+  // ─── WEEKLY FLOW PHASE (Steps 1–4): the repeating planning loop ───
+  // Count cook slots and which ones have recipes assigned, to decide
+  // whether the dashboard shows Step 1 (plan) or Step 3 (assign).
+  let totalCookSlots = 0;
+  let unassignedCookSlots = 0;
+  DAYS.forEach(d=>MEALS.forEach(m=>{
+    const s = mealPlan[d]&&mealPlan[d][m];
+    if(s && s.state==='cook'){
+      totalCookSlots++;
+      if(!s.recipeId && !s.freezerId) unassignedCookSlots++;
+    }
+  }));
+  // A week is considered "planned" if ANY slot entry exists (cook or skipped).
+  // This matches how the Plan This Week modal writes state.
+  let anySlotTouched = false;
+  DAYS.forEach(d=>MEALS.forEach(m=>{
+    if(mealPlan[d]&&mealPlan[d][m]) anySlotTouched = true;
+  }));
+
+  const bDash=document.getElementById('onboardingBanner-dash');
+  if(bDash){
+    if(!anySlotTouched){
+      // Step 1 — plan this week
+      const step1Btn=`<button class="btn btn-primary btn-next" onclick="openPlanWeekModal1()">Plan This Week →</button>`;
+      bDash.innerHTML=obBanner('Step 1 of 4','Plan Your Week','Tap Plan This Week and pick which meals you\'re actually cooking. Takes about 30 seconds. Anything you don\'t pick, we\'ll treat as leftovers, eating out, or skipped — no pressure.', step1Btn);
+    } else {
+      // Step 3 — assign recipes to cook slots. Content varies by state.
+      let title, desc, btn;
+      if(totalCookSlots === 0){
+        // Nothing to cook this week — subtle nudge to Groceries
+        title = 'Nothing to Cook This Week';
+        desc = 'You\'ve marked every meal as skipped, leftovers, or eating out. That\'s fine — head to Groceries for your flex & backup list just in case.';
+        btn = `<button class="btn btn-primary btn-next" onclick="switchTab('grocerylist')">See Groceries →</button>`;
+      } else if(unassignedCookSlots === 0){
+        // All cook slots have recipes — move on
+        title = 'All Meals Assigned';
+        desc = 'Nice — every cooking slot has a recipe. Your grocery list is ready.';
+        btn = `<button class="btn btn-primary btn-next" onclick="switchTab('grocerylist')">See Groceries →</button>`;
+      } else {
+        // Normal case — instruct user to tap slots
+        title = 'Assign Your Meals';
+        desc = `Tap any cooking slot below and pick a recipe from your no-decision menu. ${unassignedCookSlots} slot${unassignedCookSlots===1?'':'s'} still need${unassignedCookSlots===1?'s':''} a meal. <strong>Tip:</strong> set servings per meal — your grocery list scales automatically.`;
+        btn = `<button class="btn btn-secondary btn-next" onclick="switchTab('grocerylist')">Skip to Groceries →</button>`;
+      }
+      bDash.innerHTML=obBanner('Step 3 of 4', title, desc, btn);
+    }
+  }
+
+  // Step 4 — Groceries. "I'm Done" here is what flips firstRunComplete=true.
+  const isReviewMode = _guideMode || (isOnboardingComplete() && !hasSeenGuide());
+  const step4Btn = isReviewMode
+    ? `<button class="btn btn-primary btn-next" onclick="toggleSetupGuide()">Hide Guide</button>`
+    : `<button class="btn btn-primary btn-next" onclick="completeOnboarding()">I'm Done →</button>`;
+  const b5=document.getElementById('onboardingBanner-5');
+  if(b5) b5.innerHTML=obBanner('Step 4 of 4','Grab Your Grocery List','Your list is built from the meals you assigned — quantities calculated, sorted by store section. Check items off as you shop, and use the Flex & Backup section for safety-net meals. When you\'re done, tap I\'m Done to retire this guide.', step4Btn);
 }
 
 function completeOnboarding(){
@@ -1095,30 +840,18 @@ function completeOnboarding(){
 }
 
 function toggleSetupGuide(){
-  // Legacy — kept as a no-op in case any old call sites remain.
-}
-
-function replayQuickStart(){
-  if(!confirm('This will clear your current meal plan and grocery list to show the demo again. Your recipes and menu stay. Continue?')) return;
-  // Reset week first so the demo plan can be generated fresh
-  weekNotes={};
-  mealPlan={};
-  checks={};
-  adhocItems=[];
-  save(K.weekNotes,weekNotes);
-  save(K.mealPlan,mealPlan);
-  save(K.checks,checks);
-  save(K.adhocItems,adhocItems);
-  // Ensure starter recipes exist (they may have been deleted by a full reset)
-  const starterIds = new Set(STARTER_RECIPES.map(r=>r.id));
-  const missing = STARTER_RECIPES.filter(sr => !recipes.some(r=>r.id===sr.id));
-  if(missing.length){
-    missing.forEach(sr => recipes.push({...sr, ingredients:sr.ingredients.map(i=>({...i}))}));
-    save(K.recipes, recipes);
+  // If guide is currently showing (either via _guideMode or because guideSeen is false), hide it
+  const currentlyShowing = _guideMode || !hasSeenGuide();
+  if(currentlyShowing){
+    _guideMode=false;
+    onboardingState.guideSeen=true;
+    _persistOnboardingState();
+    renderOnboardingUI();
+  } else {
+    _guideMode=true;
+    renderOnboardingUI();
+    switchTab('recipes');
   }
-  renderAll();
-  switchTab('dashboard');
-  openQuickStartModal();
 }
 
 // ── Reset Logic ─────────────────────────────────────────────────────────
@@ -1182,8 +915,8 @@ function buildSyncPayload() {
 //   INFO TOOLTIPS
 // ╚═══════════════════════════════════════╝
 const INFO_TIPS = {
-  dashboard:   'Your week at a glance. Tap \u0027Plan This Week\u0027 to fill in your meals in about 30 seconds. Tap any recipe name to open cooking instructions.',
-  recipes:     'Once a recipe is saved, you can add it to your No-Decision Menu with one click. Your Go-To meals should be recipes you can make half asleep. Experimental meals require more time in the kitchen.',
+  dashboard:   'Your week at a glance — auto-built from Steps 1-3 (Schedule → Meals → Groceries). Finish those steps first and your plan will show up here. Tap any recipe name to open cooking instructions.',
+  recipes:     'Add meals by pasting a URL or building from scratch. Filter by meal type — Breakfast, Lunch, Dinner — or by tags like Under 15 Min, Batch Cook, and Freezer Friendly to find what fits your night. Once a recipe is saved, you can add it to your No-Decision Menu with one click.',
   menu:        'This is the short list your entire meal plan is built from. Pick 3–5 Go-To meals you can repeat on autopilot and a few Experimental ones when you want variety. The smaller this menu is, the fewer decisions you make every week.',
   weeksetup:   'Add what\u0027s happening each day — busy nights, kids\u0027 activities, dinners out, late meetings. This shows up right in your meal plan so you can see your schedule while you\u0027re deciding what to eat. The more detail you add, the easier it is to assign the right meal to the right night.',
   mealplan:    'Tap any day to pick a meal from your No-Decision Menu. Busy night? Pick a 15-minute Go-To. Free evening? Try something Experimental. The goal is zero decisions at 5 PM — just open the plan and cook.',
@@ -1257,10 +990,10 @@ function switchTab(id){
   if(activeBtn) activeBtn.classList.add('active');
   // Set add context for library rendering
   if(id==='dashboard') { renderDashboard(); }
-  if(id==='recipes') { _addContext='recipes'; renderLibrary(); renderOnboardingUI(); if(_learnMoreActive) _renderLearnMoreBanner(); }
-  if(id==='menu') { _addContext='menu'; renderMealSections(); renderOnboardingUI(); if(_learnMoreActive) _renderLearnMoreBanner(); }
+  if(id==='recipes') { _addContext='recipes'; renderLibrary(); renderOnboardingUI(); }
+  if(id==='menu') { _addContext='menu'; renderMealSections(); renderOnboardingUI(); }
   if(id==='grocerylist') { renderGrocery(); renderOnboardingUI(); }
-  if(id==='freezer') { renderFreezer(); if(_learnMoreActive) _renderLearnMoreBanner(); }
+  if(id==='freezer') renderFreezer();
   localStorage.setItem('mpos_active_tab', id);
   window.scrollTo(0, 0);
   // FAB visibility follows the dashboard
@@ -1711,9 +1444,6 @@ function renderDashboard(){
       html += '</div>';
     });
     if(isToday) html += '<div class="dash-today-footer">Today</div>';
-    // Show per-day obligation from weekNotes (subtle red text at bottom of card)
-    const _obl = weekNotes[day] && weekNotes[day].am ? String(weekNotes[day].am).trim() : '';
-    if(_obl) html += `<div class="dash-obligation">${_esc(_obl)}</div>`;
     html += '</div>'; // /day-card
   });
   html += '</div>'; // /grid
@@ -3865,20 +3595,11 @@ async function loadAndRender(userId) {
   const tabMigration = {step1:'recipes',step2:'menu',step3:'dashboard',step4:'dashboard',library:'recipes',weeksetup:'dashboard',mealplan:'dashboard'};
   if(savedTab && tabMigration[savedTab]) savedTab=tabMigration[savedTab];
   const validTabs = ['dashboard','recipes','menu','grocerylist','freezer'];
-  // V4: Everyone starts on Dashboard (quick-start fires from there for new users)
-  const defaultTab = 'dashboard';
+  // New users (onboarding not complete) start at Recipes; returning users default to Dashboard
+  const defaultTab = isOnboardingComplete() ? 'dashboard' : 'recipes';
   switchTab(savedTab && validTabs.includes(savedTab) ? savedTab : defaultTab);
   renderAll();
-
-  // V4 Quick Start: trigger for new users who haven't completed onboarding
-  // and have no existing meal plan data (guard against re-triggering)
-  const hasExistingPlan = DAYS.some(d => MEALS.some(m => mealPlan[d] && mealPlan[d][m]));
-  if(!isOnboardingComplete() && !hasExistingPlan){
-    // Skip What's New for brand-new users — quick start is their intro
-    openQuickStartModal();
-  } else {
-    checkWhatsNew(cloud);
-  }
+  checkWhatsNew(cloud);
 }
 
 // ── What's New modal ─────────────────────────────────────────

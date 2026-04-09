@@ -1225,118 +1225,6 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 }
 
 /* ═══════════════════════════════════════
-   V4 LEARN MORE BUTTON (Nav)
-═══════════════════════════════════════ */
-.learn-more-btn {
-  margin-left: auto;
-  flex-shrink: 0;
-  align-self: center;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  animation: lmPulse 2s ease-in-out 3;
-}
-.learn-more-btn:hover {
-  background: var(--accent-hover, #3a7be0);
-}
-@keyframes lmPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(66,133,244,0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(66,133,244,0); }
-}
-
-/* V4 Learn More Banner (sequential walkthrough) */
-.lm-banner {
-  background: var(--accent-light);
-  border: 1px solid var(--accent-mid);
-  border-radius: var(--radius);
-  padding: 14px 18px;
-  margin-bottom: 18px;
-}
-.lm-banner-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-}
-.lm-banner-left { flex: 1; min-width: 0; }
-.lm-banner-right { flex-shrink: 0; }
-.lm-banner-step {
-  font-size: 10px; font-weight: 800;
-  text-transform: uppercase; letter-spacing: 0.8px;
-  color: var(--accent); margin-bottom: 4px;
-}
-.lm-banner-title { font-size: 16px; font-weight: 800; margin-bottom: 3px; }
-.lm-banner-desc { font-size: 13px; color: var(--text-2); line-height: 1.5; }
-.lm-banner .btn-next {
-  padding: 8px 18px; font-size: 13px; font-weight: 700;
-  white-space: nowrap; border-radius: 8px;
-}
-
-/* ═══════════════════════════════════════
-   V4 QUICK-START ONBOARDING TOOLTIPS
-═══════════════════════════════════════ */
-.qs-tooltip-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.45);
-  z-index: 9000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  animation: qsFadeIn 0.25s ease;
-}
-@keyframes qsFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.qs-tooltip-card {
-  background: var(--surface);
-  border-radius: 16px;
-  padding: 28px 24px;
-  max-width: 380px;
-  width: 100%;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
-  text-align: center;
-}
-.qs-tooltip-title {
-  font-size: 20px;
-  font-weight: 800;
-  margin-bottom: 8px;
-  color: var(--text-1);
-}
-.qs-tooltip-body {
-  font-size: 14px;
-  color: var(--text-2);
-  line-height: 1.55;
-  margin-bottom: 16px;
-}
-.qs-tooltip-btn {
-  padding: 12px 28px;
-  font-size: 15px;
-  font-weight: 700;
-  border-radius: 10px;
-  min-width: 180px;
-}
-.qs-reset-arrow {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent);
-  margin: 12px 0 16px;
-  animation: qsBounce 1.2s ease infinite;
-}
-@keyframes qsBounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(5px); }
-}
-.qs-final-card {
-  max-width: 420px;
-}
-
-/* ═══════════════════════════════════════
    SAVED RECIPES (Step 2 — Not on menu)
 ═══════════════════════════════════════ */
 .saved-recipes-section {
@@ -1607,15 +1495,6 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   color: var(--accent);
-}
-.dash-obligation {
-  margin-top: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #C0392B;
-  text-align: center;
-  line-height: 1.3;
-  opacity: 0.85;
 }
 .dash-day-date {
   font-size: 11px;
@@ -2086,18 +1965,6 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   padding: 0 4px;
 }
 .plan-row-head.weekend { color: var(--text-3); font-weight: 600; }
-.plan-row-obligation {
-  display: block;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--accent);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 70px;
-  line-height: 1.2;
-  margin-top: 1px;
-}
 .plan-cell {
   background: #F4F5F8;
   border: 1.5px solid #E2E5EC;
