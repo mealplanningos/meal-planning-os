@@ -3074,7 +3074,7 @@ function renderGrocery(){
   // Flex & Backup ALWAYS renders (even empty) so users learn to use it.
   // Staples and Misc hide when empty.
   const extras = [
-    {type:'staples', icon:'📌', title:'Weekly Staples', tipKey:'groc_staples', items:staples,    removeFn:'removeStaple',     alwaysShow:false, emptyHint:''},
+    {type:'staples', icon:'📌', title:'Weekly Staples', tipKey:'groc_staples', items:staples,    removeFn:'removeStaple',     alwaysShow:true,  emptyHint:'Add items you buy every single week — milk, eggs, bread, coffee. They\'ll always be on your list so you never forget the basics.'},
     {type:'flex',    icon:'🛟', title:'Flex & Backup',   tipKey:'groc_flex',    items:flexItems,  removeFn:'removeFlexItem',   alwaysShow:true,  emptyHint:'Add backup meals for nights when cooking falls apart — frozen pizza, canned soup, sandwich fixings. Your safety net.'},
     {type:'adhoc',   icon:'🛍️', title:'Misc',            tipKey:'groc_adhoc',   items:adhocItems, removeFn:'removeAdhocItem',  alwaysShow:false, emptyHint:''},
   ];
