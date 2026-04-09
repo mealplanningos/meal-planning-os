@@ -167,7 +167,6 @@
     <div class="nav-tab nav-tab-secondary" data-tab="freezer" onclick="switchTab('freezer')">Freezer</div>
   </div>
 </div>
-<button class="learn-more-btn" id="learnMoreBtn" onclick="startLearnMore()" style="display:none">Learn More</button>
 
 <!-- MAIN -->
 <div class="main">
@@ -180,9 +179,12 @@
         <div class="dash-title">This Week's Plan <span id="infoTip-dashboard"></span></div>
         <div class="dash-daterange" id="dashDateRange"></div>
       </div>
-      <button class="btn btn-primary dash-grocery-btn" onclick="switchTab('grocerylist')">
-        View Grocery List →
-      </button>
+      <div class="dash-header-actions">
+        <button class="learn-more-btn" id="learnMoreBtn" onclick="startLearnMore()" style="display:none">Learn More</button>
+        <button class="btn btn-primary dash-grocery-btn" onclick="switchTab('grocerylist')">
+          View Grocery List →
+        </button>
+      </div>
     </div>
     <div class="dash-body" id="dashBody"></div>
   </div>

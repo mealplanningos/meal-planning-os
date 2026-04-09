@@ -243,7 +243,7 @@ function _showQuickStartTooltip(step){
         <div class="qs-tooltip-card qs-final-card">
           <div class="qs-tooltip-title">Ready to make it yours?</div>
           <div class="qs-tooltip-body">This is a demo plan with sample recipes. When you're ready, tap <strong>Reset Week</strong> below to clear it and start fresh.</div>
-          <div class="qs-tooltip-body" style="font-size:12px;color:var(--text-3);margin-top:4px">Tap <strong>Learn More</strong> in the nav bar to understand each section.</div>
+          <div class="qs-tooltip-body" style="font-size:12px;color:var(--text-3);margin-top:4px">Tap <strong>Learn More</strong> at the top of your Home tab to understand each section.</div>
           <div class="qs-reset-arrow">↓ Reset Week is at the bottom of the page</div>
           <button class="btn btn-primary qs-tooltip-btn" onclick="_qsFinish()">Start Planning</button>
         </div>`;
