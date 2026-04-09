@@ -1,0 +1,7 @@
+# Force revalidation on core app files so iOS PWA always gets fresh code after deploys
+/index.html
+  Cache-Control: no-cache
+/app.js
+  Cache-Control: no-cache
+/styles.css
+  Cache-Control: no-cache
