@@ -1225,29 +1225,31 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 }
 
 /* ═══════════════════════════════════════
-   V4 LEARN MORE BUTTON (Nav)
+   V4 LEARN MORE BUTTON (floating)
 ═══════════════════════════════════════ */
 .learn-more-btn {
-  margin-left: auto;
-  flex-shrink: 0;
-  align-self: center;
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  z-index: 90;
   background: var(--accent);
   color: #fff;
   border: none;
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 12px;
+  border-radius: 20px;
+  padding: 10px 18px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: 0 2px 12px rgba(30,60,120,0.25);
   animation: lmPulse 2s ease-in-out 3;
 }
 .learn-more-btn:hover {
   background: var(--accent-hover, #3a7be0);
 }
 @keyframes lmPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(66,133,244,0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(66,133,244,0); }
+  0%, 100% { box-shadow: 0 2px 12px rgba(30,60,120,0.25), 0 0 0 0 rgba(66,133,244,0.4); }
+  50% { box-shadow: 0 2px 12px rgba(30,60,120,0.25), 0 0 0 6px rgba(66,133,244,0); }
 }
 
 /* V4 Learn More Banner (sequential walkthrough) */
