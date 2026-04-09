@@ -145,6 +145,16 @@ let _isQuickStart = false;
 let _quickStartStep = 0; // 0=not started, 1=meal grid, 2+=tooltips
 
 function openQuickStartModal(){
+  // Show welcome CTA first, then proceed to obligations
+  const w = document.getElementById('qsWelcomeModal');
+  if(w) w.classList.add('open');
+}
+function closeQsWelcome(){
+  const w = document.getElementById('qsWelcomeModal');
+  if(w) w.classList.remove('open');
+}
+function qsWelcomeGo(){
+  closeQsWelcome();
   _isQuickStart = true;
   _quickStartStep = 1;
   // Pre-fill draft: Mon-Fri B/L/D ON, weekends OFF + 3 demo obligations
@@ -702,7 +712,7 @@ function _renderPlanModal1(){
   const closeBtn = document.getElementById('planModal1Close');
   const nextBtn = document.getElementById('planModal1Next');
   if(_isQuickStart){
-    if(titleEl) titleEl.textContent = 'Plan your week in 30 seconds';
+    if(titleEl) titleEl.textContent = 'Any obligations this week?';
     if(stepEl)  stepEl.textContent = 'Step 2 of 2';
     if(backBtn)   backBtn.style.display = 'none';
     if(closeBtn)  closeBtn.style.display = 'none';
@@ -760,8 +770,9 @@ function _updatePlanCounter(){
   let msg = 'Tap the meals you\'re cooking';
   if(n===1||n===2) msg = 'Nice start';
   else if(n>=3 && n<=5) msg = 'Looking good';
-  else if(n>=6 && n<=10) msg = 'Big week';
-  else if(n>=11) msg = 'Chef mode';
+  else if(n>=6 && n<=10) msg = 'Dialed in';
+  else if(n>=11 && n<=14) msg = 'System running';
+  else if(n>=15) msg = 'Operator mode';
   el.textContent = `${n} meal${n===1?'':'s'} planned · ${msg}`;
 }
 
@@ -868,7 +879,7 @@ function _renderPlanModal2(){
   const closeBtn  = document.getElementById('planModal2Close');
   const nextBtn   = document.getElementById('planModal2Next');
   if(_isQuickStart){
-    if(titleEl) titleEl.textContent = 'Plan your week in 30 seconds';
+    if(titleEl) titleEl.textContent = 'Any obligations this week?';
     if(stepEl)  stepEl.textContent = 'Step 1 of 2';
     if(cancelBtn) cancelBtn.style.display = 'none';
     if(closeBtn)  closeBtn.style.display = 'none';
@@ -892,7 +903,8 @@ function _renderPlanModal2(){
     html += `<div class="plan-day-group${weekend?' weekend':''}">`;
     html += `<div class="plan-note-row" style="align-items:center">`;
     html += `<div class="plan-day-head" style="min-width:90px;margin:0">${DAY_FULL[d]}</div>`;
-    html += `<input type="text" class="plan-note-input" data-day="${d}" value="${_esc(noteVal)}" placeholder="${_esc(ph)}" oninput="_planDraft.notes['${d}']=this.value">`;
+    const exClass = (_isQuickStart && noteVal) ? ' qs-example' : '';
+    html += `<input type="text" class="plan-note-input${exClass}" data-day="${d}" value="${_esc(noteVal)}" placeholder="${_esc(ph)}" oninput="this.classList.remove('qs-example');_planDraft.notes['${d}']=this.value">`;
     html += `</div></div>`;
   });
   html += '</div>';

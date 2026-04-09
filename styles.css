@@ -1225,32 +1225,72 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 }
 
 /* ═══════════════════════════════════════
+   V4 QUICK-START WELCOME MODAL
+═══════════════════════════════════════ */
+.qs-welcome-modal {
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+  padding: 48px 32px 40px;
+  border-radius: 16px;
+  position: relative;
+}
+.qs-welcome-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.qs-welcome-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-1);
+  margin: 0 0 8px;
+  letter-spacing: -0.3px;
+}
+.qs-welcome-sub {
+  font-size: 15px;
+  color: var(--text-2);
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+.qs-welcome-btn {
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 10px;
+}
+
+/* Quick-start example highlight on pre-filled obligation inputs */
+.plan-note-input.qs-example {
+  border: 2px solid var(--accent, #1E5EFF);
+  background: rgba(30, 94, 255, 0.04);
+}
+
+/* ═══════════════════════════════════════
    V4 LEARN MORE BUTTON (dash header)
 ═══════════════════════════════════════ */
-.dash-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
 .learn-more-btn {
-  background: var(--accent);
-  color: #fff;
+  background: none;
+  color: var(--accent);
   border: none;
-  border-radius: 6px;
-  padding: 7px 14px;
-  font-size: 12px;
-  font-weight: 700;
+  border-radius: 0;
+  padding: 2px 0;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  text-decoration: none;
+  display: inline-block;
   animation: lmPulse 2s ease-in-out 3;
 }
 .learn-more-btn:hover {
-  background: var(--accent-hover, #3a7be0);
+  text-decoration: underline;
+  background: none;
 }
 @keyframes lmPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(66,133,244,0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(66,133,244,0); }
+  0%, 100% { text-shadow: 0 0 0 rgba(66,133,244,0.4); }
+  50% { text-shadow: 0 0 8px rgba(66,133,244,0.3); }
 }
 
 /* V4 Learn More Banner (sequential walkthrough) */

@@ -178,13 +178,11 @@
       <div>
         <div class="dash-title">This Week's Plan <span id="infoTip-dashboard"></span></div>
         <div class="dash-daterange" id="dashDateRange"></div>
+        <button class="learn-more-btn" id="learnMoreBtn" onclick="startLearnMore()" style="display:none">Learn More →</button>
       </div>
-      <div class="dash-header-actions">
-        <button class="learn-more-btn" id="learnMoreBtn" onclick="startLearnMore()" style="display:none">Learn More</button>
-        <button class="btn btn-primary dash-grocery-btn" onclick="switchTab('grocerylist')">
-          View Grocery List →
-        </button>
-      </div>
+      <button class="btn btn-primary dash-grocery-btn" onclick="switchTab('grocerylist')">
+        View Grocery List →
+      </button>
     </div>
     <div class="dash-body" id="dashBody"></div>
   </div>
@@ -460,6 +458,17 @@
     <div class="modal-footer" style="justify-content:center">
       <button class="btn btn-primary" onclick="dismissWhatsNew()">Got it</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: Quick-Start Welcome (pre-onboarding CTA) -->
+<div class="modal-overlay" id="qsWelcomeModal">
+  <div class="modal qs-welcome-modal">
+    <button class="modal-close" onclick="closeQsWelcome()">✕</button>
+    <div class="qs-welcome-icon">⚡️</div>
+    <h2 class="qs-welcome-title">Let's plan your week.</h2>
+    <p class="qs-welcome-sub">Takes about 60 seconds.</p>
+    <button class="btn btn-primary qs-welcome-btn" onclick="qsWelcomeGo()">Get Started →</button>
   </div>
 </div>
 
