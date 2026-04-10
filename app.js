@@ -523,7 +523,7 @@ const DEFAULT_FLEX = [
 ];
 
 function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
-function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));localStorage.setItem('mpos_local_dirty_at',new Date().toISOString());}catch{} scheduleSyncToSupabase();}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));const _dirtyTs=new Date().toISOString();localStorage.setItem('mpos_local_dirty_at',_dirtyTs);console.info('[sync] dirty: local change at',_dirtyTs,'key=',k);}catch{} scheduleSyncToSupabase();}
 function uid(){return Math.random().toString(36).substr(2,9);}
 
 let recipes    = load(K.recipes, null);
@@ -735,9 +735,9 @@ function _renderPlanModal1(){
   const countEl_id = 'planModal1Count';
   let html = '';
   if(_isQuickStart){
-    html += '<div class="plan-modal-intro">Tap any meal you need to plan.<br><span style="color:var(--text-3);font-size:12px">Skip meals you don\'t need to worry about — like work lunches or dining out.</span></div>';
+    html += '<div class="plan-modal-intro">Tap any meals you need to plan.<br><span style="color:var(--text-3);font-size:12px">Cooking at home, planned takeout, whatever needs deciding.</span></div>';
   } else {
-    html += '<div class="plan-modal-intro">Tap the meals you\'re cooking.<br><span style="color:var(--text-3);font-size:12px">Leave the rest — we\'ll handle those.</span></div>';
+    html += '<div class="plan-modal-intro">Tap any meals you need to plan.<br><span style="color:var(--text-3);font-size:12px">Cooking at home, planned takeout, whatever needs deciding.</span></div>';
   }
   // Column header pills
   html += '<div class="plan-grid-wrap"><div class="plan-grid">';
@@ -772,7 +772,7 @@ function _updatePlanCounter(){
   const el = document.getElementById('planModal1Count');
   if(!el) return;
   const n = Object.keys(_planDraft.cook).filter(k=>_planDraft.cook[k]).length;
-  let msg = 'Tap the meals you\'re cooking';
+  let msg = 'Tap meals you need to plan';
   if(n===1||n===2) msg = 'Nice start';
   else if(n>=3 && n<=5) msg = 'Looking good';
   else if(n>=6 && n<=10) msg = 'Dialed in';
@@ -1287,11 +1287,6 @@ function switchTab(id){
   if(id==='freezer') { renderFreezer(); if(_learnMoreActive) _renderLearnMoreBanner(); }
   localStorage.setItem('mpos_active_tab', id);
   window.scrollTo(0, 0);
-  // FAB visibility follows the dashboard
-  if(typeof _updatePlanFab === 'function'){
-    const hasPlan = DAYS.some(d=>MEALS.some(m=>!!(mealPlan[d]&&mealPlan[d][m])));
-    _updatePlanFab(hasPlan);
-  }
 }
 
 // ╔═══════════════════════════════════════╗
@@ -1642,10 +1637,9 @@ function renderDashboard(){
       <div class="dash-empty">
         <div class="dash-empty-icon">🍽️</div>
         <div class="dash-empty-title">Your week is wide open</div>
-        <div class="dash-empty-sub">Tap the button below to plan your week in about 30 seconds.</div>
+        <div class="dash-empty-sub">Tap the button below to plan your week in 10 minutes.</div>
         <button class="btn btn-primary" onclick="openPlanWeekModal1()">Plan This Week →</button>
       </div>`;
-    _updatePlanFab(false);
     return;
   }
 
@@ -1743,25 +1737,6 @@ function renderDashboard(){
   });
   html += '</div>'; // /grid
   body.innerHTML = html;
-  _updatePlanFab(true);
-}
-
-// ── Floating Action Button ───────────────────────────────────────────────
-function _updatePlanFab(hasPlan){
-  const fab = document.getElementById('planFab');
-  if(!fab) return;
-  // Only show on Dashboard
-  const dashActive = document.getElementById('dashboard') && document.getElementById('dashboard').classList.contains('active');
-  fab.style.display = dashActive ? 'flex' : 'none';
-  const label = fab.querySelector('.fab-label');
-  const sub = fab.querySelector('.fab-sub');
-  if(hasPlan){
-    if(label) label.textContent = '↻ Adjust My Week';
-    if(sub) sub.textContent = 'Change your mind? Redo it';
-  } else {
-    if(label) label.textContent = 'Plan This Week →';
-    if(sub) sub.textContent = 'Takes about 30 seconds';
-  }
 }
 
 // ── Slot Editor popover (tap-to-edit on Dashboard) ──────────────────────
@@ -3178,7 +3153,10 @@ function openFreezerModal(){
   document.getElementById('fz_servings').value=2;
   document.getElementById('fz_notes').value='';
   document.getElementById('freezerModal').classList.add('open');
-  setTimeout(()=>document.getElementById('fz_name').focus(),100);
+  // Blur any focused element first (prevents mobile from focusing a date input),
+  // then explicitly focus the text field after modal animation settles.
+  if(document.activeElement) document.activeElement.blur();
+  setTimeout(()=>{const el=document.getElementById('fz_name');if(el){el.blur();el.focus();}},200);
 }
 function saveFreezerItem(){
   const name=document.getElementById('fz_name').value.trim();
@@ -3654,13 +3632,25 @@ function scheduleSyncToSupabase() {
 
 // ── Sync status indicator ────────────────────────────────────
 // Green = synced, orange = saving, red = error
+let _savingFailsafe = null;
 function _updateSyncIndicator(state) {
   const el = document.getElementById('syncIndicator');
   if (!el) return;
+  if (_savingFailsafe) { clearTimeout(_savingFailsafe); _savingFailsafe = null; }
   const colors = { synced: '#4caf50', saving: '#ff9800', error: '#f44336' };
   const titles = { synced: 'All changes saved', saving: 'Saving…', error: 'Sync issue — retrying' };
   el.style.background = colors[state] || colors.synced;
   el.title = titles[state] || '';
+  // Failsafe: prevent permanent-orange from an unresolved async request
+  if (state === 'saving') {
+    _savingFailsafe = setTimeout(() => {
+      _savingFailsafe = null;
+      const dirty = localStorage.getItem('mpos_local_dirty_at');
+      console.info('[sync] indicator failsafe: saving state exceeded 15s, dirty=', !!dirty);
+      el.style.background = dirty ? colors.error : colors.synced;
+      el.title = dirty ? 'Sync may need attention' : titles.synced;
+    }, 15000);
+  }
 }
 
 // Called once cloud is ready — pushes any saves that happened before auth/cloud load completed
@@ -3673,28 +3663,40 @@ function _flushDeferredSync() {
 }
 
 let _syncRetries = 0;
+let _syncInFlight = false;
 async function syncToSupabase() {
   if (!_currentUser) return;
   // DATA GUARD: never write to cloud unless we successfully loaded first
-  if (!_cloudLoadedOk) { console.warn('Cloud sync blocked — cloud data not loaded yet'); return; }
+  if (!_cloudLoadedOk) { console.warn('[sync] push: blocked — cloud data not loaded yet'); return; }
+  _syncInFlight = true;
+  console.info('[sync] push: starting sync attempt');
   const payload = buildSyncPayload();
-  const { error: syncErr } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
-  if (syncErr) {
-    console.error('Cloud sync failed:', syncErr.message);
-    _updateSyncIndicator('error');
-    // Auto-retry up to 3 times with backoff — don't silently lose data
-    if (_syncRetries < 3) {
-      _syncRetries++;
-      clearTimeout(_saveTimer);
-      _saveTimer = setTimeout(syncToSupabase, 2000 * _syncRetries);
+  try {
+    const { error: syncErr } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
+    if (syncErr) {
+      console.error('[sync] push: failed —', syncErr.message, '(retry', (_syncRetries+1) + '/3)');
+      _updateSyncIndicator('error');
+      // Auto-retry up to 3 times with backoff — don't silently lose data
+      if (_syncRetries < 3) {
+        _syncRetries++;
+        clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(syncToSupabase, 2000 * _syncRetries);
+      }
+    } else {
+      _syncRetries = 0;
+      // Only update the cloud timestamp AFTER a confirmed successful upsert.
+      // This ensures _pullFromCloud won't skip a pull if the previous sync failed.
+      _cloudUpdatedAt = payload.updated_at;
+      try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
+      console.info('[sync] push: success — cloud updated_at', payload.updated_at);
+      console.info('[sync] dirty: cleared (sync confirmed)');
+      _updateSyncIndicator('synced');
     }
-  } else {
-    _syncRetries = 0;
-    // Only update the cloud timestamp AFTER a confirmed successful upsert.
-    // This ensures _pullFromCloud won't skip a pull if the previous sync failed.
-    _cloudUpdatedAt = payload.updated_at;
-    try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
-    _updateSyncIndicator('synced');
+  } catch(e) {
+    console.error('[sync] push: exception —', e?.message || e);
+    _updateSyncIndicator('error');
+  } finally {
+    _syncInFlight = false;
   }
 }
 
@@ -3879,6 +3881,25 @@ async function loadAndRender(userId) {
   await migrateIfNeeded(userId);
   const cloud = await loadFromSupabase(userId);
   applyCloudData(cloud);
+
+  // ── Startup stale dirty recovery ───────────────────────────
+  // Heal dirty flags left by interrupted iOS PWA sessions on previous visits.
+  // If cloud already has data from at/after the dirty timestamp, clear the flag.
+  try {
+    const _startupDirty = localStorage.getItem('mpos_local_dirty_at');
+    if (_startupDirty && cloud && cloud.updated_at) {
+      const cloudTs = new Date(cloud.updated_at).getTime();
+      const dirtyTs = new Date(_startupDirty).getTime();
+      if (cloudTs >= dirtyTs) {
+        console.info('[sync] startup: clearing stale dirty flag — cloud updated_at (' + cloud.updated_at + ') >= dirty_at (' + _startupDirty + ')');
+        localStorage.removeItem('mpos_local_dirty_at');
+        _updateSyncIndicator('synced');
+      } else {
+        console.info('[sync] startup: dirty flag exists and local is newer — will push on next sync');
+      }
+    }
+  } catch(e) { /* proceed normally on parse error */ }
+
   normalizeRecipeTypes();
   // Defensive: new user with no recipes yet — seed starters and sync
   // ONLY do this if cloud was successfully queried (not on failed load)
@@ -4042,7 +4063,7 @@ window.addEventListener('pagehide',     _flushToCloud);
 
 // ── Sync on visibility change ────────────────────────────────
 // When tab goes hidden (mobile: screen lock, app switch): flush pending save NOW.
-// When tab becomes visible again: pull fresh data from cloud (for cross-device sync).
+// When tab becomes visible again: reconcile — push dirty data first, then pull.
 document.addEventListener('visibilitychange', async () => {
   if (!_currentUser) return;
   if (document.visibilityState === 'hidden') {
@@ -4053,7 +4074,16 @@ document.addEventListener('visibilitychange', async () => {
       await syncToSupabase();
     }
   } else if (document.visibilityState === 'visible') {
-    _pullFromCloud();
+    // ── Resume reconciliation ──
+    // On iOS standalone/PWA, a backgrounded app may have had its sync killed
+    // mid-flight, leaving a stale dirty flag. Push first, then pull.
+    console.info('[sync] resume: app became visible — reconciling');
+    const localDirty = localStorage.getItem('mpos_local_dirty_at');
+    if (localDirty && !_syncInFlight) {
+      console.info('[sync] resume: dirty flag exists (' + localDirty + ') — attempting push first');
+      await syncToSupabase();
+    }
+    await _pullFromCloud();
   }
 });
 
@@ -4061,10 +4091,66 @@ document.addEventListener('visibilitychange', async () => {
 let _pullTimer = null;
 async function _pullFromCloud() {
   if (!_currentUser || _applyingCloud) return;
-  // Don't pull if there are pending local saves — let them sync first
-  if (_saveTimer) return;
+  // Don't pull if there's an active debounce timer (imminent save)
+  if (_saveTimer) { console.info('[sync] pull: deferred — active debounce timer'); return; }
+  // Don't pull if a sync request is currently in flight
+  if (_syncInFlight) { console.info('[sync] pull: deferred — sync in flight'); return; }
+
   const localDirty = localStorage.getItem('mpos_local_dirty_at');
-  if (localDirty) return; // local changes haven't been confirmed in cloud yet
+  if (localDirty) {
+    const dirtyAge = Date.now() - new Date(localDirty).getTime();
+
+    // Recent dirty flag (<30s) — normal sync should handle it, don't interfere
+    if (dirtyAge < 30000) {
+      console.info('[sync] pull: deferred — dirty flag is', Math.round(dirtyAge/1000) + 's old (waiting for sync)');
+      return;
+    }
+
+    // ── Stale dirty recovery ──
+    // Dirty flag is >30s old with no active sync — likely an interrupted iOS PWA session.
+    // Try to push local changes, then reconcile with cloud.
+    console.info('[sync] stale dirty recovery: flag is', Math.round(dirtyAge/1000) + 's old — attempting recovery');
+
+    // 1. Try to push local changes (in case they genuinely haven't synced)
+    await syncToSupabase();
+
+    // 2. If sync succeeded, dirty flag is now cleared — fall through to normal pull
+    const stillDirty = localStorage.getItem('mpos_local_dirty_at');
+    if (stillDirty) {
+      // Sync didn't clear it (failed or new change happened). Fetch cloud to compare.
+      console.info('[sync] stale dirty recovery: push did not clear dirty — fetching cloud to compare');
+      const cloud = await loadFromSupabase(_currentUser.id);
+      if (cloud && cloud.updated_at) {
+        const cloudTs = new Date(cloud.updated_at).getTime();
+        const dirtyTs = new Date(stillDirty).getTime();
+        if (cloudTs >= dirtyTs) {
+          // Cloud already reflects data at or after the dirty timestamp — safe to clear
+          console.info('[sync] stale dirty recovery: cloud updated_at (' + cloud.updated_at + ') >= dirty_at (' + stillDirty + ') — clearing dirty flag');
+          try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
+          console.info('[sync] dirty: cleared (cloud has current data)');
+          // Apply cloud data if it's newer than what we have in memory
+          if (!_cloudUpdatedAt || new Date(cloud.updated_at).getTime() !== new Date(_cloudUpdatedAt).getTime()) {
+            console.info('[sync] pull: applying cloud data after stale recovery');
+            applyCloudData(cloud);
+            renderAll();
+          }
+          return;
+        } else {
+          // Local is genuinely newer — schedule another push attempt, don't block forever
+          console.info('[sync] stale dirty recovery: local is newer than cloud — scheduling retry push');
+          scheduleSyncToSupabase();
+          return;
+        }
+      }
+      // Cloud fetch returned nothing — can't reconcile, let periodic sync retry
+      console.info('[sync] stale dirty recovery: cloud fetch returned no data — deferring');
+      return;
+    }
+    // Dirty was cleared by sync success — fall through to normal pull
+    console.info('[sync] stale dirty recovery: push succeeded — proceeding to pull');
+  }
+
+  // ── Normal pull path (no dirty flag blocking) ──
   const cloud = await loadFromSupabase(_currentUser.id);
   if (!cloud || !cloud.updated_at) return;
   // Only re-render if cloud data is actually newer than what we last loaded
@@ -4072,6 +4158,7 @@ async function _pullFromCloud() {
   // (e.g. "Z" vs "+00:00") which would cause string === to always fail
   if (_cloudUpdatedAt &&
       new Date(cloud.updated_at).getTime() === new Date(_cloudUpdatedAt).getTime()) return;
+  console.info('[sync] pull: cloud data is newer — applying');
   applyCloudData(cloud);
   renderAll();
 }

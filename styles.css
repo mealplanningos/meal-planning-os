@@ -985,12 +985,16 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 /* ── AUTH SCREEN ── */
 #authScreen {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg);
   padding: 24px;
+  overflow-y: auto;
 }
+/* Prevent flex from squishing auth box when mobile keyboard is open */
+.auth-box { flex-shrink: 0; }
 .auth-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2363,47 +2367,7 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
 }
 .plan-note-row.skipped .plan-note-label { opacity: 0.55; }
 
-/* ── FAB ─────────────────────────────────────────────────────── */
-.plan-fab {
-  position: fixed;
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  right: 20px;
-  z-index: 100;
-  background: var(--accent, #0D1829);
-  color: #FFF;
-  border: none;
-  border-radius: 14px;
-  padding: 12px 20px;
-  box-shadow: 0 8px 24px rgba(13,24,41,0.25);
-  cursor: pointer;
-  font-family: inherit;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.plan-fab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(13,24,41,0.3);
-}
-.plan-fab .fab-label {
-  font-size: 14px;
-  font-weight: 800;
-}
-.plan-fab .fab-sub {
-  font-size: 10px;
-  font-weight: 500;
-  opacity: 0.8;
-}
-@media (max-width: 600px) {
-  .plan-fab {
-    right: 14px;
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    padding: 10px 16px;
-  }
-  .plan-fab .fab-label { font-size: 13px; }
-}
+/* ── FAB removed ── */
 
 /* ── Slot Editor popover ─────────────────────────────────────── */
 .slot-editor-overlay { z-index: 220; }

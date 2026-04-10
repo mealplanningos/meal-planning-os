@@ -29,7 +29,7 @@
 <body>
 
 <!-- LANDING ─ default view for logged-out visitors -->
-<div id="landingScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
+<div id="landingScreen" style="display:none;min-height:100vh;min-height:100dvh;align-items:center;justify-content:center;background:var(--bg);overflow-y:auto;padding:24px 0">
   <div class="auth-box">
     <div class="auth-logo">
       <svg class="logo-svg" viewBox="0 0 40 40" fill="none">
@@ -51,7 +51,7 @@
 </div>
 
 <!-- AUTH SCREEN ─ default view for all visitors -->
-<div id="authScreen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background:var(--bg)">
+<div id="authScreen" style="display:flex;min-height:100vh;min-height:100dvh;align-items:center;justify-content:center;background:var(--bg);overflow-y:auto;padding:24px 0">
   <div class="auth-box">
     <div class="auth-logo">
       <svg class="logo-svg" viewBox="0 0 40 40" fill="none">
@@ -350,14 +350,18 @@
     <div class="modal-body">
       <div class="form-group">
         <label>Meal Name</label>
-        <input type="text" id="fz_name" placeholder="e.g. Chicken Chili">
+        <input type="text" inputmode="text" id="fz_name" placeholder="e.g. Chicken Chili" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Date Made</label>
+        <input type="date" id="fz_made">
+      </div>
+      <div class="form-group">
+        <label>Expiration Date</label>
+        <input type="date" id="fz_exp">
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Date Made</label><input type="date" id="fz_made"></div>
-        <div class="form-group"><label>Expiration Date</label><input type="date" id="fz_exp"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Servings Frozen</label><input type="number" id="fz_servings" min="1" value="2"></div>
+        <div class="form-group"><label>Servings Frozen</label><input type="number" inputmode="numeric" id="fz_servings" min="1" value="2"></div>
         <div class="form-group"><label>Notes (optional)</label><input type="text" id="fz_notes" placeholder="e.g. No dairy"></div>
       </div>
     </div>
@@ -516,11 +520,7 @@
   </div>
 </div>
 
-<!-- FAB: Plan This Week -->
-<button type="button" id="planFab" class="plan-fab" onclick="openPlanWeekModal1()" style="display:none">
-  <div class="fab-label">Plan This Week →</div>
-  <div class="fab-sub">Takes about 30 seconds</div>
-</button>
+<!-- FAB removed — single Plan This Week button on empty dashboard is sufficient -->
 
 <!-- MODAL: Account Settings -->
 <div class="modal-overlay" id="accountSettingsModal">
