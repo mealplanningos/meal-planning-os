@@ -1532,7 +1532,7 @@ function addToMenu(recipeId){
     alert(label+' category is full (5/5). Remove one to make room.');
     return;
   }
-  r.onMenu=true;
+  r.onMenu=true; r.updated_at=new Date().toISOString();
   save(K.recipes,recipes);
   renderLibrary();
   renderMealSections();
@@ -2152,7 +2152,7 @@ function removeFromMenu(recipeId){
   if(!confirm('Remove "'+r.name+'" from your No-Decision Menu? It will stay in your recipe library.')) return;
   // Also remove from meal plan if assigned
   DAYS.forEach(d=>MEALS.forEach(m=>{if(mealPlan[d]&&mealPlan[d][m]&&mealPlan[d][m].recipeId===recipeId)delete mealPlan[d][m];}));
-  r.onMenu=false;
+  r.onMenu=false; r.updated_at=new Date().toISOString();
   save(K.recipes,recipes); save(K.mealPlan,mealPlan);
   renderMealSections();
   renderLibrary();
@@ -2324,7 +2324,7 @@ function saveRecipe(){
   _importedSourceUrl=null;
   if(_editId){
     const i=recipes.findIndex(r=>r.id===_editId);
-    if(i>-1) recipes[i]={...recipes[i],...data};
+    if(i>-1) recipes[i]={...recipes[i],...data,updated_at:new Date().toISOString()};
   } else {
     // From menu context → add directly to menu; from recipes context → save to library only
     const goesOnMenu=_modalContext==='menu';
@@ -2336,7 +2336,7 @@ function saveRecipe(){
         return;
       }
     }
-    recipes.push({id:uid(),onMenu:goesOnMenu,...data});
+    recipes.push({id:uid(),onMenu:goesOnMenu,...data,updated_at:new Date().toISOString()});
   }
   save(K.recipes,recipes);
   closeModal('recipeModal');
@@ -3144,25 +3144,25 @@ function uncheckAll(){ checks={}; save(K.checks,checks); renderGrocery(); }
 function addStaple(){
   const el=document.getElementById('new-staples-input'); if(!el) return;
   const name=el.value.trim(); if(!name) return;
-  staples.push({id:uid(),name}); save(K.staples,staples); el.value=''; renderGrocery();
+  staples.push({id:uid(),name,updated_at:new Date().toISOString()}); save(K.staples,staples); el.value=''; renderGrocery();
 }
 function removeStaple(id){ staples=staples.filter(s=>s.id!==id); save(K.staples,staples); renderGrocery(); }
 function addFlexItem(){
   const el=document.getElementById('new-flex-input'); if(!el) return;
   const name=el.value.trim(); if(!name) return;
-  flexItems.push({id:uid(),name}); save(K.flexItems,flexItems); el.value=''; renderGrocery();
+  flexItems.push({id:uid(),name,updated_at:new Date().toISOString()}); save(K.flexItems,flexItems); el.value=''; renderGrocery();
 }
 function removeFlexItem(id){ flexItems=flexItems.filter(f=>f.id!==id); save(K.flexItems,flexItems); renderGrocery(); }
 function addAdhocItem(){
   const el=document.getElementById('new-adhoc-input'); if(!el) return;
   const name=el.value.trim(); if(!name) return;
-  adhocItems.push({id:uid(),name}); save(K.adhocItems,adhocItems); el.value=''; renderGrocery();
+  adhocItems.push({id:uid(),name,updated_at:new Date().toISOString()}); save(K.adhocItems,adhocItems); el.value=''; renderGrocery();
 }
 function removeAdhocItem(id){ adhocItems=adhocItems.filter(a=>a.id!==id); save(K.adhocItems,adhocItems); renderGrocery(); }
 function addCategoryItem(category,inputId){
   const el=document.getElementById(inputId); if(!el) return;
   const name=el.value.trim(); if(!name) return;
-  categoryItems.push({id:uid(),name,category}); save(K.categoryItems,categoryItems); el.value=''; renderGrocery();
+  categoryItems.push({id:uid(),name,category,updated_at:new Date().toISOString()}); save(K.categoryItems,categoryItems); el.value=''; renderGrocery();
 }
 function removeCategoryItem(id){ categoryItems=categoryItems.filter(c=>c.id!==id); save(K.categoryItems,categoryItems); renderGrocery(); }
 
@@ -3186,7 +3186,7 @@ function openFreezerModal(){
 function saveFreezerItem(){
   const name=document.getElementById('fz_name').value.trim();
   if(!name){document.getElementById('fz_name').focus();return;}
-  freezer.push({id:uid(),name,dateMade:document.getElementById('fz_made').value,expDate:document.getElementById('fz_exp').value,servings:parseInt(document.getElementById('fz_servings').value)||2,notes:document.getElementById('fz_notes').value.trim()});
+  freezer.push({id:uid(),name,dateMade:document.getElementById('fz_made').value,expDate:document.getElementById('fz_exp').value,servings:parseInt(document.getElementById('fz_servings').value)||2,notes:document.getElementById('fz_notes').value.trim(),updated_at:new Date().toISOString()});
   freezer.sort((a,b)=>new Date(a.dateMade)-new Date(b.dateMade));
   save(K.freezer,freezer);
   closeModal('freezerModal'); renderFreezer();
@@ -3816,41 +3816,88 @@ async function migrateIfNeeded(userId) {
   return null;
 }
 
+// ── Merge helper: combine local + cloud arrays by item id ──
+// Items unique to either side are kept. Items in both → prefer later updated_at.
+// If timestamps are missing, cloud wins (it's the shared truth from another device).
+let _mergeHadLocalOnly = false; // set by _mergeArraysById, read by applyCloudData
+function _mergeArraysById(localArr, cloudArr, label) {
+  const local = Array.isArray(localArr) ? localArr : [];
+  const cloud = Array.isArray(cloudArr) ? cloudArr : [];
+  const map = new Map();
+  let localWins = 0, cloudWins = 0, localOnly = 0, cloudOnly = 0;
+
+  // Seed with local items
+  local.forEach(item => { if (item && item.id) map.set(item.id, { src: 'local', item }); });
+
+  // Merge cloud items
+  cloud.forEach(item => {
+    if (!item || !item.id) return;
+    const existing = map.get(item.id);
+    if (!existing) {
+      map.set(item.id, { src: 'cloud', item });
+      cloudOnly++;
+    } else {
+      // Both have it — compare updated_at; cloud wins if no timestamps
+      const lTs = existing.item.updated_at ? new Date(existing.item.updated_at).getTime() : 0;
+      const cTs = item.updated_at ? new Date(item.updated_at).getTime() : 0;
+      if (cTs >= lTs) { map.set(item.id, { src: 'cloud', item }); cloudWins++; }
+      else { localWins++; }
+    }
+  });
+
+  // Count local-only (items in local but not in cloud)
+  local.forEach(item => {
+    if (item && item.id && !cloud.some(c => c && c.id === item.id)) localOnly++;
+  });
+
+  const merged = Array.from(map.values()).map(v => v.item);
+  if (localOnly > 0 || localWins > 0) _mergeHadLocalOnly = true;
+  console.info('[sync] merge ' + label + ': ' + merged.length + ' items (localOnly=' + localOnly + ', cloudOnly=' + cloudOnly + ', localWins=' + localWins + ', cloudWins=' + cloudWins + ')');
+  return merged;
+}
+
 function applyCloudData(data) {
   if (!data || data._loadFailed) return;
 
-  // ── Race-condition guard ──────────────────────────────────
-  // If local data was modified AFTER the cloud's updated_at, the keepalive
-  // flush on unload hasn't reached Supabase yet.  Preserve the newer local
-  // state and push it to the cloud instead of overwriting it.
-  try {
-    const localDirty = localStorage.getItem('mpos_local_dirty_at');
-    if (localDirty && data.updated_at) {
-      const localTs = new Date(localDirty).getTime();
-      const cloudTs = new Date(data.updated_at).getTime();
-      if (localTs > cloudTs) {
-        console.info('Local data is newer than cloud — skipping cloud overwrite, will push local → cloud');
-        // Do NOT clear mpos_local_dirty_at here — only syncToSupabase clears it
-        // on confirmed success. This keeps the protection active if re-sync also fails.
-        scheduleSyncToSupabase();
-        return;
-      }
-    }
-  } catch(e) { /* proceed with normal apply on any parse error */ }
+  // Phase 1: no dirty-flag guard — we now MERGE arrays instead of replacing,
+  // so pulling cloud data no longer destroys local changes.
+  // After merge, if local had unpushed changes the dirty flag remains set
+  // and the next sync cycle will push the merged state.
 
+  console.info('[sync] pull: applying cloud data — merging arrays by item id');
+
+  _mergeHadLocalOnly = false; // reset before merge pass
   _applyingCloud = true; // suppress cloud write-back while applying pulled data
   try {
-    if (Array.isArray(data.recipes))              { recipes   = data.recipes;    save(K.recipes,   recipes); }
+    if (Array.isArray(data.recipes)) {
+      recipes = _mergeArraysById(recipes, data.recipes, 'recipes');
+      save(K.recipes, recipes);
+    }
     if (data.assignments !== null &&
         typeof data.assignments === 'object')     { mealPlan  = data.assignments; save(K.mealPlan,  mealPlan); }
     if (data.week_notes !== undefined)            { weekNotes = data.week_notes;  save(K.weekNotes, weekNotes); }
-    if (Array.isArray(data.freezer))              { freezer   = data.freezer;     save(K.freezer,   freezer); }
+    if (Array.isArray(data.freezer)) {
+      freezer = _mergeArraysById(freezer, data.freezer, 'freezer');
+      save(K.freezer, freezer);
+    }
     if (data.groceries) {
-      if (data.groceries.staples)    { staples     = data.groceries.staples;     save(K.staples,     staples); }
-      if (data.groceries.flexItems)  { flexItems   = data.groceries.flexItems;   save(K.flexItems,   flexItems); }
+      if (data.groceries.staples) {
+        staples = _mergeArraysById(staples, data.groceries.staples, 'groceries.staples');
+        save(K.staples, staples);
+      }
+      if (data.groceries.flexItems) {
+        flexItems = _mergeArraysById(flexItems, data.groceries.flexItems, 'groceries.flexItems');
+        save(K.flexItems, flexItems);
+      }
       if (data.groceries.checks)     { checks      = data.groceries.checks;      save(K.checks,      checks); }
-      if (data.groceries.adhocItems) { adhocItems  = data.groceries.adhocItems;  save(K.adhocItems,  adhocItems); }
-      if (data.groceries.categoryItems) { categoryItems = data.groceries.categoryItems; save(K.categoryItems, categoryItems); }
+      if (data.groceries.adhocItems) {
+        adhocItems = _mergeArraysById(adhocItems, data.groceries.adhocItems, 'groceries.adhocItems');
+        save(K.adhocItems, adhocItems);
+      }
+      if (data.groceries.categoryItems) {
+        categoryItems = _mergeArraysById(categoryItems, data.groceries.categoryItems, 'groceries.categoryItems');
+        save(K.categoryItems, categoryItems);
+      }
     }
     if (data.onboarding && typeof data.onboarding === 'object') {
       onboardingState = data.onboarding;
@@ -3865,8 +3912,14 @@ function applyCloudData(data) {
   } finally {
     _applyingCloud = false;
     // Clear the dirty flag that save() set during cloud application.
-    // This data came FROM the cloud — it doesn't need to be synced back.
     try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
+    // If merge included local-only items or local won any conflicts,
+    // the merged state differs from cloud — push it so devices converge.
+    if (_mergeHadLocalOnly) {
+      console.info('[sync] pull: merge included local-only data — scheduling push of merged state');
+      try { localStorage.setItem('mpos_local_dirty_at', new Date().toISOString()); } catch(e) {}
+      scheduleSyncToSupabase();
+    }
   }
 }
 
