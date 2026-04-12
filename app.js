@@ -1280,7 +1280,10 @@ function switchTab(id){
   const activeBtn = document.querySelector(`.nav-tab[data-tab="${id}"]`);
   if(activeBtn) activeBtn.classList.add('active');
   // Set add context for library rendering
+  // Hide FAB on non-dashboard tabs; renderDashboard shows it when appropriate
+  const _fab = document.getElementById('planFab');
   if(id==='dashboard') { renderDashboard(); }
+  else if(_fab) { _fab.style.display = 'none'; }
   if(id==='recipes') { _addContext='recipes'; renderLibrary(); renderOnboardingUI(); if(_learnMoreActive) _renderLearnMoreBanner(); }
   if(id==='menu') { _addContext='menu'; renderMealSections(); renderOnboardingUI(); if(_learnMoreActive) _renderLearnMoreBanner(); }
   if(id==='grocerylist') { renderGrocery(); renderOnboardingUI(); }
@@ -1640,6 +1643,9 @@ function renderDashboard(){
         <div class="dash-empty-sub">Tap the button below to plan your week in 10 minutes.</div>
         <button class="btn btn-primary" onclick="openPlanWeekModal1()">Plan This Week →</button>
       </div>`;
+    // Hide FAB — the empty state has its own inline "Plan This Week" button
+    const _efab = document.getElementById('planFab');
+    if(_efab) _efab.style.display = 'none';
     return;
   }
 
@@ -1737,6 +1743,25 @@ function renderDashboard(){
   });
   html += '</div>'; // /grid
   body.innerHTML = html;
+  _updatePlanFab(hasAny);
+}
+
+// ── Floating Action Button ───────────────────────────────────────────────
+function _updatePlanFab(hasPlan){
+  const fab = document.getElementById('planFab');
+  if(!fab) return;
+  // Only show on Dashboard
+  const dashActive = document.getElementById('dashboard') && document.getElementById('dashboard').classList.contains('active');
+  fab.style.display = dashActive ? 'flex' : 'none';
+  const label = fab.querySelector('.fab-label');
+  const sub = fab.querySelector('.fab-sub');
+  if(hasPlan){
+    if(label) label.textContent = '↻ Adjust My Week';
+    if(sub) sub.textContent = 'Change your mind? Redo it';
+  } else {
+    if(label) label.textContent = 'Plan This Week →';
+    if(sub) sub.textContent = 'Takes about 30 seconds';
+  }
 }
 
 // ── Slot Editor popover (tap-to-edit on Dashboard) ──────────────────────
