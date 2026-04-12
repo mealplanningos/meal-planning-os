@@ -4078,12 +4078,28 @@ document.addEventListener('visibilitychange', async () => {
     // On iOS standalone/PWA, a backgrounded app may have had its sync killed
     // mid-flight, leaving a stale dirty flag. Push first, then pull.
     console.info('[sync] resume: app became visible — reconciling');
+
+    // Reset retry counter so a previously-exhausted sync gets a fresh chance
+    _syncRetries = 0;
+
+    // Refresh the Supabase session — mobile PWAs can sit backgrounded long
+    // enough for the JWT to expire, which causes red-circle sync failures.
+    try {
+      const { data: { session: freshSession } } = await _sb.auth.getSession();
+      if (freshSession) _accessToken = freshSession.access_token || _accessToken;
+    } catch(e) { console.warn('[sync] resume: session refresh failed —', e?.message); }
+
     const localDirty = localStorage.getItem('mpos_local_dirty_at');
     if (localDirty && !_syncInFlight) {
       console.info('[sync] resume: dirty flag exists (' + localDirty + ') — attempting push first');
       await syncToSupabase();
     }
     await _pullFromCloud();
+
+    // Restart the 30s polling interval — mobile browsers kill setInterval
+    // timers when the app is backgrounded; this ensures cross-device pulls
+    // keep running after the app comes back to the foreground.
+    _startPeriodicSync();
   }
 });
 
