@@ -3747,12 +3747,40 @@ async function syncToSupabase() {
     const { error: syncErr, status: syncStatus } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
     console.info('[sync] push: upsert response — status:', syncStatus, ', error:', syncErr ? syncErr.message : 'none');
     if (syncErr) {
-      console.error('[sync] push: FAILED —', syncErr.message, ', code:', syncErr.code, ', details:', syncErr.details, '(retry', (_syncRetries+1) + '/3)');
+      console.error('[sync] push: upsert FAILED —', syncErr.message, ', code:', syncErr.code, ', details:', syncErr.details);
+
+      // ── Fallback: if upsert fails with a constraint/conflict error, try .update() ──
+      const _errMsg = (syncErr.message || '').toLowerCase();
+      const _errCode = syncErr.code || '';
+      const _isConstraint = _errMsg.includes('duplicate') || _errMsg.includes('conflict') ||
+                            _errMsg.includes('unique') || _errMsg.includes('constraint') ||
+                            _errCode === '23505'; // PostgreSQL unique_violation
+      if (_isConstraint) {
+        console.info('[sync] push: constraint error detected — attempting fallback .update()');
+        // Remove user_id from the update payload (can't update the key we're matching on)
+        const { user_id: _uid, ...updatePayload } = payload;
+        const { error: updateErr, status: updateStatus } = await _sb.from('user_data')
+          .update(updatePayload).eq('user_id', _currentUser.id);
+        console.info('[sync] push: fallback update response — status:', updateStatus, ', error:', updateErr ? updateErr.message : 'none');
+        if (!updateErr) {
+          _syncRetries = 0;
+          _cloudUpdatedAt = payload.updated_at;
+          _lastConfirmedSyncTs = payload.updated_at;
+          try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
+          console.info('[sync] push: SUCCESS via fallback update — cloud updated_at', payload.updated_at);
+          console.info('[sync] dirty: cleared (sync confirmed)');
+          _updateSyncIndicator('synced');
+          return;
+        }
+        console.error('[sync] push: fallback update also FAILED —', updateErr.message, ', code:', updateErr.code);
+      }
+
+      // Both upsert and fallback failed (or error was not constraint-related) — retry with backoff
       _updateSyncIndicator('error');
-      // Auto-retry up to 3 times with backoff — don't silently lose data
       if (_syncRetries < 3) {
         _syncRetries++;
         clearTimeout(_saveTimer);
+        console.info('[sync] push: scheduling retry', _syncRetries, '/3 in', (2000 * _syncRetries) + 'ms');
         _saveTimer = setTimeout(syncToSupabase, 2000 * _syncRetries);
       }
     } else {
@@ -3762,7 +3790,7 @@ async function syncToSupabase() {
       _cloudUpdatedAt = payload.updated_at;
       _lastConfirmedSyncTs = payload.updated_at;
       try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
-      console.info('[sync] push: SUCCESS — cloud updated_at', payload.updated_at);
+      console.info('[sync] push: SUCCESS via upsert — cloud updated_at', payload.updated_at);
       console.info('[sync] dirty: cleared (sync confirmed)');
       _updateSyncIndicator('synced');
     }
