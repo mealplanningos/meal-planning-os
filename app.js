@@ -3710,6 +3710,10 @@ async function syncToSupabase() {
   if (!_currentUser) return;
   // DATA GUARD: never write to cloud unless we successfully loaded first
   if (!_cloudLoadedOk) { console.warn('[sync] push: blocked — cloud data not loaded yet'); return; }
+  // Clear the debounce timer reference — the timer already fired (that's how we got here).
+  // Without this, _pullFromCloud's `if (_saveTimer)` guard stays truthy forever,
+  // permanently blocking the 30-second periodic pull from detecting cross-device changes.
+  _saveTimer = null;
   _syncInFlight = true;
   console.info('[sync] push: starting sync attempt');
 
