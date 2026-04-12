@@ -523,7 +523,7 @@ const DEFAULT_FLEX = [
 ];
 
 function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
-function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));const _dirtyTs=new Date().toISOString();localStorage.setItem('mpos_local_dirty_at',_dirtyTs);console.info('[sync] dirty: local change at',_dirtyTs,'key=',k);}catch{} scheduleSyncToSupabase();}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));const _dirtyTs=new Date().toISOString();localStorage.setItem('mpos_local_dirty_at',_dirtyTs);if(!_applyingCloud) _lastSaveTs=_dirtyTs;console.info('[sync] dirty: local change at',_dirtyTs,'key=',k);}catch{} scheduleSyncToSupabase();}
 function uid(){return Math.random().toString(36).substr(2,9);}
 
 let recipes    = load(K.recipes, null);
@@ -3295,6 +3295,8 @@ let _cloudUpdatedAt  = null;  // DATA GUARD: timestamp of last successful cloud 
 let _applyingCloud   = false; // SYNC GUARD: suppresses write-back during cloud data application
 let _syncDeferred    = false; // true when a save happened before cloud was ready
 let _cloudRetryTimer = null;  // retry timer for failed cloud loads
+let _lastSaveTs      = null;  // INDICATOR: timestamp of most recent save() call
+let _lastConfirmedSyncTs = null; // INDICATOR: timestamp of last confirmed successful push
 
 // ── UI state helpers ─────────────────────────────────────────
 let _authMode = 'signin';
@@ -3657,6 +3659,7 @@ function scheduleSyncToSupabase() {
 
 // ── Sync status indicator ────────────────────────────────────
 // Green = synced, orange = saving, red = error
+// Green only shows when the latest user save has been confirmed synced to cloud.
 let _savingFailsafe = null;
 function _updateSyncIndicator(state) {
   const el = document.getElementById('syncIndicator');
@@ -3664,6 +3667,20 @@ function _updateSyncIndicator(state) {
   if (_savingFailsafe) { clearTimeout(_savingFailsafe); _savingFailsafe = null; }
   const colors = { synced: '#4caf50', saving: '#ff9800', error: '#f44336' };
   const titles = { synced: 'All changes saved', saving: 'Saving…', error: 'Sync issue — retrying' };
+
+  // Guard: only show green if latest user save has actually been confirmed pushed
+  if (state === 'synced' && _lastSaveTs && _lastConfirmedSyncTs) {
+    const saveMs  = new Date(_lastSaveTs).getTime();
+    const syncMs  = new Date(_lastConfirmedSyncTs).getTime();
+    if (saveMs > syncMs) {
+      // A save happened after the last confirmed sync — stay orange, not green
+      console.info('[sync] indicator: suppressing green — save (' + _lastSaveTs + ') is after last sync (' + _lastConfirmedSyncTs + ')');
+      el.style.background = colors.saving;
+      el.title = titles.saving;
+      return;
+    }
+  }
+
   el.style.background = colors[state] || colors.synced;
   el.title = titles[state] || '';
   // Failsafe: prevent permanent-orange from an unresolved async request
@@ -3695,11 +3712,42 @@ async function syncToSupabase() {
   if (!_cloudLoadedOk) { console.warn('[sync] push: blocked — cloud data not loaded yet'); return; }
   _syncInFlight = true;
   console.info('[sync] push: starting sync attempt');
-  const payload = buildSyncPayload();
+
+  // ── Freshness check: don't overwrite newer cloud data ──
+  // Before pushing, check if the cloud has data newer than what we last loaded.
+  // This prevents a stale device from overwriting another device's changes.
   try {
-    const { error: syncErr } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
+    const { data: _freshCheck } = await _sb.from('user_data')
+      .select('updated_at').eq('user_id', _currentUser.id).maybeSingle();
+    if (_freshCheck && _freshCheck.updated_at && _cloudUpdatedAt) {
+      const _fcCloudTs = new Date(_freshCheck.updated_at).getTime();
+      const _fcKnownTs = new Date(_cloudUpdatedAt).getTime();
+      if (_fcCloudTs > _fcKnownTs) {
+        // Cloud was updated by another device since we last loaded — pull first
+        console.info('[sync] push: ABORTED — cloud is newer (cloud=' + _freshCheck.updated_at + ', lastKnown=' + _cloudUpdatedAt + '). Pulling first.');
+        _syncInFlight = false;
+        const _freshCloud = await loadFromSupabase(_currentUser.id);
+        if (_freshCloud) { applyCloudData(_freshCloud); renderAll(); }
+        // After applying cloud, check if local dirty flag is still set (user made changes ON TOP of cloud data)
+        const _stillDirty = localStorage.getItem('mpos_local_dirty_at');
+        if (_stillDirty) {
+          console.info('[sync] push: re-scheduling after cloud pull — local still dirty');
+          scheduleSyncToSupabase();
+        }
+        return;
+      }
+    }
+  } catch(e) {
+    console.warn('[sync] push: freshness check failed —', e?.message, '— proceeding with push');
+  }
+
+  const payload = buildSyncPayload();
+  console.info('[sync] push: payload built — recipes:', payload.recipes?.length, ', updated_at:', payload.updated_at);
+  try {
+    const { error: syncErr, status: syncStatus } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
+    console.info('[sync] push: upsert response — status:', syncStatus, ', error:', syncErr ? syncErr.message : 'none');
     if (syncErr) {
-      console.error('[sync] push: failed —', syncErr.message, '(retry', (_syncRetries+1) + '/3)');
+      console.error('[sync] push: FAILED —', syncErr.message, ', code:', syncErr.code, ', details:', syncErr.details, '(retry', (_syncRetries+1) + '/3)');
       _updateSyncIndicator('error');
       // Auto-retry up to 3 times with backoff — don't silently lose data
       if (_syncRetries < 3) {
@@ -3712,13 +3760,14 @@ async function syncToSupabase() {
       // Only update the cloud timestamp AFTER a confirmed successful upsert.
       // This ensures _pullFromCloud won't skip a pull if the previous sync failed.
       _cloudUpdatedAt = payload.updated_at;
+      _lastConfirmedSyncTs = payload.updated_at;
       try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
-      console.info('[sync] push: success — cloud updated_at', payload.updated_at);
+      console.info('[sync] push: SUCCESS — cloud updated_at', payload.updated_at);
       console.info('[sync] dirty: cleared (sync confirmed)');
       _updateSyncIndicator('synced');
     }
   } catch(e) {
-    console.error('[sync] push: exception —', e?.message || e);
+    console.error('[sync] push: EXCEPTION —', e?.message || e);
     _updateSyncIndicator('error');
   } finally {
     _syncInFlight = false;
@@ -4070,7 +4119,7 @@ function _flushToCloud() {
     // newer updated_at than our local dirty timestamp, so applyCloudData
     // will proceed normally.  If it fails, the dirty flag ensures we preserve
     // the local data on reload instead of overwriting it with stale cloud data.
-    fetch(`${SUPABASE_URL}/rest/v1/user_data`, {
+    fetch(`${SUPABASE_URL}/rest/v1/user_data?on_conflict=user_id`, {
       method:    'POST',
       keepalive: true,
       headers: {
@@ -4099,10 +4148,10 @@ document.addEventListener('visibilitychange', async () => {
       await syncToSupabase();
     }
   } else if (document.visibilityState === 'visible') {
-    // ── Resume reconciliation ──
-    // On iOS standalone/PWA, a backgrounded app may have had its sync killed
-    // mid-flight, leaving a stale dirty flag. Push first, then pull.
-    console.info('[sync] resume: app became visible — reconciling');
+    // ── Resume reconciliation (PULL-FIRST) ──
+    // A backgrounded device may have stale data. Always check the cloud
+    // BEFORE pushing, so a stale device cannot overwrite fresher data.
+    console.info('[sync] resume: app became visible — reconciling (pull-first)');
 
     // Reset retry counter so a previously-exhausted sync gets a fresh chance
     _syncRetries = 0;
@@ -4114,12 +4163,31 @@ document.addEventListener('visibilitychange', async () => {
       if (freshSession) _accessToken = freshSession.access_token || _accessToken;
     } catch(e) { console.warn('[sync] resume: session refresh failed —', e?.message); }
 
-    const localDirty = localStorage.getItem('mpos_local_dirty_at');
-    if (localDirty && !_syncInFlight) {
-      console.info('[sync] resume: dirty flag exists (' + localDirty + ') — attempting push first');
+    // ── Step 1: Pull from cloud first ──
+    // Fetch cloud state to see if another device pushed newer data while we were away.
+    const _resumeCloud = await loadFromSupabase(_currentUser.id);
+    const _resumeLocalDirty = localStorage.getItem('mpos_local_dirty_at');
+
+    if (_resumeCloud && _resumeCloud.updated_at) {
+      const _rCloudTs = new Date(_resumeCloud.updated_at).getTime();
+      const _rLocalTs = _resumeLocalDirty ? new Date(_resumeLocalDirty).getTime() : 0;
+
+      if (_rCloudTs > _rLocalTs) {
+        // Cloud is newer than anything local — apply it, clear dirty flag
+        console.info('[sync] resume: cloud is newer (cloud=' + _resumeCloud.updated_at + ', dirty=' + (_resumeLocalDirty||'none') + ') — applying cloud');
+        applyCloudData(_resumeCloud);
+        renderAll();
+      } else if (_resumeLocalDirty) {
+        // Local is newer — safe to push our data
+        console.info('[sync] resume: local is newer (dirty=' + _resumeLocalDirty + ', cloud=' + _resumeCloud.updated_at + ') — pushing local');
+        await syncToSupabase();
+      }
+      // else: no dirty flag, cloud already applied during pull — nothing to do
+    } else if (_resumeLocalDirty && !_syncInFlight) {
+      // Cloud returned nothing (new user or failed fetch) — push local if dirty
+      console.info('[sync] resume: no cloud data, dirty flag exists — pushing local');
       await syncToSupabase();
     }
-    await _pullFromCloud();
 
     // Restart the 30s polling interval — mobile browsers kill setInterval
     // timers when the app is backgrounded; this ensures cross-device pulls
