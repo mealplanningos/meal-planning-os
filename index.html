@@ -22,7 +22,7 @@
   <meta name="twitter:image" content="https://app.mealplanningos.com/og-image.png">
   <link rel="apple-touch-icon" href="favicon.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260412a">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -520,7 +520,11 @@
   </div>
 </div>
 
-<!-- FAB removed — single Plan This Week button on empty dashboard is sufficient -->
+<!-- FAB: Plan This Week / Adjust My Week -->
+<button type="button" id="planFab" class="plan-fab" onclick="openPlanWeekModal1()" style="display:none">
+  <div class="fab-label">Plan This Week →</div>
+  <div class="fab-sub">Takes about 30 seconds</div>
+</button>
 
 <!-- MODAL: Account Settings -->
 <div class="modal-overlay" id="accountSettingsModal">
@@ -609,6 +613,6 @@
 
 </div><!-- /appRoot -->
 
-<script src="app.js"></script>
+<script src="app.js?v=20260412a"></script>
 </body>
 </html>

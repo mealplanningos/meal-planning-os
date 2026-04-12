@@ -1,5 +1,7 @@
 //   DATA
 // ╚═══════════════════════════════════════╝
+const MPOS_VERSION = '2026-04-12a';
+console.info('[MPOS] version:', MPOS_VERSION);
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
   mealPlan:'mpos_plan_v2', staples:'mpos_staples_v2',
@@ -3666,7 +3668,7 @@ function _updateSyncIndicator(state) {
   if (!el) return;
   if (_savingFailsafe) { clearTimeout(_savingFailsafe); _savingFailsafe = null; }
   const colors = { synced: '#4caf50', saving: '#ff9800', error: '#f44336' };
-  const titles = { synced: 'All changes saved', saving: 'Saving…', error: 'Sync issue — retrying' };
+  const titles = { synced: 'All changes saved (v' + MPOS_VERSION + ')', saving: 'Saving… (v' + MPOS_VERSION + ')', error: 'Sync issue — retrying (v' + MPOS_VERSION + ')' };
 
   // Guard: only show green if latest user save has actually been confirmed pushed
   if (state === 'synced' && _lastSaveTs && _lastConfirmedSyncTs) {
@@ -3727,18 +3729,21 @@ async function syncToSupabase() {
       const _fcCloudTs = new Date(_freshCheck.updated_at).getTime();
       const _fcKnownTs = new Date(_cloudUpdatedAt).getTime();
       if (_fcCloudTs > _fcKnownTs) {
-        // Cloud was updated by another device since we last loaded — pull first
-        console.info('[sync] push: ABORTED — cloud is newer (cloud=' + _freshCheck.updated_at + ', lastKnown=' + _cloudUpdatedAt + '). Pulling first.');
-        _syncInFlight = false;
+        // Cloud was updated by another device since we last loaded — pull + merge first, then push immediately.
+        // IMPORTANT: We do NOT return or schedule a delayed retry here. Instead we merge the cloud
+        // data and fall through to the push below. This prevents a race where another device pushes
+        // during the retry delay, causing this device to never successfully push.
+        console.info('[sync] push: cloud is newer (cloud=' + _freshCheck.updated_at + ', lastKnown=' + _cloudUpdatedAt + '). Merging first, then pushing.');
         const _freshCloud = await loadFromSupabase(_currentUser.id);
         if (_freshCloud) { applyCloudData(_freshCloud); renderAll(); }
-        // After applying cloud, check if local dirty flag is still set (user made changes ON TOP of cloud data)
-        const _stillDirty = localStorage.getItem('mpos_local_dirty_at');
-        if (_stillDirty) {
-          console.info('[sync] push: re-scheduling after cloud pull — local still dirty');
-          scheduleSyncToSupabase();
-        }
-        return;
+        // After merge, _cloudUpdatedAt is now current. Clear any dirty flag set by the merge
+        // so we don't double-push — we're about to push right now.
+        try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
+        // Clear any pending debounce timer that applyCloudData's _mergeHadLocalOnly may have set
+        clearTimeout(_saveTimer);
+        _saveTimer = null;
+        console.info('[sync] push: merge complete — proceeding with push');
+        // Fall through to build payload and push below
       }
     }
   } catch(e) {
