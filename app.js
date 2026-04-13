@@ -159,7 +159,7 @@ function qsWelcomeGo(){
   // Step 1: show obligations modal (pre-filled)
   _renderPlanModal2();
   const ov = document.getElementById('planModal2');
-  if(ov) ov.classList.add('open');
+  if(ov){ ov.classList.add('open'); _scrollModalBodyTop('planModal2Body'); }
 }
 
 function quickStartNextToMeals(){
@@ -170,7 +170,21 @@ function quickStartNextToMeals(){
   _isQuickStart = wasQS;
   _renderPlanModal1();
   const ov = document.getElementById('planModal1');
-  if(ov) ov.classList.add('open');
+  if(ov){ ov.classList.add('open'); _scrollModalBodyTop('planModal1Body'); }
+}
+
+// Ensure each onboarding modal opens scrolled to the top (fixes
+// the second modal inheriting scroll position from the first).
+function _scrollModalBodyTop(bodyId){
+  try {
+    const el = document.getElementById(bodyId);
+    if(el){ el.scrollTop = 0; }
+    // Also reset parent modal if it is the scrolling element
+    const parent = el && el.closest ? el.closest('.modal') : null;
+    if(parent){ parent.scrollTop = 0; }
+    const overlay = el && el.closest ? el.closest('.modal-overlay') : null;
+    if(overlay){ overlay.scrollTop = 0; }
+  } catch(e){}
 }
 
 function quickStartNext(){
@@ -947,7 +961,7 @@ function openPlanWeekModal1(){
   });
   _renderPlanModal2();
   const ov = document.getElementById('planModal2');
-  if(ov) ov.classList.add('open');
+  if(ov){ ov.classList.add('open'); _scrollModalBodyTop('planModal2Body'); }
 }
 
 function _renderPlanModal1(){
@@ -1082,7 +1096,7 @@ function planModal2Next(){
 function _openMealGridModal(){
   _renderPlanModal1();
   const ov = document.getElementById('planModal1');
-  if(ov) ov.classList.add('open');
+  if(ov){ ov.classList.add('open'); _scrollModalBodyTop('planModal1Body'); }
 }
 
 function planModal1Back(){
@@ -1090,7 +1104,7 @@ function planModal1Back(){
   closePlanModal1();
   _renderPlanModal2();
   const ov = document.getElementById('planModal2');
-  if(ov) ov.classList.add('open');
+  if(ov){ ov.classList.add('open'); _scrollModalBodyTop('planModal2Body'); }
 }
 
 function planModal1Done(){
@@ -1384,7 +1398,7 @@ function replayQuickStart(){
 
 // ── Reset Logic ─────────────────────────────────────────────────────────
 function startFreshWeek(){
-  if(!confirm('Start a fresh week? This will clear your Schedule, Meal Plan, and Grocery List. Your recipes, freezer meals, and No-Decision Menu will stay.')) return;
+  if(!confirm('Start a fresh week? This clears your Schedule, Meal Plan, and Grocery List regardless of which week label (This Week / Next Week) is currently selected — there is only one underlying plan. Your recipes, freezer meals, and No-Decision Menu will stay.')) return;
   weekNotes={};
   mealPlan={};
   checks={};
@@ -1851,16 +1865,36 @@ function renderWeek(){
 //   Pure view over existing in-memory state.
 //   No Supabase reads, no Netlify function calls.
 // ╚═══════════════════════════════════════╝
+// ── Week context (LABEL ONLY — does NOT fork storage) ────────────────
+// Single underlying mealPlan remains the source of truth. This flag just
+// controls what dates we LABEL the plan with in the UI.
+// Default: if Sat/Sun AND user has not explicitly chosen this session,
+// show "Next Week". Otherwise honor saved preference, else "Current".
+function _getWeekContext(){
+  const saved = localStorage.getItem('mpos_week_context'); // 'current'|'next'|null
+  if(saved==='current'||saved==='next') return saved;
+  const dow = new Date().getDay(); // 0=Sun, 6=Sat
+  if(dow===0||dow===6) return 'next';
+  return 'current';
+}
+function setWeekContext(ctx){
+  if(ctx!=='current'&&ctx!=='next') return;
+  try { localStorage.setItem('mpos_week_context', ctx); } catch(e){}
+  if(document.getElementById('dashboard')) renderDashboard();
+}
+
 function renderDashboard(){
   const body=document.getElementById('dashBody');
   const dateRangeEl=document.getElementById('dashDateRange');
   if(!body) return;
 
-  // Compute Monday of this week and Mon-Sun date labels
+  // Compute Monday of the active week-context (current or next) and Mon-Sun labels
+  const _wctx = _getWeekContext();
   const now=new Date();
   const dow=now.getDay(); // 0=Sun..6=Sat
   const mon=new Date(now); mon.setDate(now.getDate()-(dow===0?6:dow-1));
   mon.setHours(0,0,0,0);
+  if(_wctx==='next'){ mon.setDate(mon.getDate()+7); }
   const dayDates={};
   DAYS.forEach((d,i)=>{
     const dt=new Date(mon); dt.setDate(mon.getDate()+i);
@@ -1868,11 +1902,28 @@ function renderDashboard(){
   });
   if(dateRangeEl){
     const fmt={month:'short',day:'numeric'};
-    dateRangeEl.textContent=`${mon.toLocaleDateString('en-US',fmt)} – ${dayDates.sunday.toLocaleDateString('en-US',fmt)}`;
+    const range = `${mon.toLocaleDateString('en-US',fmt)} – ${dayDates.sunday.toLocaleDateString('en-US',fmt)}`;
+    const toggle = `
+      <div class="week-ctx-toggle" role="tablist" aria-label="Planning week">
+        <button type="button" class="week-ctx-btn${_wctx==='current'?' active':''}" onclick="setWeekContext('current')" aria-pressed="${_wctx==='current'}">This Week</button>
+        <button type="button" class="week-ctx-btn${_wctx==='next'?' active':''}" onclick="setWeekContext('next')" aria-pressed="${_wctx==='next'}">Next Week</button>
+      </div>`;
+    dateRangeEl.innerHTML = `<span class="week-ctx-range">${range}</span> ${toggle}`;
+  }
+  // Update dash title to reflect which week
+  const _dashTitleEl = document.querySelector('#dashboard .dash-title');
+  if(_dashTitleEl){
+    const _base = _wctx==='next' ? "Next Week's Plan" : "This Week's Plan";
+    const _tipSpan = _dashTitleEl.querySelector('#infoTip-dashboard');
+    _dashTitleEl.childNodes[0] && (_dashTitleEl.childNodes[0].nodeValue = _base+' ');
+    if(!_dashTitleEl.childNodes[0] || _dashTitleEl.childNodes[0].nodeType!==3){
+      _dashTitleEl.insertBefore(document.createTextNode(_base+' '), _dashTitleEl.firstChild);
+    }
   }
 
-  // "Today" highlights the current day (Mon..Sun)
-  const todayIdx = dow===0 ? 6 : dow-1;
+  // "Today" highlights the current day (Mon..Sun). Only applies when
+  // viewing the current week — for "Next Week" no day is highlighted.
+  const todayIdx = (_wctx==='next') ? -1 : (dow===0 ? 6 : dow-1);
 
   // Count how many cook slots are planned this week
   let cookCount=0, hasAny=false;
@@ -2242,12 +2293,17 @@ function _slotEditorCommitStaged(){
     if(!f) return;
     setSlotCook(day,meal);
     mealPlan[day][meal] = {state:'cook', name:f.name, servings:srv, mealType:'freezer', freezerItem:true, freezerId:f.id, recipeId:null, note:prevNote};
+    var _justUsedFreezer = {id:f.id, name:f.name};
   }
   save(K.mealPlan, mealPlan);
   _slotEditStaged = null;
   closeSlotEditor();
   renderDashboard();
   renderOnboardingUI();
+  // Lightweight inventory prompt — only when a freezer meal was just logged.
+  if(typeof _justUsedFreezer !== 'undefined' && _justUsedFreezer){
+    _promptRemoveFreezerUsed(_justUsedFreezer.id, _justUsedFreezer.name);
+  }
 }
 function _slotEditorSkip(){
   if(!_slotEditCtx) return;
@@ -3430,14 +3486,63 @@ function _kickSyncNow(){
 // ╔═══════════════════════════════════════╗
 //   FREEZER
 // ╚═══════════════════════════════════════╝
-function openFreezerModal(){
-  const today=new Date(), exp=new Date(today);
-  exp.setMonth(exp.getMonth()+3);
-  document.getElementById('fz_name').value='';
-  document.getElementById('fz_made').value=toDateInput(today);
-  document.getElementById('fz_exp').value=toDateInput(exp);
-  document.getElementById('fz_servings').value=2;
-  document.getElementById('fz_notes').value='';
+// Default shelf life in days for freezer items (overridable by user).
+const FREEZER_DEFAULT_SHELF_DAYS = 90;
+
+function _addDaysToInput(dateStr, days){
+  // dateStr is YYYY-MM-DD from an <input type="date">.
+  if(!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  if(isNaN(d.getTime())) return '';
+  d.setDate(d.getDate() + days);
+  // Format back to YYYY-MM-DD in local time (avoid ISO/UTC drift).
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function openFreezerModal(existingId){
+  // Defaults for brand-new items: today + FREEZER_DEFAULT_SHELF_DAYS
+  const today=new Date();
+  const madeDefault = toDateInput(today);
+  const expDefault  = _addDaysToInput(madeDefault, FREEZER_DEFAULT_SHELF_DAYS);
+  let name='', made=madeDefault, expStr=expDefault, servings=2, notes='';
+  // If editing an existing item, use its actual saved dates (do not overwrite)
+  if(existingId){
+    const f = freezer.find(x=>x.id===existingId);
+    if(f){
+      name     = f.name || '';
+      made     = f.dateMade || made;
+      expStr   = f.expDate || ''; // preserve empty — handled in render
+      servings = f.servings || 2;
+      notes    = f.notes || '';
+    }
+  }
+  const nameEl = document.getElementById('fz_name');
+  const madeEl = document.getElementById('fz_made');
+  const expEl  = document.getElementById('fz_exp');
+  const srvEl  = document.getElementById('fz_servings');
+  const notesEl= document.getElementById('fz_notes');
+  if(nameEl)  nameEl.value=name;
+  if(madeEl)  madeEl.value=made;
+  if(expEl)   expEl.value=expStr;
+  if(srvEl)   srvEl.value=servings;
+  if(notesEl) notesEl.value=notes;
+
+  // Live-link: when user changes Date Made, shift Expiration by the same
+  // default shelf life — unless they've manually edited Expiration, in which
+  // case leave their explicit value alone. One-time binding per modal open.
+  if(madeEl && expEl && !madeEl._mposExpBound){
+    madeEl._mposExpBound = true;
+    expEl.addEventListener('input', ()=>{ expEl._mposUserEdited = true; });
+    madeEl.addEventListener('change', ()=>{
+      if(expEl._mposUserEdited) return;
+      const shifted = _addDaysToInput(madeEl.value, FREEZER_DEFAULT_SHELF_DAYS);
+      if(shifted) expEl.value = shifted;
+    });
+  }
+  if(expEl) expEl._mposUserEdited = false;
   document.getElementById('freezerModal').classList.add('open');
   // Blur any focused element first (prevents mobile from focusing a date input),
   // then explicitly focus the text field after modal animation settles.
@@ -3447,7 +3552,11 @@ function openFreezerModal(){
 function saveFreezerItem(){
   const name=document.getElementById('fz_name').value.trim();
   if(!name){document.getElementById('fz_name').focus();return;}
-  freezer.push({id:uid(),name,dateMade:document.getElementById('fz_made').value,expDate:document.getElementById('fz_exp').value,servings:parseInt(document.getElementById('fz_servings').value)||2,notes:document.getElementById('fz_notes').value.trim(),updated_at:new Date().toISOString()});
+  const _made = document.getElementById('fz_made').value || toDateInput(new Date());
+  // Defensive: if the user somehow wiped the exp field, derive from dateMade
+  let _exp = document.getElementById('fz_exp').value;
+  if(!_exp) _exp = _addDaysToInput(_made, FREEZER_DEFAULT_SHELF_DAYS);
+  freezer.push({id:uid(),name,dateMade:_made,expDate:_exp,servings:parseInt(document.getElementById('fz_servings').value)||2,notes:document.getElementById('fz_notes').value.trim(),updated_at:new Date().toISOString()});
   freezer.sort((a,b)=>new Date(a.dateMade)-new Date(b.dateMade));
   save(K.freezer,freezer);
   closeModal('freezerModal'); renderFreezer();
@@ -3466,11 +3575,22 @@ function renderFreezer(){
   list.innerHTML='';
   const today=new Date();
   _fz.forEach((f,i)=>{
-    const exp=new Date(f.expDate+'T00:00:00');
-    const days=Math.round((exp-today)/(86400000));
-    let cls='exp-ok',txt=`Expires in ${days} days`;
-    if(days<0){cls='exp-danger';txt=`Expired ${Math.abs(days)} days ago`;}
-    else if(days<30){cls='exp-warn';txt=`Expires soon — ${days} days`;}
+    let cls='exp-ok', txt='';
+    if(!f.expDate){
+      cls='exp-ok';
+      txt='No expiration set';
+    } else {
+      const exp=new Date(f.expDate+'T00:00:00');
+      if(isNaN(exp.getTime())){
+        cls='exp-ok';
+        txt='No expiration set';
+      } else {
+        const days=Math.round((exp-today)/(86400000));
+        txt=`Expires in ${days} day${days===1?'':'s'}`;
+        if(days<0){cls='exp-danger';txt=`Expired ${Math.abs(days)} day${Math.abs(days)===1?'':'s'} ago`;}
+        else if(days<30){cls='exp-warn';txt=`Expires soon — ${days} day${days===1?'':'s'}`;}
+      }
+    }
     const card=document.createElement('div');
     card.className='freezer-card'+(i===0?' use-first':'');
     card.innerHTML=`
@@ -3499,7 +3619,27 @@ function confirmFzPlan(){
   mealPlan[day][meal]={state:'cook',name:f.name,servings:f.servings,mealType:'freezer',freezerItem:true,freezerId:f.id,recipeId:null,note:''};
   save(K.mealPlan,mealPlan);
   closeModal('fzPlanModal');
+  // Lightweight inventory prompt — user just logged a freezer meal.
+  _promptRemoveFreezerUsed(f.id, f.name);
   switchTab('dashboard');
+}
+
+// Lightweight reminder — no auto-delete. User plans to use a freezer meal;
+// we simply remind them to remove it from inventory AFTER they actually eat it.
+// Shown once per inventory item per session to avoid nagging.
+const _freezerReminderShown = new Set();
+function _promptRemoveFreezerUsed(freezerId, name){
+  try {
+    if(!freezerId) return;
+    // Don't nag if the item is already gone (e.g., previously removed)
+    const stillThere = _visible(freezer).some(x=>x.id===freezerId);
+    if(!stillThere) return;
+    if(_freezerReminderShown.has(freezerId)) return;
+    _freezerReminderShown.add(freezerId);
+    const label = name ? ` ("${name}")` : '';
+    // Plain alert — acknowledge only, no destructive action.
+    alert(`Heads up: once you actually eat this freezer meal${label}, remember to remove it from your freezer inventory so your list stays accurate.`);
+  } catch(e) { /* non-critical */ }
 }
 function removeFreezerItem(id){
   if(!confirm('Remove this meal from your freezer?')) return;
@@ -3840,16 +3980,36 @@ async function handleAuth() {
 // ── Sign out ─────────────────────────────────────────────────
 async function signOut() {
   _stopPeriodicSync();
-  try { await _sb.auth.signOut(); } catch(e) { /* proceed even if this fails */ }
-  // Clear cached data so next login starts fresh from cloud
-  Object.values(K).forEach(k => localStorage.removeItem(k));
-  localStorage.removeItem('mpos_weekstart');
-  localStorage.removeItem('mpos_active_tab');
+  // Race Supabase sign-out against a 1.5s timeout so a hung network call
+  // can never leave the user stuck on a "Signing out…" state. We still
+  // clear local state either way.
+  try {
+    await Promise.race([
+      _sb.auth.signOut(),
+      new Promise(res => setTimeout(res, 1500))
+    ]);
+  } catch(e) { /* proceed even if this fails */ }
+  // Clear cached app data so next login starts fresh from cloud
+  try { Object.values(K).forEach(k => localStorage.removeItem(k)); } catch(e){}
+  try {
+    localStorage.removeItem('mpos_weekstart');
+    localStorage.removeItem('mpos_active_tab');
+    localStorage.removeItem('mpos_local_dirty_at');
+    localStorage.removeItem('mpos_week_context');
+    // Belt-and-suspenders: nuke any lingering Supabase auth tokens
+    // (iOS/PWA sometimes keeps the auth cookie/token around after signOut)
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('sb-') || k.indexOf('supabase') !== -1)) {
+        localStorage.removeItem(k);
+      }
+    }
+    sessionStorage.clear();
+  } catch(e){}
   _currentUser = null;
   _cloudLoadedOk = false;
   _syncDeferred = false;
   _syncRetries = 0;
-  localStorage.removeItem('mpos_local_dirty_at');
   // Force full navigation — more reliable than reload() in iOS standalone/PWA mode
   window.location.href = window.location.origin + window.location.pathname;
 }

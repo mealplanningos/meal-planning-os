@@ -1669,7 +1669,37 @@ label { font-size: 11px; font-weight: 700; color: var(--text-2); display: block;
   color: var(--text-2);
   margin-top: 4px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
+.week-ctx-range { white-space: nowrap; }
+.week-ctx-toggle {
+  display: inline-flex;
+  background: var(--bg-2, #f1f3f8);
+  border: 1px solid var(--border, #e4e8ef);
+  border-radius: 999px;
+  padding: 2px;
+}
+.week-ctx-btn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+  background: transparent;
+  border: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.week-ctx-btn.active {
+  background: var(--accent, #1E5EFF);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+.week-ctx-btn:not(.active):hover { color: var(--text-1); }
 .dash-grocery-btn {
   white-space: nowrap;
   flex-shrink: 0;
