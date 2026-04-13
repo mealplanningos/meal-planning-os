@@ -1,6 +1,6 @@
 //   DATA
 // ╚═══════════════════════════════════════╝
-const MPOS_VERSION = '2026-04-13e';
+const MPOS_VERSION = '2026-04-13f';
 console.info('[MPOS] version:', MPOS_VERSION);
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
@@ -3640,21 +3640,31 @@ function startCheckout() {
 
 // ── Cloud load / save ─────────────────────────────────────────
 async function loadFromSupabase(userId) {
-  let data, error;
+  // Direct fetch() — bypasses Supabase client's dead connection pool after iOS app-switch
+  let _tok = _accessToken;
+  if (!_tok) { try { const { data: { session: s } } = await _sb.auth.getSession(); _tok = s?.access_token; } catch(e) {} }
+  if (!_tok) _tok = SUPABASE_KEY; // fallback — RLS will use anon role
   try {
-    ({ data, error } = await _withTimeout(
-      _sb.from('user_data').select('*').eq('user_id', userId).maybeSingle(),
-      12000, 'loadFromSupabase'
-    ));
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 10000);
+    const url = SUPABASE_URL + '/rest/v1/user_data?select=*&user_id=eq.' + userId;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _tok, 'Accept': 'application/json' },
+      signal: ac.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) { console.error('Cloud load HTTP error:', res.status); return { _loadFailed: true }; }
+    const rows = await res.json();
+    const data = Array.isArray(rows) ? rows[0] || null : rows;
+    _cloudLoadedOk = true;
+    if (data && data.updated_at) _cloudUpdatedAt = data.updated_at;
+    _flushDeferredSync();
+    return data;
   } catch(e) {
-    console.error('Cloud load timeout:', e?.message);
+    console.error('Cloud load failed:', e?.message);
     return { _loadFailed: true };
   }
-  if (error) { console.error('Cloud load failed:', error.message); return { _loadFailed: true }; }
-  _cloudLoadedOk = true;
-  if (data && data.updated_at) _cloudUpdatedAt = data.updated_at;
-  _flushDeferredSync();
-  return data || null;
 }
 
 function scheduleSyncToSupabase() {
