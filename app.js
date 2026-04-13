@@ -1,6 +1,6 @@
 //   DATA
 // ╚═══════════════════════════════════════╝
-const MPOS_VERSION = '2026-04-13a';
+const MPOS_VERSION = '2026-04-13b';
 console.info('[MPOS] version:', MPOS_VERSION);
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
@@ -3729,107 +3729,99 @@ let _syncRetries = 0;
 let _syncInFlight = false;
 async function syncToSupabase() {
   if (!_currentUser) return;
-  // DATA GUARD: never write to cloud unless we successfully loaded first
   if (!_cloudLoadedOk) { console.warn('[sync] push: blocked — cloud data not loaded yet'); return; }
-  // DATA GUARD: never push until applyCloudData() has merged cloud into memory.
-  // Without this, a boot-time race can push stale localStorage before the merge runs,
-  // overwriting other devices' data with empty arrays.
   if (!_cloudApplied) { console.warn('[sync] push: blocked — cloud data not yet applied/merged'); return; }
-  // Clear the debounce timer reference — the timer already fired (that's how we got here).
-  // Without this, _pullFromCloud's `if (_saveTimer)` guard stays truthy forever,
-  // permanently blocking the 30-second periodic pull from detecting cross-device changes.
   _saveTimer = null;
   _syncInFlight = true;
   console.info('[sync] push: starting sync attempt');
 
-  // ── Freshness check: don't overwrite newer cloud data ──
-  // Before pushing, check if the cloud has data newer than what we last loaded.
-  // This prevents a stale device from overwriting another device's changes.
-  try {
-    const { data: _freshCheck } = await _sb.from('user_data')
-      .select('updated_at').eq('user_id', _currentUser.id).maybeSingle();
-    if (_freshCheck && _freshCheck.updated_at && _cloudUpdatedAt) {
-      const _fcCloudTs = new Date(_freshCheck.updated_at).getTime();
-      const _fcKnownTs = new Date(_cloudUpdatedAt).getTime();
-      if (_fcCloudTs > _fcKnownTs) {
-        // Cloud was updated by another device since we last loaded — pull + merge first, then push immediately.
-        // IMPORTANT: We do NOT return or schedule a delayed retry here. Instead we merge the cloud
-        // data and fall through to the push below. This prevents a race where another device pushes
-        // during the retry delay, causing this device to never successfully push.
-        console.info('[sync] push: cloud is newer (cloud=' + _freshCheck.updated_at + ', lastKnown=' + _cloudUpdatedAt + '). Merging first, then pushing.');
-        const _freshCloud = await loadFromSupabase(_currentUser.id);
-        if (_freshCloud) { applyCloudData(_freshCloud); renderAll(); }
-        // After merge, _cloudUpdatedAt is now current. Clear any dirty flag set by the merge
-        // so we don't double-push — we're about to push right now.
-        try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
-        // Clear any pending debounce timer that applyCloudData's _mergeHadLocalOnly may have set
-        clearTimeout(_saveTimer);
-        _saveTimer = null;
-        console.info('[sync] push: merge complete — proceeding with push');
-        // Fall through to build payload and push below
-      }
-    }
-  } catch(e) {
-    console.warn('[sync] push: freshness check failed —', e?.message, '— proceeding with push');
-  }
+  // ── 15-second timeout: abort if any await hangs (common on iOS when backgrounded) ──
+  const _syncAbort = new AbortController();
+  const _syncTimeout = setTimeout(() => {
+    console.warn('[sync] push: TIMEOUT after 15s — aborting');
+    _syncAbort.abort();
+  }, 15000);
 
-  const payload = buildSyncPayload();
-  console.info('[sync] push: payload built — recipes:', payload.recipes?.length, ', updated_at:', payload.updated_at);
-  try {
+  try { // TOP-LEVEL try/finally — guarantees _syncInFlight is always reset
+    // ── Freshness check ──
+    try {
+      const { data: _freshCheck } = await _sb.from('user_data')
+        .select('updated_at').eq('user_id', _currentUser.id).maybeSingle();
+      if (_freshCheck && _freshCheck.updated_at && _cloudUpdatedAt) {
+        const _fcCloudTs = new Date(_freshCheck.updated_at).getTime();
+        const _fcKnownTs = new Date(_cloudUpdatedAt).getTime();
+        if (_fcCloudTs > _fcKnownTs) {
+          console.info('[sync] push: cloud is newer (cloud=' + _freshCheck.updated_at + ', lastKnown=' + _cloudUpdatedAt + '). Merging first, then pushing.');
+          const _freshCloud = await loadFromSupabase(_currentUser.id);
+          if (_freshCloud) { applyCloudData(_freshCloud); try { renderAll(); } catch(re) { console.warn('[sync] renderAll error during merge:', re?.message); } }
+          try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
+          clearTimeout(_saveTimer);
+          _saveTimer = null;
+          console.info('[sync] push: merge complete — proceeding with push');
+        }
+      }
+    } catch(e) {
+      console.warn('[sync] push: freshness check failed —', e?.message, '— proceeding with push');
+    }
+
+    // ── Build and push ──
+    const payload = buildSyncPayload();
+    console.info('[sync] push: payload built — recipes:', payload.recipes?.length, ', categoryItems:', payload.groceries?.categoryItems?.length, ', updated_at:', payload.updated_at);
     const { error: syncErr, status: syncStatus } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
     console.info('[sync] push: upsert response — status:', syncStatus, ', error:', syncErr ? syncErr.message : 'none');
     if (syncErr) {
       console.error('[sync] push: upsert FAILED —', syncErr.message, ', code:', syncErr.code, ', details:', syncErr.details);
 
-      // ── Fallback: if upsert fails with a constraint/conflict error, try .update() ──
       const _errMsg = (syncErr.message || '').toLowerCase();
       const _errCode = syncErr.code || '';
       const _isConstraint = _errMsg.includes('duplicate') || _errMsg.includes('conflict') ||
                             _errMsg.includes('unique') || _errMsg.includes('constraint') ||
-                            _errCode === '23505'; // PostgreSQL unique_violation
+                            _errCode === '23505';
       if (_isConstraint) {
-        console.info('[sync] push: constraint error detected — attempting fallback .update()');
-        // Remove user_id from the update payload (can't update the key we're matching on)
+        console.info('[sync] push: constraint error — attempting fallback .update()');
         const { user_id: _uid, ...updatePayload } = payload;
         const { error: updateErr, status: updateStatus } = await _sb.from('user_data')
           .update(updatePayload).eq('user_id', _currentUser.id);
-        console.info('[sync] push: fallback update response — status:', updateStatus, ', error:', updateErr ? updateErr.message : 'none');
+        console.info('[sync] push: fallback update — status:', updateStatus, ', error:', updateErr ? updateErr.message : 'none');
         if (!updateErr) {
           _syncRetries = 0;
           _cloudUpdatedAt = payload.updated_at;
           _lastConfirmedSyncTs = payload.updated_at;
           try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
-          console.info('[sync] push: SUCCESS via fallback update — cloud updated_at', payload.updated_at);
-          console.info('[sync] dirty: cleared (sync confirmed)');
+          console.info('[sync] push: SUCCESS via fallback update');
           _updateSyncIndicator('synced');
           return;
         }
-        console.error('[sync] push: fallback update also FAILED —', updateErr.message, ', code:', updateErr.code);
+        console.error('[sync] push: fallback update also FAILED —', updateErr.message);
       }
 
-      // Both upsert and fallback failed (or error was not constraint-related) — retry with backoff
       _updateSyncIndicator('error');
       if (_syncRetries < 3) {
         _syncRetries++;
         clearTimeout(_saveTimer);
-        console.info('[sync] push: scheduling retry', _syncRetries, '/3 in', (2000 * _syncRetries) + 'ms');
         _saveTimer = setTimeout(syncToSupabase, 2000 * _syncRetries);
       }
     } else {
       _syncRetries = 0;
-      // Only update the cloud timestamp AFTER a confirmed successful upsert.
-      // This ensures _pullFromCloud won't skip a pull if the previous sync failed.
       _cloudUpdatedAt = payload.updated_at;
       _lastConfirmedSyncTs = payload.updated_at;
       try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
       console.info('[sync] push: SUCCESS via upsert — cloud updated_at', payload.updated_at);
-      console.info('[sync] dirty: cleared (sync confirmed)');
       _updateSyncIndicator('synced');
     }
   } catch(e) {
     console.error('[sync] push: EXCEPTION —', e?.message || e);
     _updateSyncIndicator('error');
+    // If push failed but we have local changes, schedule a retry
+    const _stillDirty = localStorage.getItem('mpos_local_dirty_at');
+    if (_stillDirty && _syncRetries < 3) {
+      _syncRetries++;
+      clearTimeout(_saveTimer);
+      _saveTimer = setTimeout(syncToSupabase, 2000 * _syncRetries);
+      console.info('[sync] push: scheduling retry', _syncRetries, '/3 after error');
+    }
   } finally {
+    clearTimeout(_syncTimeout);
     _syncInFlight = false;
   }
 }
