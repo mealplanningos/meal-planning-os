@@ -1,6 +1,6 @@
 //   DATA
 // ╚═══════════════════════════════════════╝
-const MPOS_VERSION = '2026-04-13c';
+const MPOS_VERSION = '2026-04-13d';
 console.info('[MPOS] version:', MPOS_VERSION);
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
@@ -3640,13 +3640,19 @@ function startCheckout() {
 
 // ── Cloud load / save ─────────────────────────────────────────
 async function loadFromSupabase(userId) {
-  const { data, error } = await _sb
-    .from('user_data').select('*').eq('user_id', userId).maybeSingle();
+  let data, error;
+  try {
+    ({ data, error } = await _withTimeout(
+      _sb.from('user_data').select('*').eq('user_id', userId).maybeSingle(),
+      12000, 'loadFromSupabase'
+    ));
+  } catch(e) {
+    console.error('Cloud load timeout:', e?.message);
+    return { _loadFailed: true };
+  }
   if (error) { console.error('Cloud load failed:', error.message); return { _loadFailed: true }; }
-  // Successful query (even if no row exists) — safe to allow writes
   _cloudLoadedOk = true;
   if (data && data.updated_at) _cloudUpdatedAt = data.updated_at;
-  // Flush any saves that were queued while cloud was unavailable
   _flushDeferredSync();
   return data || null;
 }
@@ -3700,14 +3706,26 @@ function _updateSyncIndicator(state) {
 
 // ── Sync debug panel (tap the sync dot to see) ──────────────
 function showSyncDebug() {
+  const stuckFor = (_syncInFlight && _syncInFlightSince) ? Math.round((Date.now() - _syncInFlightSince)/1000) + 's' : 'n/a';
   const info = [
     'v' + MPOS_VERSION,
     'cloudLoadedOk: ' + _cloudLoadedOk,
     'cloudApplied: ' + _cloudApplied,
     'cloudUpdatedAt: ' + (_cloudUpdatedAt || 'null'),
-    'syncInFlight: ' + _syncInFlight,
+    'syncInFlight: ' + _syncInFlight + (stuckFor !== 'n/a' ? ' (for ' + stuckFor + ')' : ''),
     'saveTimer: ' + (_saveTimer ? 'active' : 'null'),
     'dirty: ' + (localStorage.getItem('mpos_local_dirty_at') || 'clean'),
+    '── PUSH ──',
+    'lastSyncStep: ' + _dbg.lastSyncStep,
+    'lastSyncError: ' + _dbg.lastSyncError,
+    'syncStarted: ' + (_dbg.lastSyncStartedAt || 'never'),
+    'syncFinished: ' + (_dbg.lastSyncFinishedAt || 'never'),
+    '── PULL ──',
+    'lastPullStep: ' + _dbg.lastPullStep,
+    'lastPullError: ' + _dbg.lastPullError,
+    '── RESUME ──',
+    'lastVisibilityStep: ' + _dbg.lastVisibilityStep,
+    '── DATA ──',
     'recipes: ' + recipes.length,
     'categoryItems: ' + categoryItems.length + ' → ' + categoryItems.map(i => i.name).join(', '),
     'staples: ' + staples.length,
@@ -3727,35 +3745,74 @@ function _flushDeferredSync() {
 
 let _syncRetries = 0;
 let _syncInFlight = false;
+let _syncInFlightSince = null; // WATCHDOG: timestamp when _syncInFlight was set true
+
+// ── Debug instrumentation (visible in showSyncDebug popup) ──
+let _dbg = {
+  lastSyncStep: 'idle',
+  lastSyncError: 'none',
+  lastSyncStartedAt: null,
+  lastSyncFinishedAt: null,
+  lastPullStep: 'idle',
+  lastPullError: 'none',
+  lastVisibilityStep: 'idle',
+};
+
+// ── Global timeout helper: race a promise against a real rejection ──
+function _withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT after ' + ms + 'ms: ' + label)), ms))
+  ]);
+}
+
+// ── WATCHDOG: if _syncInFlight has been true for >15s, force-reset ──
+setInterval(function _syncWatchdog() {
+  if (_syncInFlight && _syncInFlightSince) {
+    const stuck = Date.now() - _syncInFlightSince;
+    if (stuck > 15000) {
+      console.error('[sync] WATCHDOG: _syncInFlight stuck for ' + Math.round(stuck/1000) + 's — force-resetting');
+      _syncInFlight = false;
+      _syncInFlightSince = null;
+      _dbg.lastSyncError = 'watchdog reset after ' + Math.round(stuck/1000) + 's at step: ' + _dbg.lastSyncStep;
+      _dbg.lastSyncStep = 'watchdog-reset';
+      _dbg.lastSyncFinishedAt = new Date().toISOString();
+      _updateSyncIndicator('error');
+    }
+  }
+}, 5000);
+
 async function syncToSupabase() {
   if (!_currentUser) return;
-  if (!_cloudLoadedOk) { console.warn('[sync] push: blocked — cloud data not loaded yet'); return; }
-  if (!_cloudApplied) { console.warn('[sync] push: blocked — cloud data not yet applied/merged'); return; }
+  if (!_cloudLoadedOk) { _dbg.lastSyncStep = 'blocked-no-cloud'; console.warn('[sync] push: blocked — cloud data not loaded yet'); return; }
+  if (!_cloudApplied) { _dbg.lastSyncStep = 'blocked-no-apply'; console.warn('[sync] push: blocked — cloud data not yet applied/merged'); return; }
+  // ── Concurrency guard: skip if already in flight ──
+  if (_syncInFlight) { _dbg.lastSyncStep = 'skipped-already-in-flight'; console.warn('[sync] push: skipped — already in flight'); return; }
   _saveTimer = null;
   _syncInFlight = true;
+  _syncInFlightSince = Date.now();
+  _dbg.lastSyncStep = 'started';
+  _dbg.lastSyncError = 'none';
+  _dbg.lastSyncStartedAt = new Date().toISOString();
   console.info('[sync] push: starting sync attempt');
-
-  // ── Helper: race a promise against a real timeout that rejects ──
-  function _withTimeout(promise, ms, label) {
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT after ' + ms + 'ms: ' + label)), ms))
-    ]);
-  }
 
   try { // TOP-LEVEL try/finally — guarantees _syncInFlight is always reset
     // ── Freshness check ──
+    _dbg.lastSyncStep = 'freshness-check-start';
     try {
       const { data: _freshCheck } = await _withTimeout(
         _sb.from('user_data').select('updated_at').eq('user_id', _currentUser.id).maybeSingle(),
         12000, 'freshness check'
       );
+      _dbg.lastSyncStep = 'freshness-check-done';
       if (_freshCheck && _freshCheck.updated_at && _cloudUpdatedAt) {
         const _fcCloudTs = new Date(_freshCheck.updated_at).getTime();
         const _fcKnownTs = new Date(_cloudUpdatedAt).getTime();
         if (_fcCloudTs > _fcKnownTs) {
+          _dbg.lastSyncStep = 'merge-load-start';
           console.info('[sync] push: cloud is newer (cloud=' + _freshCheck.updated_at + ', lastKnown=' + _cloudUpdatedAt + '). Merging first, then pushing.');
           const _freshCloud = await _withTimeout(loadFromSupabase(_currentUser.id), 12000, 'merge load');
+          _dbg.lastSyncStep = 'merge-load-done';
           if (_freshCloud) { applyCloudData(_freshCloud); try { renderAll(); } catch(re) { console.warn('[sync] renderAll error during merge:', re?.message); } }
           try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
           clearTimeout(_saveTimer);
@@ -3764,18 +3821,24 @@ async function syncToSupabase() {
         }
       }
     } catch(e) {
+      _dbg.lastSyncStep = 'freshness-check-failed';
+      _dbg.lastSyncError = 'freshness: ' + (e?.message || String(e));
       console.warn('[sync] push: freshness check failed —', e?.message, '— proceeding with push');
     }
 
     // ── Build and push ──
+    _dbg.lastSyncStep = 'upsert-start';
     const payload = buildSyncPayload();
     console.info('[sync] push: payload built — recipes:', payload.recipes?.length, ', categoryItems:', payload.groceries?.categoryItems?.length, ', updated_at:', payload.updated_at);
     const { error: syncErr, status: syncStatus } = await _withTimeout(
       _sb.from('user_data').upsert(payload, { onConflict: 'user_id' }),
       12000, 'upsert'
     );
+    _dbg.lastSyncStep = 'upsert-done';
     console.info('[sync] push: upsert response — status:', syncStatus, ', error:', syncErr ? syncErr.message : 'none');
     if (syncErr) {
+      _dbg.lastSyncStep = 'upsert-failed';
+      _dbg.lastSyncError = 'upsert: ' + syncErr.message + ' (code:' + (syncErr.code||'?') + ')';
       console.error('[sync] push: upsert FAILED —', syncErr.message, ', code:', syncErr.code, ', details:', syncErr.details);
 
       const _errMsg = (syncErr.message || '').toLowerCase();
@@ -3784,22 +3847,26 @@ async function syncToSupabase() {
                             _errMsg.includes('unique') || _errMsg.includes('constraint') ||
                             _errCode === '23505';
       if (_isConstraint) {
+        _dbg.lastSyncStep = 'fallback-update-start';
         console.info('[sync] push: constraint error — attempting fallback .update()');
         const { user_id: _uid, ...updatePayload } = payload;
         const { error: updateErr, status: updateStatus } = await _withTimeout(
           _sb.from('user_data').update(updatePayload).eq('user_id', _currentUser.id),
           12000, 'fallback update'
         );
+        _dbg.lastSyncStep = 'fallback-update-done';
         console.info('[sync] push: fallback update — status:', updateStatus, ', error:', updateErr ? updateErr.message : 'none');
         if (!updateErr) {
           _syncRetries = 0;
           _cloudUpdatedAt = payload.updated_at;
           _lastConfirmedSyncTs = payload.updated_at;
           try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
+          _dbg.lastSyncStep = 'success-via-fallback';
           console.info('[sync] push: SUCCESS via fallback update');
           _updateSyncIndicator('synced');
           return;
         }
+        _dbg.lastSyncError = 'fallback: ' + updateErr.message;
         console.error('[sync] push: fallback update also FAILED —', updateErr.message);
       }
 
@@ -3808,28 +3875,34 @@ async function syncToSupabase() {
         _syncRetries++;
         clearTimeout(_saveTimer);
         _saveTimer = setTimeout(syncToSupabase, 2000 * _syncRetries);
+        _dbg.lastSyncStep = 'retry-scheduled-' + _syncRetries;
       }
     } else {
       _syncRetries = 0;
       _cloudUpdatedAt = payload.updated_at;
       _lastConfirmedSyncTs = payload.updated_at;
       try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
+      _dbg.lastSyncStep = 'success';
       console.info('[sync] push: SUCCESS via upsert — cloud updated_at', payload.updated_at);
       _updateSyncIndicator('synced');
     }
   } catch(e) {
+    _dbg.lastSyncStep = 'exception';
+    _dbg.lastSyncError = 'exception: ' + (e?.message || String(e));
     console.error('[sync] push: EXCEPTION —', e?.message || e);
     _updateSyncIndicator('error');
-    // If push failed but we have local changes, schedule a retry
     const _stillDirty = localStorage.getItem('mpos_local_dirty_at');
     if (_stillDirty && _syncRetries < 3) {
       _syncRetries++;
       clearTimeout(_saveTimer);
       _saveTimer = setTimeout(syncToSupabase, 2000 * _syncRetries);
+      _dbg.lastSyncStep = 'retry-after-exception-' + _syncRetries;
       console.info('[sync] push: scheduling retry', _syncRetries, '/3 after error');
     }
   } finally {
     _syncInFlight = false;
+    _syncInFlightSince = null;
+    _dbg.lastSyncFinishedAt = new Date().toISOString();
   }
 }
 
@@ -4163,7 +4236,7 @@ async function dismissWhatsNew() {
   if (modal) modal.classList.remove('open');
   if (!_currentUser) return;
   try {
-    await _sb.from('user_data').update({ last_seen_update_version: CURRENT_UPDATE_VERSION }).eq('user_id', _currentUser.id);
+    await _withTimeout(_sb.from('user_data').update({ last_seen_update_version: CURRENT_UPDATE_VERSION }).eq('user_id', _currentUser.id), 12000, 'dismissWhatsNew');
   } catch(e) { /* best-effort — next login will retry */ }
 }
 
@@ -4261,24 +4334,26 @@ document.addEventListener('visibilitychange', async () => {
       await syncToSupabase();
     }
   } else if (document.visibilityState === 'visible') {
-    // ── Resume reconciliation (PULL-FIRST) ──
-    // A backgrounded device may have stale data. Always check the cloud
-    // BEFORE pushing, so a stale device cannot overwrite fresher data.
+    _dbg.lastVisibilityStep = 'resume-start';
     console.info('[sync] resume: app became visible — reconciling (pull-first)');
-
-    // Reset retry counter so a previously-exhausted sync gets a fresh chance
     _syncRetries = 0;
 
-    // Refresh the Supabase session — mobile PWAs can sit backgrounded long
-    // enough for the JWT to expire, which causes red-circle sync failures.
+    // Refresh session — wrapped with timeout
+    _dbg.lastVisibilityStep = 'session-refresh';
     try {
-      const { data: { session: freshSession } } = await _sb.auth.getSession();
+      const { data: { session: freshSession } } = await _withTimeout(_sb.auth.getSession(), 8000, 'resume getSession');
       if (freshSession) _accessToken = freshSession.access_token || _accessToken;
     } catch(e) { console.warn('[sync] resume: session refresh failed —', e?.message); }
 
-    // ── Step 1: Pull from cloud first ──
-    // Fetch cloud state to see if another device pushed newer data while we were away.
-    const _resumeCloud = await loadFromSupabase(_currentUser.id);
+    // Pull from cloud — wrapped with timeout
+    _dbg.lastVisibilityStep = 'resume-load';
+    let _resumeCloud = null;
+    try {
+      _resumeCloud = await _withTimeout(loadFromSupabase(_currentUser.id), 12000, 'resume load');
+    } catch(e) {
+      _dbg.lastVisibilityStep = 'resume-load-timeout';
+      console.warn('[sync] resume: cloud load failed —', e?.message);
+    }
     const _resumeLocalDirty = localStorage.getItem('mpos_local_dirty_at');
 
     if (_resumeCloud && _resumeCloud.updated_at) {
@@ -4286,25 +4361,22 @@ document.addEventListener('visibilitychange', async () => {
       const _rLocalTs = _resumeLocalDirty ? new Date(_resumeLocalDirty).getTime() : 0;
 
       if (_rCloudTs > _rLocalTs) {
-        // Cloud is newer than anything local — apply it, clear dirty flag
+        _dbg.lastVisibilityStep = 'resume-apply-cloud';
         console.info('[sync] resume: cloud is newer (cloud=' + _resumeCloud.updated_at + ', dirty=' + (_resumeLocalDirty||'none') + ') — applying cloud');
         applyCloudData(_resumeCloud);
         renderAll();
       } else if (_resumeLocalDirty) {
-        // Local is newer — safe to push our data
+        _dbg.lastVisibilityStep = 'resume-push-local';
         console.info('[sync] resume: local is newer (dirty=' + _resumeLocalDirty + ', cloud=' + _resumeCloud.updated_at + ') — pushing local');
         await syncToSupabase();
       }
-      // else: no dirty flag, cloud already applied during pull — nothing to do
     } else if (_resumeLocalDirty && !_syncInFlight) {
-      // Cloud returned nothing (new user or failed fetch) — push local if dirty
+      _dbg.lastVisibilityStep = 'resume-push-no-cloud';
       console.info('[sync] resume: no cloud data, dirty flag exists — pushing local');
       await syncToSupabase();
     }
 
-    // Restart the 30s polling interval — mobile browsers kill setInterval
-    // timers when the app is backgrounded; this ensures cross-device pulls
-    // keep running after the app comes back to the foreground.
+    _dbg.lastVisibilityStep = 'resume-done';
     _startPeriodicSync();
   }
 });
@@ -4312,47 +4384,39 @@ document.addEventListener('visibilitychange', async () => {
 // ── Periodic cloud pull — catches cross-device edits even if tab stays in foreground ──
 let _pullTimer = null;
 async function _pullFromCloud() {
-  if (!_currentUser || _applyingCloud) return;
-  // Don't pull if there's an active debounce timer (imminent save)
-  if (_saveTimer) { console.info('[sync] pull: deferred — active debounce timer'); return; }
-  // Don't pull if a sync request is currently in flight
-  if (_syncInFlight) { console.info('[sync] pull: deferred — sync in flight'); return; }
-  // Helper: race a promise against a timeout that rejects (prevents iOS hang)
-  function _withPullTimeout(promise, ms, label) {
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT after ' + ms + 'ms: ' + label)), ms))
-    ]);
-  }
+  if (!_currentUser || _applyingCloud) { _dbg.lastPullStep = 'skip-no-user-or-applying'; return; }
+  if (_saveTimer) { _dbg.lastPullStep = 'skip-save-timer'; console.info('[sync] pull: deferred — active debounce timer'); return; }
+  if (_syncInFlight) { _dbg.lastPullStep = 'skip-in-flight'; console.info('[sync] pull: deferred — sync in flight'); return; }
+
+  _dbg.lastPullStep = 'started';
+  _dbg.lastPullError = 'none';
 
   const localDirty = localStorage.getItem('mpos_local_dirty_at');
   if (localDirty) {
     const dirtyAge = Date.now() - new Date(localDirty).getTime();
 
-    // Recent dirty flag (<30s) — normal sync should handle it, don't interfere
     if (dirtyAge < 30000) {
+      _dbg.lastPullStep = 'skip-dirty-' + Math.round(dirtyAge/1000) + 's';
       console.info('[sync] pull: deferred — dirty flag is', Math.round(dirtyAge/1000) + 's old (waiting for sync)');
       return;
     }
 
     // ── Stale dirty recovery ──
-    // Dirty flag is >30s old with no active sync — likely an interrupted iOS PWA session.
-    // Try to push local changes, then reconcile with cloud.
+    _dbg.lastPullStep = 'stale-dirty-recovery';
     console.info('[sync] stale dirty recovery: flag is', Math.round(dirtyAge/1000) + 's old — attempting recovery');
-
-    // 1. Try to push local changes (in case they genuinely haven't synced)
     await syncToSupabase();
 
-    // 2. If sync succeeded, dirty flag is now cleared — fall through to normal pull
     const stillDirty = localStorage.getItem('mpos_local_dirty_at');
     if (stillDirty) {
-      // Sync didn't clear it (failed or new change happened). Fetch cloud to compare.
+      _dbg.lastPullStep = 'stale-dirty-fetch-cloud';
       console.info('[sync] stale dirty recovery: push did not clear dirty — fetching cloud to compare');
       const _prevTs = _cloudUpdatedAt;
       let cloud;
       try {
-        cloud = await _withPullTimeout(loadFromSupabase(_currentUser.id), 12000, 'stale recovery load');
+        cloud = await _withTimeout(loadFromSupabase(_currentUser.id), 12000, 'stale recovery load');
       } catch(e) {
+        _dbg.lastPullStep = 'stale-dirty-timeout';
+        _dbg.lastPullError = 'stale recovery: ' + (e?.message || String(e));
         console.warn('[sync] stale dirty recovery: load timed out —', e?.message);
         return;
       }
@@ -4362,47 +4426,50 @@ async function _pullFromCloud() {
         if (cloudTs >= dirtyTs) {
           console.info('[sync] stale dirty recovery: cloud updated_at (' + cloud.updated_at + ') >= dirty_at (' + stillDirty + ') — clearing dirty flag');
           try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
-          console.info('[sync] dirty: cleared (cloud has current data)');
           if (!_prevTs || new Date(cloud.updated_at).getTime() !== new Date(_prevTs).getTime()) {
-            console.info('[sync] pull: applying cloud data after stale recovery');
             applyCloudData(cloud);
             renderAll();
           }
+          _dbg.lastPullStep = 'stale-dirty-resolved';
           return;
         } else {
+          _dbg.lastPullStep = 'stale-dirty-local-newer';
           console.info('[sync] stale dirty recovery: local is newer than cloud — scheduling retry push');
           scheduleSyncToSupabase();
           return;
         }
       }
+      _dbg.lastPullStep = 'stale-dirty-no-cloud';
       console.info('[sync] stale dirty recovery: cloud fetch returned no data — deferring');
       return;
     }
-    // Dirty was cleared by sync success — fall through to normal pull
+    _dbg.lastPullStep = 'stale-dirty-push-ok';
     console.info('[sync] stale dirty recovery: push succeeded — proceeding to pull');
   }
 
-  // ── Normal pull path (no dirty flag blocking) ──
-  // IMPORTANT: capture the old timestamp BEFORE loadFromSupabase overwrites _cloudUpdatedAt.
-  // Without this, loadFromSupabase sets _cloudUpdatedAt = cloud.updated_at, making the
-  // comparison below always equal — so periodic pulls would never apply cloud data.
+  // ── Normal pull path ──
+  _dbg.lastPullStep = 'load-start';
   const _prevCloudTs = _cloudUpdatedAt;
   let cloud;
   try {
-    cloud = await _withPullTimeout(loadFromSupabase(_currentUser.id), 12000, 'periodic pull');
+    cloud = await _withTimeout(loadFromSupabase(_currentUser.id), 12000, 'periodic pull');
   } catch(e) {
+    _dbg.lastPullStep = 'load-timeout';
+    _dbg.lastPullError = 'pull: ' + (e?.message || String(e));
     console.warn('[sync] pull: failed —', e?.message);
     return;
   }
-  if (!cloud || !cloud.updated_at) return;
-  // Only re-render if cloud data is actually newer than what we last loaded
-  // Use Date comparison — Supabase and JS may use different ISO 8601 formats
-  // (e.g. "Z" vs "+00:00") which would cause string === to always fail
+  if (!cloud || !cloud.updated_at) { _dbg.lastPullStep = 'load-empty'; return; }
   if (_prevCloudTs &&
-      new Date(cloud.updated_at).getTime() === new Date(_prevCloudTs).getTime()) return;
+      new Date(cloud.updated_at).getTime() === new Date(_prevCloudTs).getTime()) {
+    _dbg.lastPullStep = 'no-change';
+    return;
+  }
+  _dbg.lastPullStep = 'applying';
   console.info('[sync] pull: cloud data is newer — applying');
   applyCloudData(cloud);
   renderAll();
+  _dbg.lastPullStep = 'done';
 }
 function _startPeriodicSync() {
   if (_pullTimer) clearInterval(_pullTimer);
