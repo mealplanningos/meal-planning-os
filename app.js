@@ -1,6 +1,6 @@
 //   DATA
 // ╚═══════════════════════════════════════╝
-const MPOS_VERSION = '2026-04-13b';
+const MPOS_VERSION = '2026-04-13c';
 console.info('[MPOS] version:', MPOS_VERSION);
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
@@ -3735,24 +3735,27 @@ async function syncToSupabase() {
   _syncInFlight = true;
   console.info('[sync] push: starting sync attempt');
 
-  // ── 15-second timeout: abort if any await hangs (common on iOS when backgrounded) ──
-  const _syncAbort = new AbortController();
-  const _syncTimeout = setTimeout(() => {
-    console.warn('[sync] push: TIMEOUT after 15s — aborting');
-    _syncAbort.abort();
-  }, 15000);
+  // ── Helper: race a promise against a real timeout that rejects ──
+  function _withTimeout(promise, ms, label) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT after ' + ms + 'ms: ' + label)), ms))
+    ]);
+  }
 
   try { // TOP-LEVEL try/finally — guarantees _syncInFlight is always reset
     // ── Freshness check ──
     try {
-      const { data: _freshCheck } = await _sb.from('user_data')
-        .select('updated_at').eq('user_id', _currentUser.id).maybeSingle();
+      const { data: _freshCheck } = await _withTimeout(
+        _sb.from('user_data').select('updated_at').eq('user_id', _currentUser.id).maybeSingle(),
+        12000, 'freshness check'
+      );
       if (_freshCheck && _freshCheck.updated_at && _cloudUpdatedAt) {
         const _fcCloudTs = new Date(_freshCheck.updated_at).getTime();
         const _fcKnownTs = new Date(_cloudUpdatedAt).getTime();
         if (_fcCloudTs > _fcKnownTs) {
           console.info('[sync] push: cloud is newer (cloud=' + _freshCheck.updated_at + ', lastKnown=' + _cloudUpdatedAt + '). Merging first, then pushing.');
-          const _freshCloud = await loadFromSupabase(_currentUser.id);
+          const _freshCloud = await _withTimeout(loadFromSupabase(_currentUser.id), 12000, 'merge load');
           if (_freshCloud) { applyCloudData(_freshCloud); try { renderAll(); } catch(re) { console.warn('[sync] renderAll error during merge:', re?.message); } }
           try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
           clearTimeout(_saveTimer);
@@ -3767,7 +3770,10 @@ async function syncToSupabase() {
     // ── Build and push ──
     const payload = buildSyncPayload();
     console.info('[sync] push: payload built — recipes:', payload.recipes?.length, ', categoryItems:', payload.groceries?.categoryItems?.length, ', updated_at:', payload.updated_at);
-    const { error: syncErr, status: syncStatus } = await _sb.from('user_data').upsert(payload, { onConflict: 'user_id' });
+    const { error: syncErr, status: syncStatus } = await _withTimeout(
+      _sb.from('user_data').upsert(payload, { onConflict: 'user_id' }),
+      12000, 'upsert'
+    );
     console.info('[sync] push: upsert response — status:', syncStatus, ', error:', syncErr ? syncErr.message : 'none');
     if (syncErr) {
       console.error('[sync] push: upsert FAILED —', syncErr.message, ', code:', syncErr.code, ', details:', syncErr.details);
@@ -3780,8 +3786,10 @@ async function syncToSupabase() {
       if (_isConstraint) {
         console.info('[sync] push: constraint error — attempting fallback .update()');
         const { user_id: _uid, ...updatePayload } = payload;
-        const { error: updateErr, status: updateStatus } = await _sb.from('user_data')
-          .update(updatePayload).eq('user_id', _currentUser.id);
+        const { error: updateErr, status: updateStatus } = await _withTimeout(
+          _sb.from('user_data').update(updatePayload).eq('user_id', _currentUser.id),
+          12000, 'fallback update'
+        );
         console.info('[sync] push: fallback update — status:', updateStatus, ', error:', updateErr ? updateErr.message : 'none');
         if (!updateErr) {
           _syncRetries = 0;
@@ -3821,7 +3829,6 @@ async function syncToSupabase() {
       console.info('[sync] push: scheduling retry', _syncRetries, '/3 after error');
     }
   } finally {
-    clearTimeout(_syncTimeout);
     _syncInFlight = false;
   }
 }
@@ -4310,6 +4317,13 @@ async function _pullFromCloud() {
   if (_saveTimer) { console.info('[sync] pull: deferred — active debounce timer'); return; }
   // Don't pull if a sync request is currently in flight
   if (_syncInFlight) { console.info('[sync] pull: deferred — sync in flight'); return; }
+  // Helper: race a promise against a timeout that rejects (prevents iOS hang)
+  function _withPullTimeout(promise, ms, label) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT after ' + ms + 'ms: ' + label)), ms))
+    ]);
+  }
 
   const localDirty = localStorage.getItem('mpos_local_dirty_at');
   if (localDirty) {
@@ -4335,16 +4349,20 @@ async function _pullFromCloud() {
       // Sync didn't clear it (failed or new change happened). Fetch cloud to compare.
       console.info('[sync] stale dirty recovery: push did not clear dirty — fetching cloud to compare');
       const _prevTs = _cloudUpdatedAt;
-      const cloud = await loadFromSupabase(_currentUser.id);
+      let cloud;
+      try {
+        cloud = await _withPullTimeout(loadFromSupabase(_currentUser.id), 12000, 'stale recovery load');
+      } catch(e) {
+        console.warn('[sync] stale dirty recovery: load timed out —', e?.message);
+        return;
+      }
       if (cloud && cloud.updated_at) {
         const cloudTs = new Date(cloud.updated_at).getTime();
         const dirtyTs = new Date(stillDirty).getTime();
         if (cloudTs >= dirtyTs) {
-          // Cloud already reflects data at or after the dirty timestamp — safe to clear
           console.info('[sync] stale dirty recovery: cloud updated_at (' + cloud.updated_at + ') >= dirty_at (' + stillDirty + ') — clearing dirty flag');
           try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
           console.info('[sync] dirty: cleared (cloud has current data)');
-          // Apply cloud data if it's newer than what we have in memory
           if (!_prevTs || new Date(cloud.updated_at).getTime() !== new Date(_prevTs).getTime()) {
             console.info('[sync] pull: applying cloud data after stale recovery');
             applyCloudData(cloud);
@@ -4352,13 +4370,11 @@ async function _pullFromCloud() {
           }
           return;
         } else {
-          // Local is genuinely newer — schedule another push attempt, don't block forever
           console.info('[sync] stale dirty recovery: local is newer than cloud — scheduling retry push');
           scheduleSyncToSupabase();
           return;
         }
       }
-      // Cloud fetch returned nothing — can't reconcile, let periodic sync retry
       console.info('[sync] stale dirty recovery: cloud fetch returned no data — deferring');
       return;
     }
@@ -4371,7 +4387,13 @@ async function _pullFromCloud() {
   // Without this, loadFromSupabase sets _cloudUpdatedAt = cloud.updated_at, making the
   // comparison below always equal — so periodic pulls would never apply cloud data.
   const _prevCloudTs = _cloudUpdatedAt;
-  const cloud = await loadFromSupabase(_currentUser.id);
+  let cloud;
+  try {
+    cloud = await _withPullTimeout(loadFromSupabase(_currentUser.id), 12000, 'periodic pull');
+  } catch(e) {
+    console.warn('[sync] pull: failed —', e?.message);
+    return;
+  }
   if (!cloud || !cloud.updated_at) return;
   // Only re-render if cloud data is actually newer than what we last loaded
   // Use Date comparison — Supabase and JS may use different ISO 8601 formats
