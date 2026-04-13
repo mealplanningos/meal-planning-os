@@ -1,6 +1,6 @@
 //   DATA
 // ╚═══════════════════════════════════════╝
-const MPOS_VERSION = '2026-04-12a';
+const MPOS_VERSION = '2026-04-12b';
 console.info('[MPOS] version:', MPOS_VERSION);
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
@@ -3295,6 +3295,7 @@ let _accessToken     = null; // current session access token — used for keepal
 let _cloudLoadedOk   = false; // DATA GUARD: only allow cloud writes after a successful cloud read
 let _cloudUpdatedAt  = null;  // DATA GUARD: timestamp of last successful cloud load
 let _applyingCloud   = false; // SYNC GUARD: suppresses write-back during cloud data application
+let _cloudApplied    = false; // DATA GUARD: no push until applyCloudData() has merged cloud into memory at least once
 let _syncDeferred    = false; // true when a save happened before cloud was ready
 let _cloudRetryTimer = null;  // retry timer for failed cloud loads
 let _lastSaveTs      = null;  // INDICATOR: timestamp of most recent save() call
@@ -3697,6 +3698,24 @@ function _updateSyncIndicator(state) {
   }
 }
 
+// ── Sync debug panel (tap the sync dot to see) ──────────────
+function showSyncDebug() {
+  const info = [
+    'v' + MPOS_VERSION,
+    'cloudLoadedOk: ' + _cloudLoadedOk,
+    'cloudApplied: ' + _cloudApplied,
+    'cloudUpdatedAt: ' + (_cloudUpdatedAt || 'null'),
+    'syncInFlight: ' + _syncInFlight,
+    'saveTimer: ' + (_saveTimer ? 'active' : 'null'),
+    'dirty: ' + (localStorage.getItem('mpos_local_dirty_at') || 'clean'),
+    'recipes: ' + recipes.length,
+    'categoryItems: ' + categoryItems.length + ' → ' + categoryItems.map(i => i.name).join(', '),
+    'staples: ' + staples.length,
+    'freezer: ' + freezer.length,
+  ];
+  alert(info.join('\n'));
+}
+
 // Called once cloud is ready — pushes any saves that happened before auth/cloud load completed
 function _flushDeferredSync() {
   if (_syncDeferred && _currentUser && _cloudLoadedOk) {
@@ -3712,6 +3731,10 @@ async function syncToSupabase() {
   if (!_currentUser) return;
   // DATA GUARD: never write to cloud unless we successfully loaded first
   if (!_cloudLoadedOk) { console.warn('[sync] push: blocked — cloud data not loaded yet'); return; }
+  // DATA GUARD: never push until applyCloudData() has merged cloud into memory.
+  // Without this, a boot-time race can push stale localStorage before the merge runs,
+  // overwriting other devices' data with empty arrays.
+  if (!_cloudApplied) { console.warn('[sync] push: blocked — cloud data not yet applied/merged'); return; }
   // Clear the debounce timer reference — the timer already fired (that's how we got here).
   // Without this, _pullFromCloud's `if (_saveTimer)` guard stays truthy forever,
   // permanently blocking the 30-second periodic pull from detecting cross-device changes.
@@ -3916,6 +3939,7 @@ function applyCloudData(data) {
     try { migrateSlotSchema(); } catch(e) {}
   } finally {
     _applyingCloud = false;
+    _cloudApplied = true; // DATA GUARD: cloud data has been merged — pushes are now safe
     // Clear the dirty flag that save() set during cloud application.
     try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
     // If merge included local-only items or local won any conflicts,
