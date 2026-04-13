@@ -1,6 +1,6 @@
 //   DATA
 // ╚═══════════════════════════════════════╝
-const MPOS_VERSION = '2026-04-13d';
+const MPOS_VERSION = '2026-04-13e';
 console.info('[MPOS] version:', MPOS_VERSION);
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
@@ -3796,80 +3796,76 @@ async function syncToSupabase() {
   _dbg.lastSyncStartedAt = new Date().toISOString();
   console.info('[sync] push: starting sync attempt');
 
+  // ── Direct fetch() with AbortController ──
+  // The Supabase JS client's internal connection pool dies after iOS app-switching.
+  // Direct fetch() creates fresh TCP connections that bypass the dead pool.
+  function _directFetch(url, opts, timeoutMs) {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    return fetch(url, { ...opts, signal: ac.signal }).finally(() => clearTimeout(timer));
+  }
+  // Get a fresh token — prefer stored _accessToken, fall back to Supabase client session
+  let _authToken = _accessToken;
+  if (!_authToken) {
+    try { const { data: { session: s } } = await _sb.auth.getSession(); _authToken = s?.access_token; } catch(e) {}
+  }
+  if (!_authToken) { _dbg.lastSyncStep = 'no-auth-token'; _dbg.lastSyncError = 'no auth token available'; console.error('[sync] push: no auth token'); _updateSyncIndicator('error'); _syncInFlight = false; _syncInFlightSince = null; return; }
+  const _hdrs = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + _authToken };
+
   try { // TOP-LEVEL try/finally — guarantees _syncInFlight is always reset
-    // ── Freshness check ──
+    // ── Freshness check (direct fetch, 5s timeout — skip on failure) ──
     _dbg.lastSyncStep = 'freshness-check-start';
     try {
-      const { data: _freshCheck } = await _withTimeout(
-        _sb.from('user_data').select('updated_at').eq('user_id', _currentUser.id).maybeSingle(),
-        12000, 'freshness check'
-      );
+      const _fcUrl = SUPABASE_URL + '/rest/v1/user_data?select=updated_at&user_id=eq.' + _currentUser.id;
+      const _fcRes = await _directFetch(_fcUrl, { method: 'GET', headers: _hdrs }, 5000);
+      const _fcData = await _fcRes.json();
       _dbg.lastSyncStep = 'freshness-check-done';
+      const _freshCheck = Array.isArray(_fcData) ? _fcData[0] : _fcData;
       if (_freshCheck && _freshCheck.updated_at && _cloudUpdatedAt) {
         const _fcCloudTs = new Date(_freshCheck.updated_at).getTime();
         const _fcKnownTs = new Date(_cloudUpdatedAt).getTime();
         if (_fcCloudTs > _fcKnownTs) {
           _dbg.lastSyncStep = 'merge-load-start';
-          console.info('[sync] push: cloud is newer (cloud=' + _freshCheck.updated_at + ', lastKnown=' + _cloudUpdatedAt + '). Merging first, then pushing.');
-          const _freshCloud = await _withTimeout(loadFromSupabase(_currentUser.id), 12000, 'merge load');
+          console.info('[sync] push: cloud is newer (cloud=' + _freshCheck.updated_at + ', lastKnown=' + _cloudUpdatedAt + '). Merging first.');
+          const _freshCloud = await _withTimeout(loadFromSupabase(_currentUser.id), 10000, 'merge load');
           _dbg.lastSyncStep = 'merge-load-done';
-          if (_freshCloud) { applyCloudData(_freshCloud); try { renderAll(); } catch(re) { console.warn('[sync] renderAll error during merge:', re?.message); } }
+          if (_freshCloud) { applyCloudData(_freshCloud); try { renderAll(); } catch(re) {} }
           try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
-          clearTimeout(_saveTimer);
-          _saveTimer = null;
-          console.info('[sync] push: merge complete — proceeding with push');
+          clearTimeout(_saveTimer); _saveTimer = null;
         }
       }
     } catch(e) {
       _dbg.lastSyncStep = 'freshness-check-failed';
       _dbg.lastSyncError = 'freshness: ' + (e?.message || String(e));
-      console.warn('[sync] push: freshness check failed —', e?.message, '— proceeding with push');
+      console.warn('[sync] push: freshness check failed —', e?.message, '— pushing anyway');
     }
 
-    // ── Build and push ──
+    // ── Build and push (direct fetch, 8s timeout) ──
     _dbg.lastSyncStep = 'upsert-start';
     const payload = buildSyncPayload();
-    console.info('[sync] push: payload built — recipes:', payload.recipes?.length, ', categoryItems:', payload.groceries?.categoryItems?.length, ', updated_at:', payload.updated_at);
-    const { error: syncErr, status: syncStatus } = await _withTimeout(
-      _sb.from('user_data').upsert(payload, { onConflict: 'user_id' }),
-      12000, 'upsert'
-    );
-    _dbg.lastSyncStep = 'upsert-done';
-    console.info('[sync] push: upsert response — status:', syncStatus, ', error:', syncErr ? syncErr.message : 'none');
-    if (syncErr) {
+    console.info('[sync] push: payload built — recipes:', payload.recipes?.length, ', categoryItems:', payload.groceries?.categoryItems?.length);
+    const _upUrl = SUPABASE_URL + '/rest/v1/user_data?on_conflict=user_id';
+    const _upRes = await _directFetch(_upUrl, {
+      method: 'POST',
+      headers: { ..._hdrs, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(payload)
+    }, 8000);
+    _dbg.lastSyncStep = 'upsert-done-status-' + _upRes.status;
+    console.info('[sync] push: upsert response — status:', _upRes.status);
+
+    if (_upRes.ok) {
+      _syncRetries = 0;
+      _cloudUpdatedAt = payload.updated_at;
+      _lastConfirmedSyncTs = payload.updated_at;
+      try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
+      _dbg.lastSyncStep = 'success';
+      console.info('[sync] push: SUCCESS — cloud updated_at', payload.updated_at);
+      _updateSyncIndicator('synced');
+    } else {
+      const _errBody = await _upRes.text().catch(() => '');
       _dbg.lastSyncStep = 'upsert-failed';
-      _dbg.lastSyncError = 'upsert: ' + syncErr.message + ' (code:' + (syncErr.code||'?') + ')';
-      console.error('[sync] push: upsert FAILED —', syncErr.message, ', code:', syncErr.code, ', details:', syncErr.details);
-
-      const _errMsg = (syncErr.message || '').toLowerCase();
-      const _errCode = syncErr.code || '';
-      const _isConstraint = _errMsg.includes('duplicate') || _errMsg.includes('conflict') ||
-                            _errMsg.includes('unique') || _errMsg.includes('constraint') ||
-                            _errCode === '23505';
-      if (_isConstraint) {
-        _dbg.lastSyncStep = 'fallback-update-start';
-        console.info('[sync] push: constraint error — attempting fallback .update()');
-        const { user_id: _uid, ...updatePayload } = payload;
-        const { error: updateErr, status: updateStatus } = await _withTimeout(
-          _sb.from('user_data').update(updatePayload).eq('user_id', _currentUser.id),
-          12000, 'fallback update'
-        );
-        _dbg.lastSyncStep = 'fallback-update-done';
-        console.info('[sync] push: fallback update — status:', updateStatus, ', error:', updateErr ? updateErr.message : 'none');
-        if (!updateErr) {
-          _syncRetries = 0;
-          _cloudUpdatedAt = payload.updated_at;
-          _lastConfirmedSyncTs = payload.updated_at;
-          try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
-          _dbg.lastSyncStep = 'success-via-fallback';
-          console.info('[sync] push: SUCCESS via fallback update');
-          _updateSyncIndicator('synced');
-          return;
-        }
-        _dbg.lastSyncError = 'fallback: ' + updateErr.message;
-        console.error('[sync] push: fallback update also FAILED —', updateErr.message);
-      }
-
+      _dbg.lastSyncError = 'upsert: HTTP ' + _upRes.status + ' ' + _errBody.slice(0, 200);
+      console.error('[sync] push: upsert FAILED — HTTP', _upRes.status, _errBody);
       _updateSyncIndicator('error');
       if (_syncRetries < 3) {
         _syncRetries++;
@@ -3877,14 +3873,6 @@ async function syncToSupabase() {
         _saveTimer = setTimeout(syncToSupabase, 2000 * _syncRetries);
         _dbg.lastSyncStep = 'retry-scheduled-' + _syncRetries;
       }
-    } else {
-      _syncRetries = 0;
-      _cloudUpdatedAt = payload.updated_at;
-      _lastConfirmedSyncTs = payload.updated_at;
-      try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
-      _dbg.lastSyncStep = 'success';
-      console.info('[sync] push: SUCCESS via upsert — cloud updated_at', payload.updated_at);
-      _updateSyncIndicator('synced');
     }
   } catch(e) {
     _dbg.lastSyncStep = 'exception';
@@ -3897,7 +3885,7 @@ async function syncToSupabase() {
       clearTimeout(_saveTimer);
       _saveTimer = setTimeout(syncToSupabase, 2000 * _syncRetries);
       _dbg.lastSyncStep = 'retry-after-exception-' + _syncRetries;
-      console.info('[sync] push: scheduling retry', _syncRetries, '/3 after error');
+      console.info('[sync] push: scheduling retry', _syncRetries, '/3');
     }
   } finally {
     _syncInFlight = false;
