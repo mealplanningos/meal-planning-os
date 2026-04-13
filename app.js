@@ -1,6 +1,6 @@
 //   DATA
 // ╚═══════════════════════════════════════╝
-const MPOS_VERSION = '2026-04-12b';
+const MPOS_VERSION = '2026-04-13a';
 console.info('[MPOS] version:', MPOS_VERSION);
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
@@ -4342,6 +4342,7 @@ async function _pullFromCloud() {
     if (stillDirty) {
       // Sync didn't clear it (failed or new change happened). Fetch cloud to compare.
       console.info('[sync] stale dirty recovery: push did not clear dirty — fetching cloud to compare');
+      const _prevTs = _cloudUpdatedAt;
       const cloud = await loadFromSupabase(_currentUser.id);
       if (cloud && cloud.updated_at) {
         const cloudTs = new Date(cloud.updated_at).getTime();
@@ -4352,7 +4353,7 @@ async function _pullFromCloud() {
           try { localStorage.removeItem('mpos_local_dirty_at'); } catch(e) {}
           console.info('[sync] dirty: cleared (cloud has current data)');
           // Apply cloud data if it's newer than what we have in memory
-          if (!_cloudUpdatedAt || new Date(cloud.updated_at).getTime() !== new Date(_cloudUpdatedAt).getTime()) {
+          if (!_prevTs || new Date(cloud.updated_at).getTime() !== new Date(_prevTs).getTime()) {
             console.info('[sync] pull: applying cloud data after stale recovery');
             applyCloudData(cloud);
             renderAll();
@@ -4374,13 +4375,17 @@ async function _pullFromCloud() {
   }
 
   // ── Normal pull path (no dirty flag blocking) ──
+  // IMPORTANT: capture the old timestamp BEFORE loadFromSupabase overwrites _cloudUpdatedAt.
+  // Without this, loadFromSupabase sets _cloudUpdatedAt = cloud.updated_at, making the
+  // comparison below always equal — so periodic pulls would never apply cloud data.
+  const _prevCloudTs = _cloudUpdatedAt;
   const cloud = await loadFromSupabase(_currentUser.id);
   if (!cloud || !cloud.updated_at) return;
   // Only re-render if cloud data is actually newer than what we last loaded
   // Use Date comparison — Supabase and JS may use different ISO 8601 formats
   // (e.g. "Z" vs "+00:00") which would cause string === to always fail
-  if (_cloudUpdatedAt &&
-      new Date(cloud.updated_at).getTime() === new Date(_cloudUpdatedAt).getTime()) return;
+  if (_prevCloudTs &&
+      new Date(cloud.updated_at).getTime() === new Date(_prevCloudTs).getTime()) return;
   console.info('[sync] pull: cloud data is newer — applying');
   applyCloudData(cloud);
   renderAll();
