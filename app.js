@@ -1,6 +1,6 @@
 //   DATA
 // ╚═══════════════════════════════════════╝
-const MPOS_VERSION = '2026-04-13g';
+const MPOS_VERSION = '2026-04-13i';
 console.info('[MPOS] version:', MPOS_VERSION);
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
@@ -526,6 +526,242 @@ const DEFAULT_FLEX = [
 
 function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));const _dirtyTs=new Date().toISOString();localStorage.setItem('mpos_local_dirty_at',_dirtyTs);if(!_applyingCloud) _lastSaveTs=_dirtyTs;console.info('[sync] dirty: local change at',_dirtyTs,'key=',k);}catch{} scheduleSyncToSupabase();}
+
+// ╔══════════════════════════════════════════════════════════════════╗
+//   DATA SAFETY INFRASTRUCTURE (v2026-04-13h)
+// ╚══════════════════════════════════════════════════════════════════╝
+// Goal: no deploy or boot-time code path should silently wipe user data.
+// Strategy:
+//   1. Snapshot full localStorage state before any boot-time migration.
+//   2. Stamp a schema version; refuse to auto-mutate data authored by a
+//      newer schema than the current code knows about.
+//   3. Flag-gate every destructive migration; default OFF.
+//   4. Track each migration run in a log visible in showSyncDebug().
+
+// Bump this when the code's expected data shape changes. The Supabase row
+// also carries a schema_version field in buildSyncPayload (best-effort).
+const MPOS_SCHEMA_VERSION = 2;
+
+// Flip to true (or set localStorage.mpos_destructive_migrations='on') only
+// after verifying a migration against real user data. Defaults OFF so a
+// bad migration shipped to prod cannot silently mutate user state.
+const MPOS_DESTRUCTIVE_MIGRATIONS_ENABLED = (function(){
+  try {
+    const v = localStorage.getItem('mpos_destructive_migrations');
+    return v === 'on' || v === 'true' || v === '1';
+  } catch(e) { return false; }
+})();
+
+// Migration / safety state, surfaced in showSyncDebug()
+let _safety = {
+  codeSchemaVersion: MPOS_SCHEMA_VERSION,
+  dataSchemaVersion: null,  // filled after read
+  schemaGuardBlocked: false,
+  destructiveEnabled: MPOS_DESTRUCTIVE_MIGRATIONS_ENABLED,
+  lastMigrationRun: null,   // {name, at, result}
+  lastBackupAt:      null,
+  lastBackupKey:     null,
+  migrationLog: [],         // array of {name, at, result, blockReason?}
+};
+
+// One full-state snapshot into localStorage before any boot mutation runs.
+// Keeps only the 3 most recent backups.
+function _snapshotBackup(label) {
+  try {
+    const ts = new Date().toISOString();
+    const payload = {
+      ts: ts,
+      label: label || 'boot',
+      codeVersion: (typeof MPOS_VERSION !== 'undefined') ? MPOS_VERSION : 'unknown',
+      schemaVersion: MPOS_SCHEMA_VERSION,
+      recipes:        localStorage.getItem(K.recipes),
+      mealPlan:       localStorage.getItem(K.mealPlan),
+      weekNotes:      localStorage.getItem(K.weekNotes),
+      staples:        localStorage.getItem(K.staples),
+      flexItems:      localStorage.getItem(K.flexItems),
+      adhocItems:     localStorage.getItem(K.adhocItems),
+      categoryItems:  localStorage.getItem(K.categoryItems),
+      freezer:        localStorage.getItem(K.freezer),
+      checks:         localStorage.getItem(K.checks),
+      onboarding:     localStorage.getItem(K.onboarding),
+    };
+    const key = 'mpos_backup_' + Date.now();
+    localStorage.setItem(key, JSON.stringify(payload));
+    // Prune — keep most recent 3
+    const all = Object.keys(localStorage).filter(k => k.startsWith('mpos_backup_')).sort();
+    while (all.length > 3) {
+      const old = all.shift();
+      try { localStorage.removeItem(old); } catch(e) {}
+    }
+    localStorage.setItem('mpos_last_backup_at', ts);
+    _safety.lastBackupAt = ts;
+    _safety.lastBackupKey = key;
+    console.info('[safety] backup saved:', key, 'label=', payload.label);
+    return key;
+  } catch(e) {
+    console.warn('[safety] snapshot failed', e);
+    return null;
+  }
+}
+
+// List all snapshots (for inspection / debug UI)
+function listBackups() {
+  return Object.keys(localStorage)
+    .filter(k => k.startsWith('mpos_backup_'))
+    .sort()
+    .map(k => {
+      try { return { key: k, meta: JSON.parse(localStorage.getItem(k)) }; }
+      catch(e) { return { key: k, meta: null }; }
+    });
+}
+
+// Manual restore path — restores the given backup key into the live
+// localStorage slots and reloads. Exposed on window for debug console use.
+function restoreBackup(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) { console.warn('[safety] no such backup', key); return false; }
+    const p = JSON.parse(raw);
+    if (!confirm('Restore backup from ' + p.ts + '? Current state will be replaced.')) return false;
+    // Safety: snapshot current state under a pre-restore label before clobbering
+    _snapshotBackup('pre-restore');
+    const keys = ['recipes','mealPlan','weekNotes','staples','flexItems','adhocItems','categoryItems','freezer','checks','onboarding'];
+    keys.forEach(name => {
+      if (p[name] !== null && p[name] !== undefined) {
+        localStorage.setItem(K[name], p[name]);
+      }
+    });
+    location.reload();
+    return true;
+  } catch(e) {
+    console.warn('[safety] restore failed', e);
+    return false;
+  }
+}
+
+// Read stamped data schema version. If absent, stamp current (first-run).
+(function _bootstrapSchemaVersion(){
+  try {
+    const raw = localStorage.getItem('mpos_schema_version');
+    if (raw === null || raw === undefined) {
+      localStorage.setItem('mpos_schema_version', String(MPOS_SCHEMA_VERSION));
+      _safety.dataSchemaVersion = MPOS_SCHEMA_VERSION;
+    } else {
+      const v = parseInt(raw, 10);
+      _safety.dataSchemaVersion = isNaN(v) ? MPOS_SCHEMA_VERSION : v;
+    }
+    if (_safety.dataSchemaVersion > MPOS_SCHEMA_VERSION) {
+      _safety.schemaGuardBlocked = true;
+      console.warn('[safety] data schema v' + _safety.dataSchemaVersion +
+                   ' is NEWER than code v' + MPOS_SCHEMA_VERSION +
+                   ' — boot-time migrations will be skipped to protect data');
+    }
+  } catch(e) {
+    _safety.dataSchemaVersion = MPOS_SCHEMA_VERSION;
+  }
+})();
+
+// Take the one-and-only boot snapshot BEFORE any mutator runs. This is the
+// rollback point if a bad deploy corrupts state.
+_snapshotBackup('boot');
+
+// Run a migration safely: honor schema guard + destructive flag, take a
+// per-migration snapshot, record result in _safety.migrationLog.
+// opts: { destructive:true }  — if true, requires destructive flag on
+function _runMigration(name, fn, opts) {
+  const o = opts || {};
+  const entry = { name: name, at: new Date().toISOString(), result: 'pending' };
+  try {
+    if (_safety.schemaGuardBlocked) {
+      entry.result = 'skipped-schema-guard';
+      entry.blockReason = 'data schema newer than code';
+      console.info('[migrate] ' + name + ' skipped (schema guard)');
+    } else if (o.destructive && !MPOS_DESTRUCTIVE_MIGRATIONS_ENABLED) {
+      entry.result = 'skipped-flag-off';
+      entry.blockReason = 'MPOS_DESTRUCTIVE_MIGRATIONS_ENABLED=false';
+      console.info('[migrate] ' + name + ' skipped (destructive flag off)');
+    } else {
+      if (o.destructive) _snapshotBackup('pre-' + name);
+      fn();
+      entry.result = 'ok';
+      console.info('[migrate] ' + name + ' ok');
+    }
+  } catch(e) {
+    entry.result = 'error';
+    entry.error = (e && e.message) ? e.message : String(e);
+    console.warn('[migrate] ' + name + ' threw', e);
+  }
+  _safety.lastMigrationRun = entry;
+  _safety.migrationLog.push(entry);
+  // Keep log bounded
+  if (_safety.migrationLog.length > 20) _safety.migrationLog.shift();
+  return entry;
+}
+
+// Smoke test — confirms that boot did not shrink core data relative to the
+// "boot" snapshot. Returns a report object; surfaced in showSyncDebug.
+function smokeTestBootIntegrity() {
+  const pre = listBackups().find(b => b.meta && b.meta.label === 'boot');
+  const parse = (raw) => { try { return JSON.parse(raw || 'null'); } catch(e) { return null; } };
+  const report = { ok: true, checks: [] };
+  if (!pre || !pre.meta) {
+    report.ok = false;
+    report.checks.push({ name: 'boot-snapshot-exists', ok: false, note: 'no boot snapshot found' });
+    return report;
+  }
+  // Helper: extract id set from an array (missing/blank ids stored as __noid_N)
+  const idSet = (arr) => {
+    const s = new Set();
+    if (!Array.isArray(arr)) return s;
+    arr.forEach((it, i) => s.add((it && it.id) ? String(it.id) : '__noid_' + i));
+    return s;
+  };
+  const diff = (a, b) => {
+    const out = [];
+    a.forEach(v => { if (!b.has(v)) out.push(v); });
+    return out;
+  };
+  const arrays = ['recipes','freezer','staples','flexItems','adhocItems','categoryItems'];
+  arrays.forEach(name => {
+    const before = parse(pre.meta[name]) || [];
+    let after;
+    switch (name) {
+      case 'recipes':       after = recipes;       break;
+      case 'freezer':       after = freezer;       break;
+      case 'staples':       after = staples;       break;
+      case 'flexItems':     after = flexItems;     break;
+      case 'adhocItems':    after = adhocItems;    break;
+      case 'categoryItems': after = categoryItems; break;
+      default:              after = [];
+    }
+    const bCount = Array.isArray(before) ? before.length : 0;
+    const aCount = Array.isArray(after)  ? after.length  : 0;
+    const bIds = idSet(before);
+    const aIds = idSet(after);
+    const removed = diff(bIds, aIds); // present before, missing after
+    const added   = diff(aIds, bIds); // absent before, present after
+    const ok = removed.length === 0; // any removal = FAIL. Adds (new items during boot) are allowed.
+    report.checks.push({
+      name: name,
+      ok: ok,
+      before: bCount,
+      after:  aCount,
+      removed: removed,
+      added:   added,
+      note: ok ? 'ok' : 'boot removed ids — check migration log'
+    });
+    if (!ok) report.ok = false;
+  });
+  return report;
+}
+
+// Expose on window for manual debug console use (safe: read-only introspection
+// except restoreBackup which prompts before acting).
+try {
+  window.listBackups = listBackups;
+  window.restoreBackup = restoreBackup;
+  window.smokeTestBootIntegrity = smokeTestBootIntegrity;
+} catch(e) {}
 function uid(){return Math.random().toString(36).substr(2,9);}
 
 let recipes    = load(K.recipes, null);
@@ -546,7 +782,10 @@ if (recipes === null) { recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.in
 // were removed in V4. Strip them from saved data so they stop appearing.
 // SAFETY: only removes recipes with EXACT retired libraryIds — custom recipes
 // (no libraryId) and user-added library recipes are NEVER touched.
-(function _cleanRetiredStarters(){
+// DESTRUCTIVE: removes retired starter libraryIds from user's recipes.
+// Flag-gated (off by default) so a bad id list shipped to prod cannot
+// silently wipe user recipes. Snapshot is taken before run.
+_runMigration('cleanRetiredStarters', function(){
   const retired = new Set(['lb_sr4','lb_sr5','lb_sr6']);
   const before = recipes.length;
   recipes = recipes.filter(r => !retired.has(r.libraryId));
@@ -557,7 +796,7 @@ if (recipes === null) { recipes = STARTER_RECIPES.map(r=>({...r,ingredients:r.in
     if(sr4) recipes.push({...sr4, ingredients: sr4.ingredients.map(i=>({...i}))});
   }
   if(recipes.length !== before || !hasSr4) save(K.recipes, recipes);
-})();
+}, { destructive: true });
 
 // ╔═══════════════════════════════════════╗
 //   SLOT SCHEMA MIGRATION (non-destructive)
@@ -650,7 +889,10 @@ function migrateSlotSchema(){
     }
   } catch(e) { /* migration is best-effort; never block app boot */ }
 }
-migrateSlotSchema();
+// DESTRUCTIVE: reshapes mealPlan slots, including delete branches for
+// malformed legacy entries. Flag-gated so a bad migration cannot silently
+// rewrite or drop user plan data.
+_runMigration('migrateSlotSchema', migrateSlotSchema, { destructive: true });
 
 // ── Slot helpers ───────────────────────────────────────────────────────────
 function getSlot(day,meal){ return (mealPlan[day]&&mealPlan[day][meal])||null; }
@@ -1191,6 +1433,10 @@ let _addContext = 'recipes'; // 'recipes' = Recipes tab (type:null), 'menu' = Me
 //   SHARED PAYLOAD BUILDER
 // ╚═══════════════════════════════════════╝
 function buildSyncPayload() {
+  // NOTE: schema_version is tracked LOCALLY only (see _safety.dataSchemaVersion).
+  // Not added as a column on user_data yet — would require a Supabase migration.
+  // When ready, add `schema_version int default 1` and `code_version text` columns,
+  // then add those fields here.
   return {
     user_id:     _currentUser ? _currentUser.id : null,
     recipes:     recipes,
@@ -3750,10 +3996,37 @@ function showSyncDebug() {
     '── RESUME ──',
     'lastVisibilityStep: ' + _dbg.lastVisibilityStep,
     '── DATA ──',
-    'recipes: ' + recipes.length,
-    'categoryItems: ' + categoryItems.length + ' → ' + categoryItems.map(i => i.name).join(', '),
-    'staples: ' + staples.length,
-    'freezer: ' + freezer.length,
+    'recipes: ' + recipes.length + ' (deleted: ' + recipes.filter(r=>r && r._deleted).length + ')',
+    'categoryItems: ' + categoryItems.length + ' (deleted: ' + categoryItems.filter(i=>i && i._deleted).length + ')',
+    'staples: ' + staples.length + ' (deleted: ' + staples.filter(i=>i && i._deleted).length + ')',
+    'flexItems: ' + flexItems.length + ' (deleted: ' + flexItems.filter(i=>i && i._deleted).length + ')',
+    'adhocItems: ' + adhocItems.length + ' (deleted: ' + adhocItems.filter(i=>i && i._deleted).length + ')',
+    'freezer: ' + freezer.length + ' (deleted: ' + freezer.filter(i=>i && i._deleted).length + ')',
+    '── SAFETY ──',
+    'codeSchema: v' + _safety.codeSchemaVersion,
+    'dataSchema: v' + _safety.dataSchemaVersion + (_safety.schemaGuardBlocked ? ' (GUARD: blocked)' : ''),
+    'destructiveEnabled: ' + _safety.destructiveEnabled,
+    'lastBackup: ' + (_safety.lastBackupAt || 'never') + (_safety.lastBackupKey ? ' (' + _safety.lastBackupKey + ')' : ''),
+    'backups: ' + listBackups().length,
+    'lastMigration: ' + (_safety.lastMigrationRun
+       ? _safety.lastMigrationRun.name + ' → ' + _safety.lastMigrationRun.result
+       : 'none'),
+    'migrationLog: ' + _safety.migrationLog.map(m => m.name + '=' + m.result).join(' | '),
+    '── SMOKE ──',
+    (function(){
+      try {
+        const r = smokeTestBootIntegrity();
+        const lines = ['bootIntegrity: ' + (r.ok ? 'OK' : 'FAIL')];
+        r.checks.forEach(c => {
+          let line = '  ' + c.name + ': ' + (c.ok ? 'ok' : 'FAIL');
+          if (typeof c.before !== 'undefined') line += ' (' + c.before + '→' + c.after + ')';
+          if (c.removed && c.removed.length) line += ' removed=[' + c.removed.slice(0,5).join(',') + (c.removed.length>5?',…':'') + ']';
+          if (c.added   && c.added.length)   line += ' added=['   + c.added.slice(0,5).join(',')   + (c.added.length>5  ?',…':'') + ']';
+          lines.push(line);
+        });
+        return lines.join('\n');
+      } catch(e) { return 'bootIntegrity: error ' + e.message; }
+    })(),
   ];
   alert(info.join('\n'));
 }
@@ -4073,7 +4346,7 @@ function applyCloudData(data) {
     // Re-run slot-schema migration after cloud pull: legacy cloud data
     // (plan entries without a .state field) must be stamped as 'cook' so
     // they render on the dashboard instead of collapsing to "N/A".
-    try { migrateSlotSchema(); } catch(e) {}
+    _runMigration('migrateSlotSchema(post-pull)', migrateSlotSchema, { destructive: true });
   } finally {
     _applyingCloud = false;
     _cloudApplied = true; // DATA GUARD: cloud data has been merged — pushes are now safe
@@ -4225,7 +4498,8 @@ async function loadAndRender(userId) {
     }
   } catch(e) { /* proceed normally on parse error */ }
 
-  normalizeRecipeTypes();
+  // DESTRUCTIVE: rewrites r.type and adds onMenu fields on recipes.
+  _runMigration('normalizeRecipeTypes', normalizeRecipeTypes, { destructive: true });
   // Defensive: new user with no recipes yet — seed starters and sync
   // ONLY do this if cloud was successfully queried (not on failed load)
   if (recipes.length === 0 && _cloudLoadedOk) {
