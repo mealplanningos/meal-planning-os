@@ -1,6 +1,6 @@
 //   DATA
 // ╚═══════════════════════════════════════╝
-const MPOS_VERSION = '2026-04-13f';
+const MPOS_VERSION = '2026-04-13g';
 console.info('[MPOS] version:', MPOS_VERSION);
 const K = {
   recipes:'mpos_recipes_v2', weekNotes:'mpos_notes_v2',
@@ -1316,7 +1316,7 @@ function renderLibrary(){
     {id:'custom',       label:'✏️ Custom'},
   ];
   // ── Tag filter (derived from library + custom) ───────────────────────────
-  const customRecipes=recipes.filter(r=>!r.libraryId);
+  const customRecipes=recipes.filter(r=>!r.libraryId && !r._deleted);
   const TAG_ORDER=['Breakfast','Lunch','Dinner','Under 15 Min','Under 30 Min','Batch Cook','Freezer Friendly','One Pan'];
   const rawTags=[...new Set(LIBRARY_RECIPES.flatMap(r=>r.tags||[]))];
   if(customRecipes.length>0 && !rawTags.includes('Custom')) rawTags.push('Custom');
@@ -1367,8 +1367,8 @@ function renderLibrary(){
   };
 
   // Count how many are on the menu per type (for disabling full categories)
-  const gotoOnMenu=recipes.filter(r=>r.onMenu&&r.type==='goto').length;
-  const expOnMenu=recipes.filter(r=>r.onMenu&&r.type==='experimental').length;
+  const gotoOnMenu=recipes.filter(r=>r.onMenu&&r.type==='goto'&&!r._deleted).length;
+  const expOnMenu=recipes.filter(r=>r.onMenu&&r.type==='experimental'&&!r._deleted).length;
   const gotoFull=gotoOnMenu>=5, expFull=expOnMenu>=5;
 
   // ── Render custom recipe cards first ────────────────────────────────────
@@ -1422,7 +1422,7 @@ function renderLibrary(){
 
   // ── Render library recipe cards ─────────────────────────────────────────
   filteredLib.forEach(lr=>{
-    const userRecipe=recipes.find(r=>r.libraryId===lr.id);
+    const userRecipe=recipes.find(r=>r.libraryId===lr.id && !r._deleted);
     const ingList=lr.ingredients.slice(0,4).map(i=>i.name).join(', ')
       +(lr.ingredients.length>4?` +${lr.ingredients.length-4} more`:'');
     const srvLabel=lr.servings===1?'1 serving':''+lr.servings+' servings per batch';
@@ -1822,9 +1822,9 @@ function openSlotEditor(day,meal){
   }
 
   // Freezer option
-  if(freezer && freezer.length>0){
+  if(freezer && _visible(freezer).length>0){
     html += '<div class="slot-editor-sub-label">or pull from freezer</div><div class="slot-editor-recipes">';
-    freezer.forEach(f=>{
+    _visible(freezer).forEach(f=>{
       const sel = cur && cur.freezerId===f.id ? ' selected' : '';
       const _fn = f.name.replace(/'/g,"\\'");
       html += `<button type="button" class="slot-editor-recipe${sel}" data-fid="${f.id}" onclick="_slotEditorStageFreezer('${f.id}','${_fn}',${f.servings||2})">❄ ${_esc(f.name)}</button>`;
@@ -2365,12 +2365,13 @@ function revertRecipe(){
 }
 function deleteRecipe(id){
   if(!confirm('Remove this recipe?')) return;
-  recipes=recipes.filter(r=>r.id!==id);
+  recipes=_softDeleteInArray(recipes,id);
   DAYS.forEach(d=>MEALS.forEach(m=>{if(mealPlan[d]&&mealPlan[d][m]&&mealPlan[d][m].recipeId===id)delete mealPlan[d][m];}));
   save(K.recipes,recipes); save(K.mealPlan,mealPlan);
   renderMealSections();
   renderLibrary();
   renderOnboardingUI();
+  if(typeof _kickSyncNow==='function') _kickSyncNow();
 }
 
 // ╔═══════════════════════════════════════╗
@@ -2649,8 +2650,8 @@ function openAssignModal(day,meal){
   const isFreezer=_aC.mealType==='freezer';
   html+=`<div id="freezerPickerSection" style="display:${isFreezer?'block':'none'};margin-top:12px">`;
   html+=`<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Pick from your Freezer</div>`;
-  if(freezer.length>0){
-    freezer.forEach(f=>{
+  if(_visible(freezer).length>0){
+    _visible(freezer).forEach(f=>{
       const sel=_aC.freezerId===f.id?'sel':'';
       html+=`<div class="recipe-pick-opt ${sel}" data-fid="${f.id}" onclick="pickFreezerItem('${f.id}','${f.name.replace(/'/g,"\\'")}',${f.servings})">
         <span style="font-size:18px">🧊</span>
@@ -2976,7 +2977,7 @@ function renderGrocery(){
   DAYS.forEach(d=>MEALS.forEach(m=>{
     const a=mealPlan[d]&&mealPlan[d][m];
     if(!a||!a.recipeId) return;
-    const r=recipes.find(x=>x.id===a.recipeId);
+    const r=recipes.find(x=>x.id===a.recipeId && !x._deleted);
     if(!r) return;
     recipeCount++;
     const srv=a.servings||r.servings||1;
@@ -3000,8 +3001,9 @@ function renderGrocery(){
 
   // Determine which categories have content (auto-generated OR user-added)
   const catsWithUserItems={};
-  categoryItems.forEach(ci=>{ if(!catsWithUserItems[ci.category]) catsWithUserItems[ci.category]=[]; catsWithUserItems[ci.category].push(ci); });
-  const hasAnyContent=Object.keys(agg).length>0||categoryItems.length>0;
+  const _visibleCategoryItems = (categoryItems||[]).filter(ci=>ci && !ci._deleted);
+  _visibleCategoryItems.forEach(ci=>{ if(!catsWithUserItems[ci.category]) catsWithUserItems[ci.category]=[]; catsWithUserItems[ci.category].push(ci); });
+  const hasAnyContent=Object.keys(agg).length>0||_visibleCategoryItems.length>0;
 
   // Unified add-item bar (always visible at top)
   const addBar=document.createElement('div');
@@ -3076,9 +3078,9 @@ function renderGrocery(){
   // Flex & Backup ALWAYS renders (even empty) so users learn to use it.
   // Staples and Misc hide when empty.
   const extras = [
-    {type:'staples', icon:'📌', title:'Weekly Staples', tipKey:'groc_staples', items:staples,    removeFn:'removeStaple',     alwaysShow:true,  emptyHint:'Add items you buy every single week — milk, eggs, bread, coffee. They\'ll always be on your list so you never forget the basics.'},
-    {type:'flex',    icon:'🛟', title:'Flex & Backup',   tipKey:'groc_flex',    items:flexItems,  removeFn:'removeFlexItem',   alwaysShow:true,  emptyHint:'Add backup meals for nights when cooking falls apart — frozen pizza, canned soup, sandwich fixings. Your safety net.'},
-    {type:'adhoc',   icon:'🛍️', title:'Misc',            tipKey:'groc_adhoc',   items:adhocItems, removeFn:'removeAdhocItem',  alwaysShow:false, emptyHint:''},
+    {type:'staples', icon:'📌', title:'Weekly Staples', tipKey:'groc_staples', items:_visible(staples),    removeFn:'removeStaple',     alwaysShow:true,  emptyHint:'Add items you buy every single week — milk, eggs, bread, coffee. They\'ll always be on your list so you never forget the basics.'},
+    {type:'flex',    icon:'🛟', title:'Flex & Backup',   tipKey:'groc_flex',    items:_visible(flexItems),  removeFn:'removeFlexItem',   alwaysShow:true,  emptyHint:'Add backup meals for nights when cooking falls apart — frozen pizza, canned soup, sandwich fixings. Your safety net.'},
+    {type:'adhoc',   icon:'🛍️', title:'Misc',            tipKey:'groc_adhoc',   items:_visible(adhocItems), removeFn:'removeAdhocItem',  alwaysShow:false, emptyHint:''},
   ];
   extras.forEach(ex=>{
     const isEmpty = !ex.items || ex.items.length===0;
@@ -3148,25 +3150,36 @@ function addStaple(){
   const name=el.value.trim(); if(!name) return;
   staples.push({id:uid(),name,updated_at:new Date().toISOString()}); save(K.staples,staples); el.value=''; renderGrocery();
 }
-function removeStaple(id){ staples=staples.filter(s=>s.id!==id); save(K.staples,staples); renderGrocery(); }
+function removeStaple(id){ staples=_softDeleteInArray(staples,id); save(K.staples,staples); renderGrocery(); _kickSyncNow(); }
 function addFlexItem(){
   const el=document.getElementById('new-flex-input'); if(!el) return;
   const name=el.value.trim(); if(!name) return;
   flexItems.push({id:uid(),name,updated_at:new Date().toISOString()}); save(K.flexItems,flexItems); el.value=''; renderGrocery();
 }
-function removeFlexItem(id){ flexItems=flexItems.filter(f=>f.id!==id); save(K.flexItems,flexItems); renderGrocery(); }
+function removeFlexItem(id){ flexItems=_softDeleteInArray(flexItems,id); save(K.flexItems,flexItems); renderGrocery(); _kickSyncNow(); }
 function addAdhocItem(){
   const el=document.getElementById('new-adhoc-input'); if(!el) return;
   const name=el.value.trim(); if(!name) return;
   adhocItems.push({id:uid(),name,updated_at:new Date().toISOString()}); save(K.adhocItems,adhocItems); el.value=''; renderGrocery();
 }
-function removeAdhocItem(id){ adhocItems=adhocItems.filter(a=>a.id!==id); save(K.adhocItems,adhocItems); renderGrocery(); }
+function removeAdhocItem(id){ adhocItems=_softDeleteInArray(adhocItems,id); save(K.adhocItems,adhocItems); renderGrocery(); _kickSyncNow(); }
 function addCategoryItem(category,inputId){
   const el=document.getElementById(inputId); if(!el) return;
   const name=el.value.trim(); if(!name) return;
   categoryItems.push({id:uid(),name,category,updated_at:new Date().toISOString()}); save(K.categoryItems,categoryItems); el.value=''; renderGrocery();
 }
-function removeCategoryItem(id){ categoryItems=categoryItems.filter(c=>c.id!==id); save(K.categoryItems,categoryItems); renderGrocery(); }
+function removeCategoryItem(id){ categoryItems=_softDeleteInArray(categoryItems,id); save(K.categoryItems,categoryItems); renderGrocery(); _kickSyncNow(); }
+
+// Immediate sync kick for destructive/urgent operations (v2026-04-13g).
+// Mirrors the pattern used by removeFreezerItem — bypasses the 400ms debounce
+// so deletions reach the cloud even if the user backgrounds the tab quickly.
+function _kickSyncNow(){
+  try {
+    if (typeof _flushToCloud === 'function') _flushToCloud();
+    if (typeof _saveTimer !== 'undefined' && _saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
+    if (typeof syncToSupabase === 'function') syncToSupabase();
+  } catch(e) { /* best-effort; debounced sync still queued as fallback */ }
+}
 
 // ╔═══════════════════════════════════════╗
 //   FREEZER
@@ -3196,7 +3209,8 @@ function saveFreezerItem(){
 function renderFreezer(){
   const list=document.getElementById('freezerList');
   if(!list) return;
-  if(freezer.length===0){
+  const _fz = _visible(freezer);
+  if(_fz.length===0){
     list.innerHTML=`<div class="freezer-empty">
       <div style="font-size:42px;margin-bottom:12px">❄️</div>
       <div style="font-size:14px;font-weight:700;margin-bottom:6px">Nothing frozen yet</div>
@@ -3205,7 +3219,7 @@ function renderFreezer(){
   }
   list.innerHTML='';
   const today=new Date();
-  freezer.forEach((f,i)=>{
+  _fz.forEach((f,i)=>{
     const exp=new Date(f.expDate+'T00:00:00');
     const days=Math.round((exp-today)/(86400000));
     let cls='exp-ok',txt=`Expires in ${days} days`;
@@ -3243,7 +3257,7 @@ function confirmFzPlan(){
 }
 function removeFreezerItem(id){
   if(!confirm('Remove this meal from your freezer?')) return;
-  freezer=freezer.filter(f=>f.id!==id);
+  freezer=_softDeleteInArray(freezer,id);
   save(K.freezer,freezer);
   renderFreezer();
   // Mobile sync fix: don't trust the 400ms debounce — mobile browsers
@@ -3917,14 +3931,49 @@ async function migrateIfNeeded(userId) {
 // ── Merge helper: combine local + cloud arrays by item id ──
 // Items unique to either side are kept. Items in both → prefer later updated_at.
 // If timestamps are missing, cloud wins (it's the shared truth from another device).
+// ── Soft-delete helpers (v2026-04-13g) ─────────────────────────────────────
+// Tombstone-style delete: mark item with _deleted:true + _deletedAt instead
+// of removing from storage. Merge logic respects the newer deletion marker so
+// cloud copies don't resurrect locally-deleted items.
+function _softDeleteInArray(arr, id) {
+  if (!Array.isArray(arr) || !id) return arr;
+  const now = new Date().toISOString();
+  let found = false;
+  const out = arr.map(it => {
+    if (it && it.id === id) {
+      found = true;
+      // Also clear onMenu on recipes so any legacy "r.onMenu" filters that
+      // don't yet check _deleted still behave correctly.
+      return Object.assign({}, it, { _deleted: true, _deletedAt: now, updated_at: now, onMenu: false });
+    }
+    return it;
+  });
+  if (!found) return arr;
+  return out;
+}
+// Render helper — hide soft-deleted items from UI
+function _visible(arr) {
+  if (!Array.isArray(arr)) return arr;
+  return arr.filter(it => !(it && it._deleted));
+}
+
 let _mergeHadLocalOnly = false; // set by _mergeArraysById, read by applyCloudData
+// Effective timestamp for an item — max of updated_at and _deletedAt.
+// Deletion is an "edit" so a deletion newer than the other side's edit wins.
+function _itemTs(it) {
+  if (!it) return 0;
+  const u = it.updated_at ? new Date(it.updated_at).getTime() : 0;
+  const d = it._deletedAt ? new Date(it._deletedAt).getTime() : 0;
+  return Math.max(u || 0, d || 0);
+}
 function _mergeArraysById(localArr, cloudArr, label) {
   const local = Array.isArray(localArr) ? localArr : [];
   const cloud = Array.isArray(cloudArr) ? cloudArr : [];
   const map = new Map();
-  let localWins = 0, cloudWins = 0, localOnly = 0, cloudOnly = 0;
+  let localWins = 0, cloudWins = 0, localOnly = 0, cloudOnly = 0, tombstones = 0;
 
-  // Seed with local items
+  // Seed with local items (including tombstones — they must survive merges
+  // so deletions can propagate to the cloud on next push).
   local.forEach(item => { if (item && item.id) map.set(item.id, { src: 'local', item }); });
 
   // Merge cloud items
@@ -3932,14 +3981,31 @@ function _mergeArraysById(localArr, cloudArr, label) {
     if (!item || !item.id) return;
     const existing = map.get(item.id);
     if (!existing) {
+      // Cloud-only item. Include it even if it's a tombstone — next pass
+      // may resurface it, and we want the tombstone recorded locally so a
+      // later cloud-resurrection attempt (with older ts) can't win.
       map.set(item.id, { src: 'cloud', item });
       cloudOnly++;
+      if (item._deleted) tombstones++;
     } else {
-      // Both have it — compare updated_at; cloud wins if no timestamps
-      const lTs = existing.item.updated_at ? new Date(existing.item.updated_at).getTime() : 0;
-      const cTs = item.updated_at ? new Date(item.updated_at).getTime() : 0;
-      if (cTs >= lTs) { map.set(item.id, { src: 'cloud', item }); cloudWins++; }
-      else { localWins++; }
+      // Both have it — use effective timestamp (max of updated_at, _deletedAt).
+      // If timestamps are missing on both, keep local (never blindly drop).
+      const lTs = _itemTs(existing.item);
+      const cTs = _itemTs(item);
+      if (cTs > lTs) { map.set(item.id, { src: 'cloud', item }); cloudWins++; }
+      else if (lTs > cTs) { localWins++; }
+      else {
+        // Exact tie — if either side is a tombstone, prefer the tombstone
+        // (deletions are sticky once both sides know about them).
+        if (existing.item._deleted || item._deleted) {
+          const winner = existing.item._deleted ? existing.item : item;
+          map.set(item.id, { src: 'tie-del', item: winner });
+        } else {
+          // Pure tie with both active — keep local to avoid overwriting
+          // unsynced local edits that happen to share a timestamp.
+          localWins++;
+        }
+      }
     }
   });
 
@@ -3949,8 +4015,9 @@ function _mergeArraysById(localArr, cloudArr, label) {
   });
 
   const merged = Array.from(map.values()).map(v => v.item);
+  // localOnly or localWins means we have state the cloud doesn't yet — push.
   if (localOnly > 0 || localWins > 0) _mergeHadLocalOnly = true;
-  console.info('[sync] merge ' + label + ': ' + merged.length + ' items (localOnly=' + localOnly + ', cloudOnly=' + cloudOnly + ', localWins=' + localWins + ', cloudWins=' + cloudWins + ')');
+  console.info('[sync] merge ' + label + ': ' + merged.length + ' items (localOnly=' + localOnly + ', cloudOnly=' + cloudOnly + ', localWins=' + localWins + ', cloudWins=' + cloudWins + ', tombstones=' + tombstones + ')');
   return merged;
 }
 
