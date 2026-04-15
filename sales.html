@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DB59JKBDZK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DB59JKBDZK');
+</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Meal Planning OS — "What's for Dinner?" Solved.</title>
@@ -338,8 +346,8 @@
     <h1>"What's for Dinner?" <em>Solved.</em></h1>
     <p class="sub">10 minutes on Sunday. Dinner decided for the whole week.</p>
     <div class="cta-row">
-      <a href="https://buy.stripe.com/dRmbJ1ewoaCH4cI7Uk3sI00" class="btn btn-primary">Lock in beta access — $29</a>
-      <a href="#how" class="btn btn-ghost">See it in action</a>
+      <a href="https://buy.stripe.com/dRmbJ1ewoaCH4cI7Uk3sI00" class="btn btn-primary" onclick="gtag('event','cta_click',{button_name:'access_top',button_location:'hero'});">Lock in beta access — $29</a>
+      <a href="#how" class="btn btn-ghost" onclick="gtag('event','cta_click',{button_name:'see_it_in_action',button_location:'hero'});">See it in action</a>
     </div>
     <div class="micro">One-time payment · Lifetime access · 7-day refund</div>
 
@@ -567,7 +575,7 @@
         <li>Freezer inventory with "use first" flags</li>
         <li>No subscription · No monthly charge to forget · No price increase, ever, for you</li>
       </ul>
-      <a href="https://buy.stripe.com/dRmbJ1ewoaCH4cI7Uk3sI00" class="btn btn-primary" style="width:100%;display:block;text-align:center">Get Access Now — $29</a>
+      <a href="https://buy.stripe.com/dRmbJ1ewoaCH4cI7Uk3sI00" class="btn btn-primary" style="width:100%;display:block;text-align:center" onclick="gtag('event','cta_click',{button_name:'access_middle',button_location:'pricing_card'});">Get Access Now — $29</a>
       <div class="guarantee">
         <b>The guarantee.</b> Not sure it'll stick? Try it for a full week. If it's not for you, email me within <b>7 days</b> and I'll refund you — no questions asked.
       </div>
@@ -629,7 +637,7 @@
   <section class="final">
     <h2>"What's for Dinner?" Solved.</h2>
     <p>Stop burning willpower on a decision you make 365 nights a year. Lock in $29 before the price moves to $97.</p>
-    <a href="https://buy.stripe.com/dRmbJ1ewoaCH4cI7Uk3sI00" class="btn btn-primary">Get Access Now — $29</a>
+    <a href="https://buy.stripe.com/dRmbJ1ewoaCH4cI7Uk3sI00" class="btn btn-primary" onclick="gtag('event','cta_click',{button_name:'access_bottom',button_location:'final_cta'});">Get Access Now — $29</a>
     <div class="micro">One-time · Lifetime access · 7-day refund</div>
 
     <div class="ps">
