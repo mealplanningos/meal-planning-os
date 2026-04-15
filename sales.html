@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Meal Planning OS — "What's for Dinner?" Solved.</title>
+<meta name="description" content="10 minutes on Sunday. Dinner decided for the whole week. A meal planning web app built by a former Coast Guard culinary specialist." />
+<style>
+  /* ======================================================================
+     All styles scoped to .mpos so the block is safe to drop into Beehiiv,
+     WordPress, or any host page without colliding with their CSS.
+     ====================================================================== */
+  .mpos{
+    --bg:#F6F7FB;
+    --bg-2:#FFFFFF;
+    --ink:#0E1736;
+    --ink-2:#3B4568;
+    --ink-3:#7C85A3;
+    --brand:#1F3FE0;
+    --brand-2:#1831B8;
+    --brand-soft:#EAEEFF;
+    --accent:#F6A723;
+    --green:#2F8A4A;
+    --warn:#D93B3B;
+    --line:#E3E6F2;
+    --card:#FFFFFF;
+    --shadow:0 1px 2px rgba(14,23,54,.04), 0 12px 28px rgba(14,23,54,.07);
+    --radius:14px;
+
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    font-size:17px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    text-align:left;
+  }
+  .mpos *{box-sizing:border-box}
+  .mpos img,.mpos video{max-width:100%;height:auto;display:block}
+
+  .mpos .wrap{max-width:1100px;margin:0 auto;padding:0 22px}
+  .mpos .narrow{max-width:760px;margin:0 auto;padding:0 22px}
+
+  /* ANNOUNCEMENT */
+  .mpos .ann{
+    background:var(--ink);color:#E7EBFA;
+    text-align:center;font-size:13px;padding:10px 18px;font-weight:500;letter-spacing:.2px;
+  }
+  .mpos .ann b{color:#fff}
+
+  /* NAV — centered logo only */
+  .mpos nav{
+    display:flex;align-items:center;justify-content:center;
+    padding:20px 22px 8px;max-width:1100px;margin:0 auto;
+  }
+  .mpos nav .logo img{height:38px}
+
+  /* HERO */
+  .mpos .hero{padding:46px 0 34px;text-align:center}
+  .mpos .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--brand-soft);color:var(--brand-2);
+    padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;
+    margin-bottom:22px;
+  }
+  .mpos .eyebrow::before{content:"●";color:var(--brand)}
+  .mpos h1{
+    font-size:clamp(34px,5.6vw,64px);line-height:1.05;letter-spacing:-1.2px;
+    margin:0 auto 18px;max-width:880px;font-weight:800;color:var(--ink);
+  }
+  .mpos h1 em{font-style:normal;color:var(--brand);position:relative;white-space:nowrap}
+  .mpos h1 em::after{
+    content:"";position:absolute;left:-2%;right:-2%;bottom:4px;height:12px;
+    background:rgba(31,63,224,.16);border-radius:4px;z-index:-1;
+  }
+  .mpos .sub{
+    font-size:clamp(17px,2vw,21px);color:var(--ink-2);
+    max-width:620px;margin:0 auto 28px;
+  }
+  .mpos .cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+  .mpos .btn{
+    display:inline-block;padding:16px 26px;border-radius:12px;
+    font-weight:700;font-size:16px;text-decoration:none;cursor:pointer;
+    border:none;transition:transform .08s ease, box-shadow .12s ease;
+    font-family:inherit;line-height:1.2;
+  }
+  .mpos .btn:active{transform:translateY(1px)}
+  .mpos .btn-primary{background:var(--brand);color:#fff;box-shadow:0 8px 24px rgba(31,63,224,.28)}
+  .mpos .btn-primary:hover{background:var(--brand-2)}
+  .mpos .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .mpos .btn-ghost:hover{border-color:var(--ink)}
+  .mpos .micro{font-size:13px;color:var(--ink-3)}
+
+  /* HERO VIDEO — phone-framed, modest size */
+  .mpos .hero-media{
+    margin:34px auto 0;max-width:280px;
+    border:9px solid #0e1736;border-radius:34px;overflow:hidden;
+    background:#0e1736;
+    box-shadow:0 22px 54px rgba(14,23,54,.22);
+  }
+  .mpos .hero-media video{width:100%;background:#0e1736}
+  .mpos .hero-media-caption{
+    text-align:center;color:var(--ink-3);font-size:13px;margin:12px auto 0;max-width:320px;
+  }
+
+  /* TRUST STRIP */
+  .mpos .trust{
+    margin-top:28px;padding:18px 16px;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    text-align:center;color:var(--ink-2);font-size:15px;letter-spacing:.2px;
+    background:#fff;
+  }
+  .mpos .trust b{color:var(--ink)}
+
+  /* SECTIONS */
+  .mpos section{padding:64px 0}
+  .mpos section h2{
+    font-size:clamp(26px,3.4vw,40px);line-height:1.15;letter-spacing:-.6px;
+    margin:0 0 14px;font-weight:800;color:var(--ink);
+  }
+  .mpos section .lede{color:var(--ink-2);font-size:17px;margin:0 0 26px}
+  .mpos .kicker{
+    text-transform:uppercase;letter-spacing:1.6px;font-size:12px;
+    color:var(--brand);font-weight:700;margin-bottom:10px;
+  }
+
+  /* FOUNDER STORY */
+  .mpos .story{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .mpos .story-grid{
+    display:grid;grid-template-columns:260px 1fr;gap:46px;align-items:start;
+  }
+  .mpos .headshot{
+    width:220px;height:220px;border-radius:50%;overflow:hidden;
+    box-shadow:0 12px 40px rgba(31,63,224,.2);
+    border:6px solid #fff;margin:0 auto;
+  }
+  .mpos .headshot img{width:100%;height:100%;object-fit:cover}
+  .mpos .byline{text-align:center;margin-top:14px;color:var(--ink-3);font-size:14px}
+  .mpos .byline b{color:var(--ink);display:block;font-size:15px;margin-bottom:2px}
+  .mpos .story p{margin:0 0 14px;color:var(--ink-2)}
+  .mpos .story p.emph{color:var(--ink);font-weight:600;font-size:19px}
+  .mpos .stat-row{
+    display:flex;gap:28px;margin-top:22px;padding-top:22px;border-top:1px solid var(--line);flex-wrap:wrap;
+  }
+  .mpos .stat{font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--brand);line-height:1}
+  .mpos .stat-label{color:var(--ink-3);font-size:13px;margin-top:4px}
+
+  /* WHAT IT IS */
+  .mpos .whatis-card{
+    background:#fff;border:1px solid var(--line);border-radius:18px;
+    padding:30px;box-shadow:var(--shadow);
+  }
+  .mpos .whatis-card ul{margin:14px 0 0;padding-left:22px;color:var(--ink-2)}
+  .mpos .whatis-card ul li{padding:4px 0}
+
+  /* STEPS (feature blocks) */
+  .mpos .features{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .mpos .feature{
+    display:grid;grid-template-columns:1fr 300px;gap:48px;align-items:center;
+    padding:48px 0;border-bottom:1px dashed var(--line);
+  }
+  .mpos .feature:last-child{border-bottom:none}
+  .mpos .feature.reverse .f-copy{order:2}
+  .mpos .feature.reverse .f-media{order:1}
+  .mpos .feature h3{font-size:26px;margin:0 0 10px;letter-spacing:-.3px;line-height:1.2;color:var(--ink)}
+  .mpos .feature p{color:var(--ink-2);margin:0 0 10px}
+  .mpos .tag{
+    display:inline-block;background:var(--brand-soft);color:var(--brand-2);
+    font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;
+    letter-spacing:.6px;text-transform:uppercase;margin-bottom:12px;
+  }
+  .mpos .f-media{display:flex;justify-content:center}
+  .mpos .phone{
+    width:100%;max-width:260px;border-radius:28px;overflow:hidden;
+    border:8px solid #0e1736;background:#0e1736;
+    box-shadow:0 22px 50px rgba(14,23,54,.18);
+  }
+
+  /* SETUP 3-UP */
+  .mpos .setup{background:var(--bg)}
+  .mpos .setup-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:28px}
+  .mpos .setup-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .mpos .setup-card .thumb{
+    background:linear-gradient(180deg,#F0F3FA,#E5EAF6);padding:22px 22px 0;
+    display:flex;justify-content:center;
+  }
+  .mpos .setup-card .thumb img{
+    max-width:180px;width:100%;border-radius:16px 16px 0 0;
+    box-shadow:0 -4px 24px rgba(14,23,54,.12);
+  }
+  .mpos .setup-card .body{padding:22px}
+  .mpos .setup-card .tag{margin-bottom:8px}
+  .mpos .setup-card h3{margin:0 0 6px;font-size:19px;color:var(--ink)}
+  .mpos .setup-card p{margin:0;color:var(--ink-2);font-size:15px}
+
+  /* WHO FOR / NOT FOR */
+  .mpos .compare{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:24px}
+  .mpos .col{border-radius:var(--radius);padding:26px;border:1px solid var(--line);background:#fff}
+  .mpos .col.not{background:#FBF7F2}
+  .mpos .col h3{margin:0 0 14px;font-size:18px;color:var(--ink)}
+  .mpos .col ul{list-style:none;padding:0;margin:0}
+  .mpos .col li{
+    padding:8px 0 8px 26px;color:var(--ink-2);font-size:15px;position:relative;
+  }
+  .mpos .col.for li::before{
+    content:"✓";color:var(--green);font-weight:800;
+    position:absolute;left:0;top:8px;
+  }
+  .mpos .col.not li::before{
+    content:"✕";color:var(--warn);font-weight:800;
+    position:absolute;left:0;top:8px;
+  }
+  .mpos .one-thing{
+    max-width:700px;margin:28px auto 0;text-align:center;color:var(--ink-2);font-size:16px;
+  }
+  .mpos .one-thing b{color:var(--ink)}
+
+  /* WHY NOT EXCEL */
+  .mpos .why{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .mpos .why .list{list-style:none;padding:0;margin:16px 0 0}
+  .mpos .why .list li{padding:6px 0;color:var(--ink-2)}
+  .mpos .why .list li::before{content:"—  ";color:var(--ink-3)}
+
+  /* TESTIMONIALS */
+  .mpos .testi-wrap{
+    background:#fff;border:1px solid var(--line);border-radius:18px;
+    padding:18px;box-shadow:var(--shadow);margin-top:24px;
+  }
+  .mpos .testi-wrap iframe{display:block;width:100%;border:0}
+  /* Testimonial.to widget has a minimum internal width that overflows on phones.
+     Scale the iframe down on narrow viewports so cards fit edge-to-edge. */
+  @media (max-width:640px){
+    .mpos .testi-wrap{padding:10px;border-radius:14px}
+  }
+  @media (max-width:520px){
+    .mpos .testi-wrap iframe{zoom:0.80}
+  }
+  @media (max-width:420px){
+    .mpos .testi-wrap iframe{zoom:0.68}
+  }
+
+  /* PRICING */
+  .mpos .pricing{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center}
+  .mpos .price-card{
+    max-width:480px;margin:28px auto 0;background:#fff;
+    border:2px solid var(--brand);border-radius:20px;padding:32px;
+    box-shadow:0 16px 48px rgba(31,63,224,.14);position:relative;text-align:left;
+  }
+  .mpos .price-card .ribbon{
+    position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+    background:var(--brand);color:#fff;font-size:12px;font-weight:700;
+    letter-spacing:.8px;padding:6px 14px;border-radius:999px;text-transform:uppercase;
+  }
+  .mpos .price{font-size:60px;font-weight:800;letter-spacing:-2px;line-height:1;margin:6px 0 0;text-align:center;color:var(--ink)}
+  .mpos .price .strike{font-size:22px;color:var(--ink-3);text-decoration:line-through;margin-right:12px;font-weight:600}
+  .mpos .price-sub{color:var(--ink-3);font-size:14px;margin:4px 0 18px;text-align:center}
+  .mpos .spots{
+    background:var(--brand-soft);color:var(--brand-2);
+    text-align:center;padding:10px;border-radius:10px;font-size:13px;font-weight:700;
+    margin-bottom:18px;
+  }
+  .mpos .bullets{list-style:none;padding:0;margin:0 0 22px}
+  .mpos .bullets li{
+    padding:7px 0 7px 26px;color:var(--ink-2);font-size:15px;position:relative;
+  }
+  .mpos .bullets li::before{
+    content:"✓";color:var(--green);font-weight:800;
+    position:absolute;left:0;top:7px;
+  }
+  .mpos .guarantee{margin-top:16px;font-size:13px;color:var(--ink-3);text-align:center}
+  .mpos .guarantee b{color:var(--ink)}
+
+  /* FAQ */
+  .mpos .faq{max-width:760px;margin:0 auto}
+  .mpos details{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 22px;margin-bottom:10px;
+  }
+  .mpos summary{cursor:pointer;font-weight:700;font-size:17px;list-style:none;display:flex;justify-content:space-between;align-items:center;color:var(--ink)}
+  .mpos summary::-webkit-details-marker{display:none}
+  .mpos summary::after{content:"+";color:var(--brand);font-weight:800;font-size:22px;margin-left:10px}
+  .mpos details[open] summary::after{content:"−"}
+  .mpos details p{color:var(--ink-2);margin:10px 0 0}
+
+  /* FINAL CTA */
+  .mpos .final{
+    background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;
+    text-align:center;padding:68px 22px;
+  }
+  .mpos .final h2{color:#fff;font-size:clamp(28px,4vw,44px);margin:0 0 14px}
+  .mpos .final p{color:#DCE3FF;font-size:18px;max-width:600px;margin:0 auto 24px}
+  .mpos .final .btn-primary{background:#fff;color:var(--brand);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  .mpos .final .btn-primary:hover{background:#F0F3FF}
+  .mpos .final .micro{color:#C7D1FF;margin-top:10px}
+  .mpos .ps{
+    max-width:600px;margin:28px auto 0;padding:18px 20px;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:14px;
+    color:#E7EBFA;font-size:15px;text-align:left;
+  }
+  .mpos .ps b{color:#fff}
+
+  /* FOOTER */
+  .mpos .footer{padding:30px 22px;text-align:center;color:var(--ink-3);font-size:13px}
+  .mpos .footer a{color:var(--ink-3);text-decoration:none;margin:0 8px}
+
+  /* MOBILE */
+  @media (max-width:860px){
+    .mpos nav{padding:16px 18px 6px}
+    .mpos nav .logo img{height:30px}
+    .mpos .story-grid{grid-template-columns:1fr;gap:22px}
+    .mpos .headshot{width:170px;height:170px}
+    .mpos .feature{grid-template-columns:1fr;gap:24px;padding:32px 0}
+    .mpos .feature.reverse .f-copy{order:0}
+    .mpos .feature.reverse .f-media{order:1}
+    .mpos .setup-grid,.mpos .compare{grid-template-columns:1fr}
+    .mpos section{padding:48px 0}
+    .mpos .price-card{padding:24px 20px}
+    .mpos .price{font-size:52px}
+    .mpos .btn{width:100%;text-align:center;padding:14px 20px}
+    .mpos .cta-row .btn{max-width:320px}
+    .mpos .stat-row{gap:18px}
+    .mpos .stat{font-size:28px}
+    .mpos .ps{margin:22px 0 0}
+  }
+</style>
+</head>
+<body>
+
+<div class="mpos">
+
+  <div class="ann">🔒 <b>Beta pricing is closing.</b> &nbsp;Once the beta fills, $29 moves to $97 — permanently.</div>
+
+  <nav>
+    <a href="#" class="logo"><img src="/sales-assets/logo.png" alt="Meal Planning OS" /></a>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero wrap">
+    <div class="eyebrow">Built on 300,000+ meals of real-world planning</div>
+    <h1>"What's for Dinner?" <em>Solved.</em></h1>
+    <p class="sub">10 minutes on Sunday. Dinner decided for the whole week.</p>
+    <div class="cta-row">
+      <a href="https://buy.stripe.com/dRmbJ1ewoaCH4cI7Uk3sI00" class="btn btn-primary">Lock in beta access — $29</a>
+      <a href="#how" class="btn btn-ghost">See it in action</a>
+    </div>
+    <div class="micro">One-time payment · Lifetime access · 7-day refund</div>
+
+    <div class="hero-media">
+      <video src="/sales-assets/demo.mp4" poster="/sales-assets/demo-poster.jpg" autoplay muted loop playsinline></video>
+    </div>
+    <div class="hero-media-caption">A short tour of the weekly flow.</div>
+  </header>
+
+  <div class="trust"><b>10 minutes on Sunday.</b> &nbsp;Dinner decided for the whole week.</div>
+
+  <!-- FOUNDER STORY -->
+  <section class="story">
+    <div class="wrap">
+      <div class="kicker">How this started</div>
+      <h2 style="max-width:720px">I planned meals for 200 sailors. Half a million dollars in groceries. 300,000+ meals.</h2>
+      <div class="story-grid">
+        <div>
+          <div class="headshot"><img src="/sales-assets/headshot.png" alt="Steven, founder of Meal Planning OS" /></div>
+          <div class="byline"><b>Steven</b>Founder · Former U.S. Coast Guard Culinary Specialist</div>
+        </div>
+        <div>
+          <p>On a ship, you can't stop at a grocery store when you run low. You learn fast when winging it isn't an option.</p>
+          <p>When I got home, I figured feeding one person in a fully stocked kitchen would be easy.</p>
+          <p class="emph">It wasn't.</p>
+          <p>Because at sea, the decision was already made. At home, every night at 6pm — after you've already solved a hundred problems — the question hits again.</p>
+          <p class="emph">"What's for dinner?"</p>
+          <p>So you order out. Again.</p>
+          <p>I took the same system I used at sea and rebuilt it for real life. That's Meal Planning OS.</p>
+          <div class="stat-row">
+            <div><div class="stat">300k+</div><div class="stat-label">Meals planned &amp; executed</div></div>
+            <div><div class="stat">$500k</div><div class="stat-label">In groceries managed</div></div>
+            <div><div class="stat">10 min</div><div class="stat-label">To plan your whole week</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT IT ACTUALLY IS -->
+  <section>
+    <div class="narrow">
+      <div class="kicker">What it actually is</div>
+      <h2>Meal Planning OS is a web app.</h2>
+      <div class="whatis-card">
+        <p style="margin:0 0 6px">No app store. No phone install. Just open the website and log in from any device — phone, laptop, tablet. Your data syncs across all of them.</p>
+        <p style="margin:0"><strong>Your plan, your recipes, and your grocery list all live in one place.</strong></p>
+        <ul>
+          <li>It's not a <b>course</b>, a <b>PDF</b>, or a meal kit.</li>
+          <li>It's a simple planning tool you use once a week — for 10 minutes.</li>
+          <li>At the grocery store, your list is already in your pocket — sorted by section.</li>
+          <li>At dinner time, you pull up the recipe on any screen. No cookbook, no scrolling.</li>
+          <li>Your partner or spouse can log in with the same account.</li>
+          <li>Their grocery list updates in real time when you make changes. No more "did you add milk?" texts.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEE IT IN ACTION -->
+  <section class="features" id="how">
+    <div class="wrap">
+      <div class="narrow" style="padding-bottom:10px">
+        <div class="kicker">See it in action</div>
+        <h2>Three steps. Ten minutes. Done for the week.</h2>
+      </div>
+
+      <!-- STEP 1 -->
+      <div class="feature">
+        <div class="f-copy">
+          <span class="tag">Step 1</span>
+          <h3>Plan your week.</h3>
+          <p>Log your commitments for each day — late meeting Monday, gym Tuesday, family dinner Thursday.</p>
+          <p>The app puts them right on your meal plan, so you're planning around your real life — not a fantasy version of it.</p>
+          <p><strong>Weekends are optional.</strong> Plan them if you want structure, leave them open if you'd rather play it by ear. The real work is Monday–Friday.</p>
+        </div>
+        <div class="f-media"><div class="phone"><img src="/sales-assets/IMG_8294.png" alt="Step 1 — Plan Your Week" /></div></div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="feature reverse">
+        <div class="f-copy">
+          <span class="tag">Step 2</span>
+          <h3>Assign meals to your week.</h3>
+          <p>Drop into a Monday–Sunday meal grid. Drop in a recipe from your library — or plug in leftovers, planned takeout, an eating-out night, or a freezer meal you already batch-cooked.</p>
+          <p><strong>Takes about 3 minutes once your menu is built.</strong></p>
+        </div>
+        <div class="f-media"><div class="phone"><img src="/sales-assets/IMG_8295.png" alt="Step 2 — Assign Meals" /></div></div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="feature">
+        <div class="f-copy">
+          <span class="tag">Step 3</span>
+          <h3>Your grocery list builds itself.</h3>
+          <p>Every ingredient, across every meal, already scaled to your serving size — sorted by store section. Produce. Protein. Pantry. Etc.</p>
+          <p><strong>This tool pays for itself the first time you skip the takeout.</strong></p>
+        </div>
+        <div class="f-media"><div class="phone"><img src="/sales-assets/IMG_8296.png" alt="Step 3 — Grocery List Builds Itself" /></div></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ONE-TIME SETUP -->
+  <section class="setup">
+    <div class="narrow">
+      <div class="kicker">First-time setup</div>
+      <h2>Do this once. Use it every week forever.</h2>
+      <p class="lede">You load your personal recipe library and build your No-Decision Menu one time. The whole setup takes under 10 minutes. After that, weekly planning is about 10 minutes on Sunday.</p>
+    </div>
+    <div class="wrap">
+      <div class="setup-grid">
+        <div class="setup-card">
+          <div class="thumb"><img src="/sales-assets/IMG_8289.png" alt="Setup 1 — Recipe Library" /></div>
+          <div class="body">
+            <span class="tag">Setup 1 of 3</span>
+            <h3>Select your recipes.</h3>
+            <p>Paste any recipe URL to auto-import it, or add your own from scratch. A library of tested recipes comes loaded, with new ones added monthly.</p>
+          </div>
+        </div>
+        <div class="setup-card">
+          <div class="thumb"><img src="/sales-assets/IMG_8290.png" alt="Setup 2 — No-Decision Menu" /></div>
+          <div class="body">
+            <span class="tag">Setup 2 of 3</span>
+            <h3>Build your No-Decision Menu.</h3>
+            <p>Pick up to 5 Go-To recipes (reliable, no-brainer meals you could cook half-asleep) and up to 5 Experimental ones. Each category caps at 5 max on purpose. To reduce decisions.</p>
+          </div>
+        </div>
+        <div class="setup-card">
+          <div class="thumb"><img src="/sales-assets/IMG_8291.png" alt="Setup 3 — Freezer Inventory" /></div>
+          <div class="body">
+            <span class="tag">Setup 3 of 3</span>
+            <h3>Stock your freezer <em>(optional)</em>.</h3>
+            <p>Already have meals in the freezer? Log them once so you can drop them into any day of your plan. Skip if your freezer is empty — come back anytime you batch cook.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHO FOR / NOT FOR -->
+  <section>
+    <div class="narrow">
+      <div class="kicker">Who this is for</div>
+      <h2>Be honest with yourself.</h2>
+    </div>
+    <div class="wrap">
+      <div class="compare">
+        <div class="col for">
+          <h3>This is for you if any of these hit close:</h3>
+          <ul>
+            <li>Busy weeks mean food is always the last thing figured out</li>
+            <li>Tried meal planning before and quit because it felt like a second job</li>
+            <li>Spending more on takeout than you want to admit</li>
+            <li>Know eating better would change everything, but can't make it stick</li>
+            <li>Done with recipe apps and subscription boxes — and want a system that just works</li>
+          </ul>
+        </div>
+        <div class="col not">
+          <h3>Close this page if any of these sound like you:</h3>
+          <ul>
+            <li>Cooking is a creative hobby — the browsing, experimenting, and improvising is the enjoyable part</li>
+            <li>A meal kit with ingredients shipped to the door is what you're after</li>
+            <li>You want a calorie tracker so you can eat recipes with the perfect macros</li>
+          </ul>
+        </div>
+      </div>
+      <p class="one-thing">Meal Planning OS does one thing — <b>makes sure the decision is already made before the week starts</b>, so you can focus on what actually matters.</p>
+    </div>
+  </section>
+
+  <!-- WHY NOT EXCEL -->
+  <section class="why">
+    <div class="narrow">
+      <div class="kicker">Why not just use Excel / Notes / whatever</div>
+      <h2>I tried all of it.</h2>
+      <ul class="list">
+        <li>Google Sheets</li>
+        <li>Notes app</li>
+        <li>Whiteboard on the fridge</li>
+      </ul>
+      <p style="margin-top:18px">They work for about 10 days and then fall apart the moment life gets busy — which is exactly when you need a system the most.</p>
+      <p><strong>Meal Planning OS keeps your recipes, your plan, your grocery list, and your freezer inventory in one place, all synced, all automatically calculated.</strong></p>
+      <p>10 minutes. Saves you hours all week.</p>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS (testimonial.to embed) -->
+  <section>
+    <div class="narrow">
+      <div class="kicker">What users are saying</div>
+      <h2>The system works. Here's what people say after using it.</h2>
+    </div>
+    <div class="wrap">
+      <div class="testi-wrap">
+        <script type="text/javascript" src="https://testimonial.to/js/iframeResizer.min.js"></script>
+        <iframe id="testimonialto-43efbcf1-717d-4ef7-b311-fc8cc60a1fc6" src="https://embed-v2.testimonial.to/w/meal-planning-os?id=43efbcf1-717d-4ef7-b311-fc8cc60a1fc6" frameborder="0" scrolling="no" width="100%"></iframe>
+        <script type="text/javascript">iFrameResize({log:false,checkOrigin:false},'#testimonialto-43efbcf1-717d-4ef7-b311-fc8cc60a1fc6');</script>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing" id="pricing">
+    <div class="narrow">
+      <div class="kicker">The price</div>
+      <h2>$29. One time. Yours forever.</h2>
+      <p class="lede">That's the beta price. It won't last long. Once the beta fills, the price moves to <b>$97</b> permanently.</p>
+    </div>
+    <div class="price-card">
+      <div class="ribbon">Beta Access</div>
+      <div class="price"><span class="strike">$97</span>$29</div>
+      <div class="price-sub">one-time payment · lifetime access</div>
+      <div class="spots">⚡ Limited beta spots — price jumps to $97 when filled</div>
+
+      <p style="margin:0 0 8px;font-weight:700">What you're getting at this price:</p>
+      <ul class="bullets">
+        <li>Lifetime access to Meal Planning OS, built from 300,000+ meals of real-world planning</li>
+        <li>A direct line to me while it's still being shaped — beta users have real influence over what gets built next</li>
+        <li>A library of tested recipes pre-loaded, with new recipes added monthly</li>
+        <li>One-click recipe URL import</li>
+        <li>No-Decision Menu + weekly meal grid</li>
+        <li>Auto-generated, store-section-sorted grocery list</li>
+        <li>Freezer inventory with "use first" flags</li>
+        <li>No subscription · No monthly charge to forget · No price increase, ever, for you</li>
+      </ul>
+      <a href="https://buy.stripe.com/dRmbJ1ewoaCH4cI7Uk3sI00" class="btn btn-primary" style="width:100%;display:block;text-align:center">Get Access Now — $29</a>
+      <div class="guarantee">
+        <b>The guarantee.</b> Not sure it'll stick? Try it for a full week. If it's not for you, email me within <b>7 days</b> and I'll refund you — no questions asked.
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section style="background:var(--bg)">
+    <div class="narrow">
+      <div class="kicker">Questions</div>
+      <h2>Things people ask before buying.</h2>
+      <div class="faq" style="margin-top:28px">
+
+        <details>
+          <summary>Is this an app I have to install?</summary>
+          <p>No. It's a web app. Open the website, log in from any device — phone, laptop, tablet. Nothing to download.</p>
+        </details>
+
+        <details>
+          <summary>Is this a recipe app?</summary>
+          <p>Not really. A library of tested recipes comes loaded (with new ones added monthly) and you can import any recipe URL in one click, but the real product is the <em>system</em> that turns those recipes into a decided week. The win isn't "find me a recipe" — it's "the decision is already made."</p>
+        </details>
+
+        <details>
+          <summary>How long does setup take?</summary>
+          <p>Under 10 minutes. Load your recipes, pick your No-Decision Menu, optionally log the freezer. After that, weekly planning is about 10 minutes on Sunday.</p>
+        </details>
+
+        <details>
+          <summary>Can my partner / spouse use it too?</summary>
+          <p>Yes. Share the login. Their grocery list updates in real time when you make changes. No more "did you add milk?" texts.</p>
+        </details>
+
+        <details>
+          <summary>Is there a subscription?</summary>
+          <p>No. $29, one time, lifetime access. No monthly charge. No price increase for you, ever.</p>
+        </details>
+
+        <details>
+          <summary>What happens after the beta?</summary>
+          <p>Once the beta fills, new access moves to $97 permanently. Everyone who bought at $29 keeps their access and all future updates.</p>
+        </details>
+
+        <details>
+          <summary>What if it doesn't work for me?</summary>
+          <p>Try it for a full week. If it's not for you, email me within 7 days and I'll refund you. No questions asked.</p>
+        </details>
+
+        <details>
+          <summary>Who built this?</summary>
+          <p>Steven — a former U.S. Coast Guard culinary specialist who planned and executed 300,000+ meals and managed over half a million dollars in groceries for ships at sea, where there's no running to the store when you run out. Meal Planning OS is that playbook, shrunk to fit your week.</p>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="final">
+    <h2>"What's for Dinner?" Solved.</h2>
+    <p>Stop burning willpower on a decision you make 365 nights a year. Lock in $29 before the price moves to $97.</p>
+    <a href="https://buy.stripe.com/dRmbJ1ewoaCH4cI7Uk3sI00" class="btn btn-primary">Get Access Now — $29</a>
+    <div class="micro">One-time · Lifetime access · 7-day refund</div>
+
+    <div class="ps">
+      <b>P.S.</b> The grocery list alone has saved people more than $29 in one week of skipped takeout. Just saying.
+    </div>
+  </section>
+
+  <div class="footer">
+    <div>Meal Planning OS · Built by Steven · <a href="mailto:steven@mealplanningos.com">steven@mealplanningos.com</a></div>
+    <div style="margin-top:8px">
+      <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+
+</div><!-- /.mpos -->
+
+</body>
+</html>
