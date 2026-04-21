@@ -1,0 +1,2492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>1-minute dinner planner — Meal Planning OS</title>
+<meta name="description" content="Decide dinner once. Stop deciding every night. A free 1-minute planner from Meal Planning OS." />
+<meta property="og:title" content="1-minute dinner planner — Meal Planning OS" />
+<meta property="og:description" content="Decide dinner once. Stop deciding every night. A free 1-minute planner from Meal Planning OS." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://mealplanningos.com/planner" />
+<meta property="og:image" content="https://mealplanningos.com/og/planner-1200x630.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="1-minute dinner planner — Meal Planning OS" />
+<meta name="twitter:description" content="Decide dinner once. Stop deciding every night." />
+<meta name="twitter:image" content="https://mealplanningos.com/og/planner-1200x630.png" />
+
+<!-- Subscribe flow goes through /.netlify/functions/subscribe → Beehiiv API.
+     No iframe, no embed scripts, no CSRF dance. -->
+
+
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+
+<style>
+/* =============================================================================
+   MPOS TOKENS (from mpos-tokens.css — verbatim)
+   ============================================================================= */
+:root {
+  /* Cobalt */
+  --cobalt-50:#eef2ff; --cobalt-100:#e0e7ff; --cobalt-200:#c7d2fe; --cobalt-300:#a5b4fc;
+  --cobalt-400:#818cf8; --cobalt-500:#4f46e5; --cobalt-600:#2b3dd6; --cobalt-700:#1e2fb8;
+  --cobalt-800:#1a2a9c; --cobalt-900:#0f1a6b;
+  --cobalt:var(--cobalt-600);
+
+  /* Ink */
+  --ink-900:#0a0f1f; --ink-800:#111827; --ink-700:#1f2937; --ink-600:#374151;
+  --ink-500:#6b7280; --ink-400:#9ca3af; --ink-300:#d1d5db; --ink-200:#e5e7eb;
+  --ink-100:#f3f4f6; --ink-50:#f9fafb;
+
+  /* Surfaces */
+  --bg-page:#eef1fb; --bg-page-alt:#f5f7fd; --bg-surface:#ffffff;
+  --bg-surface-2:#f7f9ff; --bg-inverse:#0a0f1f;
+
+  /* Accents */
+  --accent-status:#22c55e; --accent-warn:#f59e0b; --accent-event:#ef4444;
+
+  /* Type */
+  --font-sans:'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Shadows */
+  --shadow-1: 0 1px 2px rgba(15, 26, 107, 0.06), 0 1px 1px rgba(15, 26, 107, 0.04);
+  --shadow-2: 0 2px 6px rgba(15, 26, 107, 0.08), 0 1px 2px rgba(15, 26, 107, 0.05);
+  --shadow-3: 0 8px 24px rgba(15, 26, 107, 0.10), 0 2px 6px rgba(15, 26, 107, 0.06);
+  --shadow-focus: 0 0 0 3px rgba(43, 61, 214, 0.25);
+  --shadow-brand: 0 6px 16px rgba(43, 61, 214, 0.28);
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dur-med: 200ms;
+}
+
+/* =============================================================================
+   BASE
+   ============================================================================= */
+*,*::before,*::after { box-sizing: border-box; }
+html,body { margin:0; padding:0; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-page);
+  color: var(--ink-900);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px 20px 80px;
+}
+
+/* =============================================================================
+   HEADER / LOGO
+   ============================================================================= */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 24px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+.logo-svg {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.logo-text {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink-900);
+  line-height: 1;
+}
+.logo-text span { color: var(--cobalt-600); }
+.header-meta {
+  font-size: 11px;
+  color: var(--ink-500);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* =============================================================================
+   PROGRESS
+   ============================================================================= */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.progress-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--cobalt-600);
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.progress-track {
+  flex: 1;
+  height: 3px;
+  background: var(--ink-100);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--cobalt-600);
+  transition: width var(--dur-med) var(--ease-standard);
+}
+
+/* =============================================================================
+   TYPOGRAPHY BLOCKS
+   ============================================================================= */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cobalt-600);
+  margin-bottom: 8px;
+}
+h1.h1 {
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  color: var(--ink-900);
+  margin: 0 0 10px;
+}
+@media (min-width: 520px) {
+  h1.h1 { font-size: 34px; }
+}
+.sub {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-600);
+  margin: 0 0 20px;
+  max-width: 540px;
+}
+/* =============================================================================
+   CARDS / PICKERS
+   ============================================================================= */
+.option-list { display: grid; gap: 10px; margin: 0 0 24px; }
+
+.option-card {
+  background: var(--bg-surface);
+  border: 1.5px solid var(--ink-200);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 140ms var(--ease-standard);
+  box-shadow: var(--shadow-1);
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  color: inherit;
+}
+.option-card:hover { border-color: var(--cobalt-300); }
+.option-card:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.option-card.selected {
+  border-color: var(--cobalt-600);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 3px rgba(43,61,214,0.12), var(--shadow-1);
+}
+
+.check {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid var(--ink-300);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  transition: all 120ms var(--ease-standard);
+}
+.option-card.selected .check {
+  border-color: var(--cobalt-600);
+  background: var(--cobalt-600);
+}
+.check svg { display: none; }
+.option-card.selected .check svg { display: block; }
+
+.option-body { flex: 1; min-width: 0; }
+.option-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-900);
+  line-height: 1.25;
+  margin-bottom: 2px;
+}
+.option-meta {
+  font-size: 12.5px;
+  color: var(--ink-500);
+  font-weight: 500;
+}
+.option-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cobalt-600);
+  padding: 2px 6px;
+  background: var(--cobalt-50);
+  border-radius: 4px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+/* =============================================================================
+   CTAs
+   ============================================================================= */
+.cta-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+.cta {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 13px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  transition: all 200ms var(--ease-standard);
+}
+.cta-primary {
+  background: var(--cobalt-600);
+  color: #fff;
+  box-shadow: var(--shadow-brand);
+  flex: 1;
+}
+.cta-primary:hover { background: var(--cobalt-700); }
+.cta-primary:disabled {
+  background: var(--ink-300);
+  color: var(--ink-500);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.cta-ghost {
+  background: #fff;
+  color: var(--ink-900);
+  border: 1px solid var(--ink-200);
+}
+.cta-ghost:hover { border-color: var(--ink-300); background: var(--bg-surface-2); }
+.cta-text {
+  background: none;
+  border: none;
+  color: var(--cobalt-600);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 4px;
+}
+.cta-text:hover { color: var(--cobalt-700); }
+
+.context-meta {
+  font-size: 12.5px;
+  color: var(--ink-500);
+  margin-bottom: 14px;
+  letter-spacing: 0.01em;
+}
+.context-meta .day-chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  background: var(--ink-100);
+  border-radius: 4px;
+  margin-right: 6px;
+  color: var(--ink-700);
+  text-transform: uppercase;
+}
+
+/* =============================================================================
+   PLAN (STEP 5) — hi-fi light card with header bar
+   ============================================================================= */
+.plan-intro {
+  margin: 0 0 16px;
+}
+.plan-intro .eyebrow { color: var(--cobalt-600); }
+.plan-intro h1.h1 { margin-bottom: 8px; }
+.plan-intro .sub {
+  color: var(--ink-600);
+  margin-bottom: 0;
+}
+.plan-intro .sub strong { color: var(--ink-900); font-weight: 700; }
+
+.plan-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--ink-200);
+  border-radius: 12px;
+  margin: 0 0 16px;
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.plan-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ink-200);
+}
+.plan-card-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-900);
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+.plan-card-header .eyebrow {
+  margin: 0;
+  color: var(--ink-500);
+}
+.plan-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ink-100);
+  background: var(--bg-surface);
+}
+.plan-row:last-child { border-bottom: none; }
+.plan-day {
+  width: 42px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+.plan-day .day-code {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-900);
+}
+.plan-day .date {
+  display: block;
+  font-size: 10px;
+  color: var(--ink-500);
+  margin-top: 2px;
+}
+.plan-meal { flex: 1; min-width: 0; }
+.plan-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cobalt-600);
+  line-height: 1.3;
+}
+.plan-theme {
+  font-size: 11px;
+  color: var(--ink-500);
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+/* Recipe collapsibles */
+.recipe {
+  padding: 0 16px 14px 70px;
+  border-bottom: 1px solid var(--ink-100);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-700);
+  background: var(--bg-surface);
+}
+.recipe:last-child { border-bottom: none; }
+.recipe-steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.recipe-steps li {
+  counter-increment: step;
+  padding: 3px 0 3px 22px;
+  position: relative;
+}
+.recipe-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  background: var(--cobalt-50);
+  color: var(--cobalt-700);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+
+/* Grocery card — hi-fi header bar */
+.grocery-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--ink-200);
+  border-radius: 12px;
+  margin: 0 0 20px;
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+.grocery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ink-200);
+}
+.grocery-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-900);
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+.grocery-header .eyebrow {
+  margin: 0;
+  color: var(--ink-500);
+}
+.grocery-body { padding: 14px 16px 16px; }
+.grocery-section { margin-bottom: 14px; }
+.grocery-section:last-child { margin-bottom: 0; }
+.grocery-section h4 {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-900);
+  margin: 0 0 8px;
+}
+.grocery-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--ink-700);
+}
+.grocery-item .check { width: 18px; height: 18px; border-radius: 4px; }
+.grocery-item.checked { color: var(--ink-400); text-decoration: line-through; }
+.grocery-item .qty {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-500);
+  font-weight: 500;
+}
+.grocery-assumes {
+  font-size: 11px;
+  color: var(--ink-500);
+  padding: 12px 16px;
+  border-top: 1px dashed var(--ink-200);
+  line-height: 1.5;
+  background: var(--bg-surface-2);
+}
+
+/* =============================================================================
+   EMAIL CAPTURE — hi-fi dark inverse block
+   ============================================================================= */
+.capture {
+  background: var(--bg-inverse);
+  color: #fff;
+  border-radius: 12px;
+  padding: 22px 22px;
+  margin: 0 0 20px;
+  position: relative;
+  overflow: hidden;
+}
+.capture::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% 0%, rgba(43,61,214,0.22) 0%, transparent 60%);
+  pointer-events: none;
+}
+.capture > * { position: relative; z-index: 1; }
+.capture .eyebrow {
+  color: var(--cobalt-300);
+  margin-bottom: 8px;
+}
+.capture h2 {
+  font-size: 20px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 8px;
+}
+.capture p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.68);
+  margin: 0 0 14px;
+}
+/* Native subscribe form — posts to /.netlify/functions/subscribe → Beehiiv API */
+.capture-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.capture-input {
+  width: 100%;
+  padding: 13px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--ink-900);
+  background: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  outline: none;
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+}
+.capture-input:focus {
+  border-color: var(--cobalt-300);
+  box-shadow: 0 0 0 3px rgba(124,138,255,0.35);
+}
+.capture-input:disabled { opacity: 0.7; cursor: not-allowed; }
+.capture-submit {
+  width: 100%;
+  padding: 13px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--cobalt-600, #2b3dd6);
+  border: 1px solid var(--cobalt-600, #2b3dd6);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 80ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+.capture-submit:hover:not(:disabled) { background: #3a4cee; }
+.capture-submit:active:not(:disabled) { transform: translateY(1px); }
+.capture-submit:disabled { opacity: 0.7; cursor: not-allowed; }
+.capture-error {
+  font-size: 13px;
+  color: #ffb4b4;
+  margin-top: 2px;
+}
+.capture-success {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  text-align: center;
+  padding: 14px 10px;
+  margin-top: 4px;
+  letter-spacing: -0.005em;
+}
+
+.save-hint {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--ink-600);
+  background: var(--bg-surface-2);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin: 0 0 12px;
+  line-height: 1.45;
+}
+.save-hint strong { color: var(--ink-900); font-weight: 700; }
+.share-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0 0 24px;
+}
+.share-row button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 14px;
+  background: var(--bg-surface);
+  color: var(--ink-700);
+  border: 1px solid var(--ink-200);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: var(--shadow-1);
+}
+.share-row button:hover { border-color: var(--ink-300); }
+.share-row button.primary {
+  background: var(--cobalt-600);
+  color: #fff;
+  border-color: var(--cobalt-600);
+}
+.share-row button.primary:hover { background: var(--cobalt-700); border-color: var(--cobalt-700); }
+
+/* Win callout — the "you saved X hours" block */
+.win-callout {
+  background: var(--cobalt-50);
+  border: 1px solid var(--cobalt-200);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.win-callout-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--cobalt-600);
+  color: #fff;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.win-callout-body { flex: 1; }
+.win-callout-headline {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink-900);
+  line-height: 1.3;
+}
+.win-callout-sub {
+  font-size: 12px;
+  color: var(--ink-600);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.footer-meta {
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-400);
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ink-200);
+}
+
+/* =============================================================================
+   NIGHTS PICKER — hi-fi day rows
+   ============================================================================= */
+.nights-list {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.night-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--ink-200);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  transition: all 140ms var(--ease-standard);
+}
+.night-row:hover { border-color: var(--cobalt-300); }
+.night-row:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.night-row.selected {
+  border-color: var(--cobalt-600);
+  box-shadow: 0 2px 8px rgba(43,61,214,0.12);
+}
+.night-row-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid var(--ink-300);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: #fff;
+  transition: all 120ms var(--ease-standard);
+}
+.night-row.selected .night-row-check {
+  border-color: var(--cobalt-600);
+  background: var(--cobalt-600);
+}
+.night-row-check svg { display: none; }
+.night-row.selected .night-row-check svg { display: block; }
+.night-row-label {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+.night-count {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--ink-500);
+  margin: 0 0 16px;
+  min-height: 18px;
+}
+
+/* =============================================================================
+   THEME GRID — 2-column hi-fi
+   ============================================================================= */
+.theme-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.theme-card {
+  padding: 14px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--ink-200);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  transition: all 140ms var(--ease-standard);
+}
+.theme-card:hover { border-color: var(--cobalt-300); }
+.theme-card:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.theme-card.selected {
+  border-color: var(--cobalt-600);
+  box-shadow: 0 2px 8px rgba(43,61,214,0.12);
+}
+.theme-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-900);
+  margin-bottom: 4px;
+  line-height: 1.25;
+}
+.theme-card.selected .theme-card-title { color: var(--cobalt-700); }
+.theme-card-meta {
+  font-size: 11px;
+  color: var(--ink-500);
+  font-weight: 500;
+}
+
+/* Theme confirmation chip (hi-fi "you picked X" block) */
+.theme-confirm {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--cobalt-50);
+  border: 1px solid var(--cobalt-200);
+  margin: 0 0 20px;
+}
+.theme-confirm .eyebrow { margin-bottom: 6px; }
+.theme-confirm-sub {
+  font-size: 13.5px;
+  color: var(--ink-700);
+  line-height: 1.4;
+}
+
+/* =============================================================================
+   MEAL PICKER — radio variant of option-card
+   ============================================================================= */
+.option-card--radio .check {
+  border-radius: 50%;
+  background: transparent !important;
+  border: 1.5px solid var(--ink-300);
+  position: relative;
+}
+.option-card--radio.selected .check {
+  border-color: var(--cobalt-600);
+  background: transparent !important;
+}
+.option-card--radio .check svg { display: none !important; }
+.option-card--radio.selected .check::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cobalt-600);
+}
+
+/* =============================================================================
+   PRINT
+   ============================================================================= */
+@media print {
+  body { background: #fff; }
+  .page { padding: 0; max-width: none; }
+  .header, .progress-row, .cta-row, .share-row, .save-hint, .capture, .win-callout, .eyebrow.no-print { display: none !important; }
+  .plan-intro h1.h1 { color: #000; }
+  .plan-card, .grocery-card { break-inside: avoid; box-shadow: none; border: 1px solid #999; }
+  .recipe { break-inside: avoid; }
+}
+</style>
+</head>
+
+<body>
+<div id="root"></div>
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel" data-presets="env,react">
+/* =============================================================================
+   CONFIG — edit these two lines before deploying
+   ============================================================================= */
+
+// Beehiiv subscribe — uses Beehiiv's published iframe embed. embed.js auto-resizes.
+// Attribution: Beehiiv captures the parent page URL as referrer, so subscribers who sign up
+// from /planner show up tagged in the Beehiiv subscriber detail view.
+const BEEHIIV_FORM_ID = "3de9ac58-4416-491a-af08-7df9ede64d1f";
+
+// Soft-upsell target (logo link at top of page)
+const UPSELL_URL = "https://mealplanningos.com";
+
+/* =============================================================================
+   DATA
+   ============================================================================= */
+const { useState, useMemo, useEffect } = React;
+
+const HOUSEHOLDS = [
+  { key: 'solo',    label: 'Just me',             meta: '1 serving, 1–2 leftover lunches' },
+  { key: 'duo',     label: 'Me + my partner',     meta: '2 servings per night' },
+  { key: 'family',  label: 'My family',           meta: '3–4 servings per night' },
+  { key: 'crew',    label: 'A bigger crew',       meta: '4+ — scale recipes 1.5x' },
+];
+
+const DAYS = [
+  { key: 'MON', label: 'Monday',    short: 'MON' },
+  { key: 'TUE', label: 'Tuesday',   short: 'TUE' },
+  { key: 'WED', label: 'Wednesday', short: 'WED' },
+  { key: 'THU', label: 'Thursday',  short: 'THU' },
+  { key: 'FRI', label: 'Friday',    short: 'FRI' },
+  { key: 'SAT', label: 'Saturday',  short: 'SAT' },
+  { key: 'SUN', label: 'Sunday',    short: 'SUN' },
+];
+
+const THEMES = [
+  { key: 'pasta',   label: 'Pasta Night',  meta: '25–30 min · comfort food' },
+  { key: 'stirfry', label: 'Stir-Fry',     meta: '20–25 min · one pan · over rice' },
+  { key: 'tacos',   label: 'Taco Night',   meta: '18–25 min · kid-approved' },
+  { key: 'sheet',   label: 'Sheet-Pan',    meta: '30–40 min · hands-off' },
+  { key: 'grain',   label: 'Grain Bowl',   meta: '25 min · leftover-friendly base' },
+  { key: 'soup',    label: 'Soup & Bread', meta: '30–40 min · batch-cooks + freezes' },
+  { key: 'grill',   label: 'Grill Night',  meta: '25–30 min · outdoor or cast-iron' },
+];
+
+// Per-theme confirm sub-copy. Keeps the lock-in moment from feeling copy-pasted.
+const THEME_CONFIRM_COPY = {
+  pasta:   'Weeknight carb-hug locked in. Pick the dish next — sauce-loaded or pantry-minimal.',
+  stirfry: 'One pan, high heat, dinner on rice. Now pick the protein-and-veg combo.',
+  tacos:   'Taco night: non-negotiable. Pick the filling — hard shells stay on standby.',
+  sheet:   'Sheet-pan means hands-off while you handle the rest of life. Pick the combo next.',
+  grain:   'A grain-bowl night pays you back — leftovers become tomorrow\'s lunch. Pick the bowl.',
+  soup:    'One pot, freezes great, feeds you twice. Pick the soup and bread pairing.',
+  grill:   'Fire up the grill (or cast-iron). Pick what\'s going on it.',
+};
+
+const CAT_ORDER = ['PRODUCE', 'PROTEIN', 'PANTRY', 'DAIRY', 'OTHER'];
+const CAT_LABEL = {
+  PRODUCE: 'Produce', PROTEIN: 'Protein & meat',
+  PANTRY: 'Pantry', DAIRY: 'Dairy & fridge', OTHER: 'Other',
+};
+
+/* 21 meals — seasonings assumed (salt, pepper, red pepper flakes, cumin, chili powder,
+   smoked paprika, Italian seasoning, sugar). Butter, eggs, honey included on grocery list. */
+const MEALS = [
+  // =========================================================================
+  // PASTA
+  // =========================================================================
+  {
+    key: 'pasta_pantry', theme: 'pasta', title: 'Pantry pasta with garlic & chili',
+    meta: 'vegetarian · 6 ingredients', timeMin: 20, scalable: true, vegetarian: true,
+    ingredients: [
+      { name: 'Spaghetti', qty: '1 lb', cat: 'PANTRY' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Lemon', qty: '1', cat: 'PRODUCE' },
+      { name: 'Baby spinach', qty: '5 oz', cat: 'PRODUCE' },
+      { name: 'Parmesan', qty: 'wedge', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Boil salted water. Cook spaghetti until al dente. Save 1 cup pasta water, then drain.',
+      'Thin-slice 6 garlic cloves. Warm ⅓ cup olive oil in a wide pan over medium. Add garlic + a pinch of red pepper flakes. Cook gently 2 min — do NOT brown.',
+      'Add drained pasta, spinach, zest + juice of the lemon, and ½ cup pasta water. Toss 1 min until glossy.',
+      'Off heat, grate in Parmesan. Taste for salt. Serve.',
+    ],
+  },
+  {
+    key: 'pasta_sausage', theme: 'pasta', title: 'Sausage & broccoli rigatoni',
+    meta: 'one pot · crowd-pleaser', timeMin: 30, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Rigatoni', qty: '1 lb', cat: 'PANTRY' },
+      { name: 'Italian sausage', qty: '1 lb', cat: 'PROTEIN' },
+      { name: 'Broccoli', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Chicken stock', qty: '32 oz carton', cat: 'PANTRY' },
+      { name: 'Parmesan', qty: 'wedge', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Boil rigatoni until 2 min shy of al dente. Drain, reserve ½ cup pasta water.',
+      'Brown sausage (casings removed) in a wide pan over medium-high, breaking it up. Remove to a plate.',
+      'Add broccoli florets + 4 minced garlic cloves + a splash of olive oil to the same pan. Cook 4 min. Add 1½ cups stock and simmer 3 min.',
+      'Return sausage + pasta. Simmer 2–3 min until sauce clings. Finish with grated Parmesan + a glug of olive oil.',
+    ],
+  },
+  {
+    key: 'pasta_lemon', theme: 'pasta', title: 'One-pan lemon chicken pasta',
+    meta: 'protein + veg in one pan', timeMin: 30, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Linguine', qty: '1 lb', cat: 'PANTRY' },
+      { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
+      { name: 'Baby spinach', qty: '5 oz', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Heavy cream', qty: '½ pt', cat: 'DAIRY' },
+      { name: 'Parmesan', qty: 'wedge', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Season chicken with salt + pepper. Sear in olive oil 4 min per side in a wide pan. Rest 5 min, then slice.',
+      'In the same pan, sauté 4 minced garlic cloves 1 min. Add 4 cups water, 1 tsp salt, and linguine (snap in half to fit). Simmer uncovered until tender, ~10 min.',
+      'Stir in heavy cream, juice of 1 lemon, and spinach. Simmer 2 min until it tightens.',
+      'Return sliced chicken. Finish with Parmesan + lemon zest. Taste for salt.',
+    ],
+  },
+
+  // =========================================================================
+  // STIR-FRY
+  // =========================================================================
+  {
+    key: 'stirfry_chicken', theme: 'stirfry', title: 'Chicken & broccoli stir-fry',
+    meta: 'classic · over rice', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Broccoli', qty: '2 crowns', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '2 in piece', cat: 'PRODUCE' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Oyster sauce', qty: 'jar', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Start rice: rinse jasmine rice, combine with 1.5× water in a pot, bring to a boil, cover, simmer 15 min.',
+      'While rice cooks, slice chicken thin against the grain.',
+      'Heat 2 tbsp oil in a large skillet until smoking. Blast broccoli florets 3 min. Remove.',
+      'Sear chicken 3 min, barely moving it. Add grated ginger + 4 minced garlic cloves, then 2 tbsp soy + 2 tbsp oyster sauce + 2 tbsp water.',
+      'Return broccoli, toss 1 min. Serve over rice.',
+    ],
+  },
+  {
+    key: 'stirfry_steak', theme: 'stirfry', title: 'Pepper steak stir-fry',
+    meta: 'fast · big flavor', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Flank or sirloin steak', qty: '1.25 lb', cat: 'PROTEIN' },
+      { name: 'Bell peppers', qty: '3', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '2 in piece', cat: 'PRODUCE' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Cornstarch', qty: 'small box', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Start rice (1:1.5 water, 15 min covered).',
+      'Slice steak thin against the grain. Toss with 1 tbsp soy + 1 tbsp cornstarch. Let sit 10 min.',
+      'Slice peppers + onion. Heat 2 tbsp oil screaming hot. Sear steak in a single layer 90 sec per side. Remove.',
+      'Add peppers + onion, cook 3 min until edges char. Add grated ginger + 4 minced garlic cloves, 30 sec.',
+      'Return steak. Add 3 tbsp soy + 2 tbsp water + ½ tsp sugar. Toss 30 sec until glossy. Serve over rice.',
+    ],
+  },
+  {
+    key: 'stirfry_tofu', theme: 'stirfry', title: 'Sesame tofu & green bean stir-fry',
+    meta: 'vegetarian · crispy', timeMin: 25, scalable: false, vegetarian: true,
+    ingredients: [
+      { name: 'Firm tofu', qty: '2 × 14 oz blocks', cat: 'PROTEIN' },
+      { name: 'Green beans', qty: '1 lb', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '2 in piece', cat: 'PRODUCE' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Honey', qty: 'small jar', cat: 'PANTRY' },
+      { name: 'Sesame seeds', qty: 'small jar', cat: 'PANTRY' },
+      { name: 'Cornstarch', qty: 'small box', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Start rice (1:1.5 water, 15 min covered).',
+      'Press tofu 10 min between paper towels. Cube. Toss with 2 tbsp cornstarch + pinch of salt.',
+      'Pan-fry tofu in 3 tbsp hot oil until golden on 3 sides, ~8 min total. Remove.',
+      'Add trimmed green beans, cook 4 min. Add grated ginger + 4 minced garlic cloves, 30 sec.',
+      'Whisk 3 tbsp soy + 1 tbsp honey + 2 tbsp water. Return tofu. Toss 30 sec. Sprinkle sesame seeds. Serve over rice.',
+    ],
+  },
+
+  // =========================================================================
+  // TACOS
+  // =========================================================================
+  {
+    key: 'tacos_tinga', theme: 'tacos', title: 'Chicken tinga tacos',
+    meta: 'pantry protein · smoky', timeMin: 30, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken thighs (boneless)', qty: '2 lb', cat: 'PROTEIN' },
+      { name: 'Chipotle in adobo', qty: '1 small can', cat: 'PANTRY' },
+      { name: 'Fire-roasted diced tomatoes', qty: '1 × 14 oz can', cat: 'PANTRY' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '4', cat: 'PRODUCE' },
+      { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Corn tortillas', qty: '2 packs', cat: 'PANTRY' },
+      { name: 'Cotija or queso fresco', qty: '4 oz', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Poach chicken thighs in a pot of salted water, covered, 15 min. Shred with two forks.',
+      'Blend tomatoes + 2 chipotles (pick out of the can) + ½ onion + pinch of salt until smooth.',
+      'Sauté remaining diced onion in oil 3 min. Add sauce + shredded chicken. Simmer 8 min until thickened.',
+      'Warm tortillas directly over a burner 10 sec per side. Top with chicken, cotija, cilantro, lime.',
+    ],
+  },
+  {
+    key: 'tacos_beef', theme: 'tacos', title: 'Beef & bean tacos',
+    meta: 'freezer-friendly · kid-approved', timeMin: 20, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Ground beef (85/15)', qty: '1 lb', cat: 'PROTEIN' },
+      { name: 'Black beans', qty: '2 cans', cat: 'PANTRY' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '2', cat: 'PRODUCE' },
+      { name: 'Flour tortillas', qty: '1 pack', cat: 'PANTRY' },
+      { name: 'Cheddar', qty: '8 oz', cat: 'DAIRY' },
+      { name: 'Sour cream', qty: 'small tub', cat: 'DAIRY' },
+      { name: 'Salsa', qty: 'jar', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Sauté diced onion in oil 3 min. Add beef, brown, break up with a spoon, 5 min.',
+      'Stir in 2 tbsp chili powder + 1 tsp cumin + 1 tsp paprika + 1 tsp salt + drained beans + ½ cup water. Simmer 5 min.',
+      'Warm tortillas in a dry skillet. Assemble with cheese, sour cream, salsa, lime.',
+    ],
+  },
+  {
+    key: 'tacos_blackbean', theme: 'tacos', title: 'Crispy black bean tacos',
+    meta: 'vegetarian · under 20 min', timeMin: 20, scalable: false, vegetarian: true,
+    ingredients: [
+      { name: 'Black beans', qty: '3 cans', cat: 'PANTRY' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '3', cat: 'PRODUCE' },
+      { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Avocado', qty: '2', cat: 'PRODUCE' },
+      { name: 'Corn tortillas', qty: '2 packs', cat: 'PANTRY' },
+      { name: 'Cotija or feta', qty: '4 oz', cat: 'DAIRY' },
+      { name: 'Salsa', qty: 'jar', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Sauté diced onion in 2 tbsp olive oil 4 min. Add 4 minced garlic cloves + 1 tbsp cumin + 1 tsp smoked paprika + 1 tsp chili powder, 30 sec.',
+      'Add drained beans + ½ cup water. Mash half with a fork. Simmer 5 min. Season with salt + juice of 1 lime.',
+      'Warm tortillas over a burner. Top with beans, sliced avocado, cotija, salsa, cilantro, more lime.',
+    ],
+  },
+
+  // =========================================================================
+  // SHEET-PAN
+  // =========================================================================
+  {
+    key: 'sheet_chicken', theme: 'sheet', title: 'Sheet-pan chicken, potatoes & lemon',
+    meta: 'hands-off · classic', timeMin: 45, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Bone-in chicken thighs', qty: '2 lb', cat: 'PROTEIN' },
+      { name: 'Baby potatoes', qty: '1.5 lb', cat: 'PRODUCE' },
+      { name: 'Carrots', qty: '1 lb', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '2', cat: 'PRODUCE' },
+      { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Fresh rosemary or thyme', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Oven to 425°F. Halve potatoes, thick-slice carrots + onions, spread on a sheet pan.',
+      'Toss with 3 tbsp olive oil, salt, pepper, chopped herbs, and smashed garlic cloves.',
+      'Nestle chicken thighs skin-side up on top. Rub skin with oil + salt. Squeeze lemon halves over and tuck in.',
+      'Roast 35–40 min until chicken skin is crisp and a thigh reads 175°F. Rest 5 min before serving.',
+    ],
+  },
+  {
+    key: 'sheet_sausage', theme: 'sheet', title: 'Sheet-pan sausage, peppers & potatoes',
+    meta: 'dump & roast', timeMin: 40, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Italian sausage (whole links)', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Bell peppers', qty: '4', cat: 'PRODUCE' },
+      { name: 'Baby potatoes', qty: '1.5 lb', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Oven to 425°F. Halve potatoes, chunk peppers + onion.',
+      'Toss vegetables on a sheet pan with 3 tbsp olive oil, salt, pepper, Italian seasoning. Roast 15 min alone (gives potatoes a head start).',
+      'Add whole sausages + smashed garlic cloves. Roast another 22–25 min until sausages are browned and potatoes are fork-tender.',
+      'Let it rest 5 min. Serves straight from the pan.',
+    ],
+  },
+  {
+    key: 'sheet_gnocchi', theme: 'sheet', title: 'Sheet-pan gnocchi with tomato & mozzarella',
+    meta: 'vegetarian · no boiling', timeMin: 30, scalable: false, vegetarian: true,
+    ingredients: [
+      { name: 'Potato gnocchi (shelf-stable)', qty: '2 × 17 oz packs', cat: 'PANTRY' },
+      { name: 'Cherry tomatoes', qty: '2 pts', cat: 'PRODUCE' },
+      { name: 'Zucchini', qty: '2', cat: 'PRODUCE' },
+      { name: 'Red onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Fresh mozzarella', qty: '8 oz ball', cat: 'DAIRY' },
+      { name: 'Fresh basil', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Oven to 425°F. Do NOT boil gnocchi — dump straight onto the sheet pan.',
+      'Add halved cherry tomatoes, chunked zucchini, sliced red onion. Toss with 4 tbsp olive oil, salt, pepper, Italian seasoning.',
+      'Roast 22 min, stirring once halfway. Gnocchi should be crispy outside, tender inside.',
+      'Tear mozzarella over the top. Return to oven 4 min until melted. Finish with torn basil + a glug of good olive oil.',
+    ],
+  },
+
+  // =========================================================================
+  // GRAIN BOWL
+  // =========================================================================
+  {
+    key: 'grain_tahini', theme: 'grain', title: 'Chicken & rice bowl with tahini',
+    meta: 'Mediterranean · leftover-friendly', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Cucumber', qty: '2', cat: 'PRODUCE' },
+      { name: 'Cherry tomatoes', qty: '1 pt', cat: 'PRODUCE' },
+      { name: 'Red onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
+      { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Tahini', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Start rice (1:1.5 water, 15 min covered).',
+      'Season chicken with salt + 1 tsp cumin. Sear in 2 tbsp olive oil 5 min per side. Rest, then slice.',
+      'Chop cucumber + tomatoes + thin-sliced red onion. Dress with olive oil, juice of ½ lemon, salt.',
+      'Whisk ⅓ cup tahini + juice of 1 lemon + 1 minced garlic clove + water, a splash at a time, until pourable.',
+      'Build bowls: rice, sliced chicken, chopped salad, tahini drizzle, torn parsley.',
+    ],
+  },
+  {
+    key: 'grain_peanut', theme: 'grain', title: 'Chicken & rice bowl with peanut sauce',
+    meta: 'Thai-inspired', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Cucumber', qty: '2', cat: 'PRODUCE' },
+      { name: 'Carrots', qty: '1 lb', cat: 'PRODUCE' },
+      { name: 'Scallions', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '2', cat: 'PRODUCE' },
+      { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Peanut butter', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Honey', qty: 'small jar', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Start rice (1:1.5 water, 15 min covered).',
+      'Season chicken with salt. Sear in 2 tbsp oil 5 min per side. Rest, then slice.',
+      'Shred carrots on a box grater. Thin-slice cucumber + scallions.',
+      'Whisk ⅓ cup peanut butter + 2 tbsp soy + 1 tbsp honey + juice of 1 lime + 3 tbsp warm water until pourable.',
+      'Build bowls: rice, sliced chicken, vegetables, peanut sauce, cilantro + lime wedge.',
+    ],
+  },
+  {
+    key: 'grain_veg', theme: 'grain', title: 'Roasted veg & quinoa bowl with feta',
+    meta: 'vegetarian · Mediterranean', timeMin: 30, scalable: false, vegetarian: true,
+    ingredients: [
+      { name: 'Quinoa', qty: '1.5 cups dry', cat: 'PANTRY' },
+      { name: 'Zucchini', qty: '2', cat: 'PRODUCE' },
+      { name: 'Red bell pepper', qty: '2', cat: 'PRODUCE' },
+      { name: 'Red onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Chickpeas', qty: '2 cans', cat: 'PANTRY' },
+      { name: 'Feta', qty: '6 oz block', cat: 'DAIRY' },
+      { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
+      { name: 'Kalamata olives', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Oven to 425°F. Chop zucchini + peppers + onion into chunks; drain chickpeas. Toss everything on a sheet pan with 3 tbsp olive oil, salt, 1 tbsp cumin. Roast 22 min.',
+      'Meanwhile cook quinoa: rinse well, combine with 3 cups water + pinch salt, simmer 15 min covered, then fluff.',
+      'Build bowls: quinoa, roasted vegetables, crumbled feta, olives, squeeze of lemon + glug of olive oil.',
+    ],
+  },
+
+  // =========================================================================
+  // SOUP & BREAD
+  // =========================================================================
+  {
+    key: 'soup_chicken', theme: 'soup', title: 'Classic chicken noodle soup',
+    meta: 'batch-cook · freezes', timeMin: 40, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Carrots', qty: '1 lb', cat: 'PRODUCE' },
+      { name: 'Celery', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '2', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Chicken stock', qty: '64 oz', cat: 'PANTRY' },
+      { name: 'Egg noodles', qty: '12 oz', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Dice onion + carrots + celery. Sauté in 2 tbsp olive oil over medium 6 min until soft.',
+      'Add 4 minced garlic cloves + stock + whole chicken breasts. Bring to a simmer, cook 15 min.',
+      'Remove chicken, shred with two forks. Add egg noodles to the pot, cook 8 min.',
+      'Return shredded chicken. Season with salt + pepper. Finish with a big handful of chopped parsley.',
+    ],
+  },
+  {
+    key: 'soup_tomato', theme: 'soup', title: 'Creamy tomato soup + grilled cheese',
+    meta: 'comfort food anchor', timeMin: 30, scalable: false, vegetarian: true,
+    ingredients: [
+      { name: 'Whole peeled tomatoes', qty: '2 × 28 oz cans', cat: 'PANTRY' },
+      { name: 'Yellow onion', qty: '2', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Sourdough loaf', qty: '1', cat: 'PANTRY' },
+      { name: 'Heavy cream', qty: '½ pt', cat: 'DAIRY' },
+      { name: 'Sharp cheddar', qty: '12 oz', cat: 'DAIRY' },
+      { name: 'Butter', qty: '1 stick', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Sauté diced onion in 2 tbsp olive oil 6 min until soft. Add 4 minced garlic cloves, 30 sec.',
+      'Add both cans of tomatoes (with juice), 1 tsp sugar, 1 tsp salt. Simmer 15 min.',
+      'Blend smooth (immersion blender is easiest). Stir in cream. Taste for salt.',
+      'Meanwhile: butter sourdough slices, stack with cheddar, griddle in a skillet 3 min per side until golden + melted. Slice on a bias.',
+    ],
+  },
+  {
+    key: 'soup_minestrone', theme: 'soup', title: 'White bean & kale minestrone',
+    meta: 'vegetarian · hearty', timeMin: 35, scalable: true, vegetarian: true,
+    ingredients: [
+      { name: 'Cannellini beans', qty: '2 cans', cat: 'PANTRY' },
+      { name: 'Diced tomatoes', qty: '1 × 28 oz can', cat: 'PANTRY' },
+      { name: 'Kale', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Carrots', qty: '1 lb', cat: 'PRODUCE' },
+      { name: 'Celery', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Vegetable stock', qty: '32 oz', cat: 'PANTRY' },
+      { name: 'Small pasta (ditalini or elbows)', qty: '8 oz', cat: 'PANTRY' },
+      { name: 'Parmesan rind (optional)', qty: '1', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Dice onion + carrots + celery. Sauté in 2 tbsp olive oil 6 min. Add 4 minced garlic cloves, 30 sec.',
+      'Add tomatoes + stock + 2 cups water + Parmesan rind if using + 1 tsp salt. Simmer 15 min.',
+      'Add drained beans + torn kale. Simmer 5 min until kale wilts.',
+      'Add pasta, cook 8 min until tender. Finish with a glug of olive oil + black pepper.',
+    ],
+  },
+
+  // =========================================================================
+  // GRILL NIGHT
+  // =========================================================================
+  {
+    key: 'grill_halloumi', theme: 'grill', title: 'Grilled halloumi with chimichurri',
+    meta: 'vegetarian · herby', timeMin: 25, scalable: false, vegetarian: true,
+    ingredients: [
+      { name: 'Halloumi', qty: '2 × 8 oz blocks', cat: 'DAIRY' },
+      { name: 'Baby potatoes', qty: '1.5 lb', cat: 'PRODUCE' },
+      { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
+      { name: 'Red wine vinegar', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Boil potatoes in salted water 15 min until tender. Drain, toss with olive oil + salt.',
+      'Slab halloumi ½-inch thick. Brush with olive oil. Grill 2 min per side over medium-high until grill-marked.',
+      'Finely chop parsley + cilantro + 4 garlic cloves. Mix with ½ cup olive oil + 3 tbsp red wine vinegar + 1 tsp salt + red pepper flakes.',
+      'Arrange halloumi + potatoes on a platter. Spoon chimichurri over. Squeeze lemon.',
+    ],
+  },
+  {
+    key: 'grill_burgers', theme: 'grill', title: 'Smash burgers with oven fries',
+    meta: 'weeknight treat', timeMin: 35, scalable: false, vegetarian: false,
+    ingredients: [
+      { name: 'Ground beef (80/20)', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Russet potatoes', qty: '2 lb', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Tomato', qty: '2', cat: 'PRODUCE' },
+      { name: 'Lettuce', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Brioche buns', qty: '1 pack', cat: 'PANTRY' },
+      { name: 'American cheese', qty: '8 slices', cat: 'DAIRY' },
+      { name: 'Pickles', qty: 'jar', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Oven to 450°F. Cut potatoes into fries, toss with 3 tbsp oil + salt, spread on a sheet pan. Roast 25–30 min, flipping once.',
+      'Form beef into 6 loose balls (do NOT pack tight). Slice onion + tomato, wash lettuce.',
+      'Heat a cast-iron or heavy skillet until screaming hot. Place 2 balls at a time, smash flat with a spatula, salt generously. Cook 2 min. Flip, add cheese, 1 more min.',
+      'Toast buns in the same pan. Build: bottom bun, lettuce, patty, tomato, onion, pickles, top bun.',
+    ],
+  },
+  {
+    key: 'grill_sausage', theme: 'grill', title: 'Grilled sausage & vegetable platter',
+    meta: 'zero-fuss · scalable', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Italian sausage (whole links)', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Zucchini', qty: '2', cat: 'PRODUCE' },
+      { name: 'Bell peppers', qty: '3', cat: 'PRODUCE' },
+      { name: 'Red onion', qty: '2', cat: 'PRODUCE' },
+      { name: 'Cherry tomatoes', qty: '1 pt', cat: 'PRODUCE' },
+      { name: 'Feta', qty: '6 oz', cat: 'DAIRY' },
+      { name: 'Baguette', qty: '1', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Fire up the grill (or heat a grill pan over medium-high). Slice zucchini lengthwise, quarter peppers, thick-slice red onion. Toss with olive oil + salt + pepper.',
+      'Grill vegetables, turning once, ~4 min per side until charred. Remove to a platter.',
+      'Grill sausages, turning occasionally, 10–12 min until browned and cooked through. Slice on a bias.',
+      'Arrange on the platter with cherry tomatoes + crumbled feta. Serve with warm baguette torn at the table.',
+    ],
+  },
+];
+
+/* =============================================================================
+   HELPERS
+   ============================================================================= */
+
+function mealsForTheme(themeKey) {
+  return MEALS.filter(m => m.theme === themeKey);
+}
+
+function weekOfString(d) {
+  const now = d || new Date();
+  // Find this week's Monday
+  const dow = now.getDay(); // 0=Sun
+  const diff = (dow === 0 ? -6 : 1 - dow);
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + diff);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `Week of ${months[mon.getMonth()]} ${mon.getDate()}`;
+}
+function dateForDay(dayKey, baseDate) {
+  const now = baseDate || new Date();
+  const dow = now.getDay();
+  const diff = (dow === 0 ? -6 : 1 - dow);
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + diff);
+  const idx = DAYS.findIndex(d => d.key === dayKey);
+  const out = new Date(mon);
+  out.setDate(mon.getDate() + idx);
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return `${months[out.getMonth()]} ${out.getDate()}`;
+}
+
+// Format minutes saved into a friendly string: "30 minutes", "1 hour", "1.5 hours", "2 hours", etc.
+function formatTimeSaved(mins) {
+  if (mins < 60) return `${mins} minutes`;
+  const hours = mins / 60;
+  if (Number.isInteger(hours)) return `${hours} hour${hours === 1 ? '' : 's'}`;
+  // Odd half-hours → show one decimal (1.5 hours, 2.5 hours, etc.)
+  return `${hours.toFixed(1)} hours`;
+}
+
+function buildPlan(nights, selections) {
+  // Only emit rows for the nights the user asked to plan. Leftover/off nights are
+  // intentionally excluded — people aren't worried about them.
+  const plan = [];
+  for (const d of DAYS) {
+    if (!nights.has(d.key)) continue;
+    const sel = selections[d.key];
+    const meal = MEALS.find(m => m.key === sel?.meal);
+    if (!meal) continue;
+    plan.push({
+      day: d.key, label: d.label, short: d.short, date: dateForDay(d.key),
+      meal, themeLabel: THEMES.find(t => t.key === meal.theme)?.label,
+    });
+  }
+  return plan;
+}
+
+function buildGrocery(nights, selections) {
+  const byName = {};
+  for (const dayKey of nights) {
+    const sel = selections[dayKey];
+    if (!sel) continue;
+    const meal = MEALS.find(m => m.key === sel.meal);
+    if (!meal) continue;
+    for (const ing of meal.ingredients) {
+      const k = ing.name.toLowerCase();
+      if (!byName[k]) {
+        byName[k] = { name: ing.name, qty: ing.qty, cat: ing.cat };
+      } else {
+        if (byName[k].qty && byName[k].qty !== ing.qty) {
+          byName[k].qty = byName[k].qty + ' + ' + ing.qty;
+        }
+      }
+    }
+  }
+  const grouped = {};
+  for (const k of CAT_ORDER) grouped[k] = [];
+  for (const item of Object.values(byName)) {
+    const c = CAT_ORDER.includes(item.cat) ? item.cat : 'OTHER';
+    grouped[c].push(item);
+  }
+  for (const k of CAT_ORDER) grouped[k].sort((a, b) => a.name.localeCompare(b.name));
+  const final = {};
+  for (const k of CAT_ORDER) if (grouped[k].length) final[k] = grouped[k];
+  return final;
+}
+
+function totalItems(grocery) {
+  return Object.values(grocery).reduce((n, arr) => n + arr.length, 0);
+}
+
+// Analytics stub — swap for posthog.capture() later.
+function track(event, props) {
+  if (typeof window !== 'undefined' && window.console) {
+    console.log('[track]', event, props || {});
+  }
+}
+
+/* =============================================================================
+   SHARE CARD — canvas-generated PNG (1080×1350 for Instagram story/feed)
+   ============================================================================= */
+
+function roundRect(ctx, x, y, w, h, r) {
+  // Clamp radius so arcTo never overshoots (otherwise paths get malformed)
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function truncateCanvas(ctx, s, maxW) {
+  if (ctx.measureText(s).width <= maxW) return s;
+  let cur = s;
+  while (ctx.measureText(cur + '…').width > maxW && cur.length > 0) cur = cur.slice(0, -1);
+  return cur + '…';
+}
+function wrapCanvas(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(' ');
+  let line = '';
+  let cy = y;
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, cy);
+      line = w;
+      cy += lineH;
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, x, cy);
+  return cy;
+}
+
+function generateShareCard(data) {
+  // Square 1080×1080 social share card — matches the Steven-provided hi-fi mockup.
+  const W = 1080, H = 1080, PAD = 72;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const sysFont = '-apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif';
+  const monoFont = '"SF Mono", "JetBrains Mono", ui-monospace, monospace';
+  const COBALT = '#2b3dd6';
+  const COBALT_50 = '#eef2ff';
+  const INK_900 = '#0a0f1f';
+  const INK_500 = '#6b7280';
+  const INK_200 = '#e5e7eb';
+  const INK_100 = '#f3f4f6';
+
+  // Background — warm cream matching bg-page-alt
+  ctx.fillStyle = '#f5f7fd';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle cobalt wash in top-right corner
+  const rad = ctx.createRadialGradient(W * 0.92, 40, 40, W * 0.92, 40, 720);
+  rad.addColorStop(0, 'rgba(79, 70, 229, 0.10)');
+  rad.addColorStop(1, 'rgba(79, 70, 229, 0)');
+  ctx.fillStyle = rad;
+  ctx.fillRect(0, 0, W, H);
+
+  // ======= TOP ROW: logo + week chip =======
+  const topY = PAD;
+  const logoSize = 52;
+
+  // Logo — white rounded square + grid glyph (ink lines)
+  ctx.fillStyle = '#ffffff';
+  roundRect(ctx, PAD, topY, logoSize, logoSize, 12);
+  ctx.fill();
+  ctx.strokeStyle = INK_200;
+  ctx.lineWidth = 1;
+  roundRect(ctx, PAD, topY, logoSize, logoSize, 12);
+  ctx.stroke();
+  ctx.strokeStyle = INK_900;
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  const gx = PAD + 14, gy = topY + 14, gs = 24;
+  ctx.beginPath();
+  ctx.moveTo(gx, gy);             ctx.lineTo(gx, gy + gs);
+  ctx.moveTo(gx + gs/2, gy);      ctx.lineTo(gx + gs/2, gy + gs);
+  ctx.moveTo(gx + gs, gy);        ctx.lineTo(gx + gs, gy + gs);
+  ctx.moveTo(gx, gy);             ctx.lineTo(gx + gs, gy);
+  ctx.moveTo(gx, gy + gs/2);      ctx.lineTo(gx + gs, gy + gs/2);
+  ctx.moveTo(gx, gy + gs);        ctx.lineTo(gx + gs, gy + gs);
+  ctx.stroke();
+
+  // Wordmark
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = INK_900;
+  ctx.font = `800 24px ${sysFont}`;
+  const wmX = PAD + logoSize + 14;
+  const wmY = topY + logoSize/2;
+  ctx.fillText('Meal Planning', wmX, wmY);
+  const mpW = ctx.measureText('Meal Planning ').width;
+  ctx.fillStyle = COBALT;
+  ctx.fillText('OS', wmX + mpW, wmY);
+
+  // Week chip top-right
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = INK_500;
+  ctx.font = `500 16px ${monoFont}`;
+  ctx.fillText((data.weekLabel || 'This week').toUpperCase(), W - PAD, topY + logoSize/2);
+
+  // Divider below top row
+  const dividerY = topY + logoSize + 28;
+  ctx.strokeStyle = INK_200;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD, dividerY); ctx.lineTo(W - PAD, dividerY); ctx.stroke();
+
+  // ======= EYEBROW =======
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = COBALT;
+  ctx.font = `700 14px ${sysFont}`;
+  const eyebrowY = dividerY + 46;
+  ctx.fillText('MY WEEK · PLANNED', PAD, eyebrowY);
+
+  // ======= BIG HEADLINE =======
+  // Line 1: "N dinners."   Line 2: [cobalt time] + " reclaimed."
+  ctx.textAlign = 'left';
+  ctx.fillStyle = INK_900;
+  const headlineSize = 84;
+  ctx.font = `800 ${headlineSize}px ${sysFont}`;
+  const line1Y = eyebrowY + 78;
+  const line1 = `${data.cookCount} dinner${data.cookCount === 1 ? '' : 's'}.`;
+  ctx.fillText(line1, PAD, line1Y);
+
+  // Line 2 — split into cobalt time + ink "reclaimed."
+  const line2Y = line1Y + 92;
+  const timeStr = data.timeSavedStr || '0 minutes';
+  ctx.fillStyle = COBALT;
+  ctx.fillText(timeStr, PAD, line2Y);
+  const timeW = ctx.measureText(timeStr).width;
+  ctx.fillStyle = INK_900;
+  ctx.fillText(' reclaimed.', PAD + timeW, line2Y);
+
+  // ======= DAY CARDS =======
+  // Show up to 5 planned nights in a horizontal row
+  const cookPlans = (data.plan || []).slice(0, 5);
+  const cardsY = line2Y + 76;
+  const cardsCount = Math.max(1, cookPlans.length);
+  const cardsGap = 14;
+  const cardsAvailW = W - 2 * PAD;
+  const cardW = Math.floor((cardsAvailW - cardsGap * (cardsCount - 1)) / cardsCount);
+  const cardH = 220;
+
+  cookPlans.forEach((row, i) => {
+    const x = PAD + i * (cardW + cardsGap);
+    const y = cardsY;
+
+    // Card background — white on light cream, subtle shadow as a soft cobalt-tinted rect
+    ctx.fillStyle = 'rgba(43, 61, 214, 0.08)';
+    roundRect(ctx, x, y + 4, cardW, cardH, 14);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    roundRect(ctx, x, y, cardW, cardH, 14);
+    ctx.fill();
+    ctx.strokeStyle = INK_100;
+    ctx.lineWidth = 1;
+    roundRect(ctx, x, y, cardW, cardH, 14);
+    ctx.stroke();
+
+    // Day code — mono, top of card in a cobalt-50 pill
+    const pillH = 32;
+    const pillPadX = 10;
+    ctx.font = `700 14px ${monoFont}`;
+    const pillTextW = ctx.measureText(row.short).width;
+    const pillW = pillTextW + pillPadX * 2;
+    const pillX = x + 14;
+    const pillY = y + 14;
+    ctx.fillStyle = COBALT_50;
+    roundRect(ctx, pillX, pillY, pillW, pillH, 8);
+    ctx.fill();
+    ctx.fillStyle = COBALT;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(row.short, pillX + pillPadX, pillY + pillH/2 + 1);
+
+    // Meal title — wraps up to 3 lines
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = INK_900;
+    ctx.font = `700 18px ${sysFont}`;
+    const titleX = x + 14;
+    const titleY = pillY + pillH + 32;
+    const titleMaxW = cardW - 28;
+    const titleLines = wrapLines(ctx, row.meal.title, titleMaxW, 3);
+    titleLines.forEach((ln, j) => {
+      ctx.fillText(ln, titleX, titleY + j * 24);
+    });
+
+    // Theme label — cobalt, small, bottom
+    ctx.fillStyle = COBALT;
+    ctx.font = `600 12px ${sysFont}`;
+    const themeY = y + cardH - 18;
+    ctx.fillText(truncateCanvas(ctx, row.themeLabel || '', titleMaxW), titleX, themeY);
+  });
+
+  // ======= EMOTIONAL QUOTE BLOCK =======
+  // Fills the space between meal cards and footer with a sharp, emotionally-charged
+  // reframing of the "what's for dinner?" problem — the core MPOS thesis in one line.
+  const cardsEndY = cardsY + cardH;
+  const quoteBoxY = cardsEndY + 60;
+  const quoteBoxH = 180;
+  const quoteBoxX = PAD;
+  const quoteBoxW = W - 2 * PAD;
+
+  // Soft cobalt-tinted panel (very subtle — visible on cream, but quiet)
+  ctx.fillStyle = 'rgba(43, 61, 214, 0.06)';
+  roundRect(ctx, quoteBoxX, quoteBoxY, quoteBoxW, quoteBoxH, 20);
+  ctx.fill();
+  // Left edge accent bar in cobalt
+  ctx.fillStyle = COBALT;
+  roundRect(ctx, quoteBoxX, quoteBoxY, 6, quoteBoxH, 3);
+  ctx.fill();
+
+  // Quote body — two lines of ink-900 bold, emotional reframing
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  const quoteTextX = quoteBoxX + 36;
+  ctx.fillStyle = INK_900;
+  ctx.font = `800 32px ${sysFont}`;
+  const quoteLine1 = `"What's for dinner?" isn't a question`;
+  const quoteLine2 = `you need to ask every night.`;
+  ctx.fillText(quoteLine1, quoteTextX, quoteBoxY + 64);
+  ctx.fillText(quoteLine2, quoteTextX, quoteBoxY + 104);
+
+  // Attribution / payoff line in cobalt
+  ctx.fillStyle = COBALT;
+  ctx.font = `700 20px ${sysFont}`;
+  ctx.fillText('Plug into the system once — not seven times a week.', quoteTextX, quoteBoxY + 150);
+
+  // ======= FOOTER — stats + CTA + URL chip =======
+  const footerY = H - PAD;
+  // Stats chunk (left)
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = INK_500;
+  ctx.font = `500 17px ${sysFont}`;
+  const stats = `${data.totalGrocery || 0} grocery items · one trip · ${data.householdLabel || 'built for you'}`;
+  ctx.fillText(truncateCanvas(ctx, stats, W/2 - PAD - 16), PAD, footerY);
+
+  // URL chip (right)
+  ctx.font = `700 17px ${sysFont}`;
+  const urlText = 'Build yours free → mealplanningos.com/planner';
+  ctx.textAlign = 'right';
+  const urlW = ctx.measureText(urlText).width;
+  const chipPadX = 16, chipPadY = 10;
+  const chipH = 40;
+  const chipW = urlW + chipPadX * 2;
+  const chipX = W - PAD - chipW;
+  const chipY = footerY - chipH + 6;
+  ctx.fillStyle = INK_900;
+  roundRect(ctx, chipX, chipY, chipW, chipH, chipH / 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(urlText, chipX + chipPadX, chipY + chipH/2 + 1);
+
+  return canvas;
+}
+
+// Wrap text into up to maxLines lines; returns array of strings (last one may be …-truncated)
+function wrapLines(ctx, text, maxW, maxLines) {
+  const words = String(text || '').split(/\s+/);
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const tryLine = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(tryLine).width <= maxW) {
+      cur = tryLine;
+    } else {
+      if (cur) lines.push(cur);
+      cur = w;
+      if (lines.length >= maxLines) break;
+    }
+  }
+  if (cur && lines.length < maxLines) lines.push(cur);
+  if (lines.length === maxLines && ctx.measureText(cur).width > maxW) {
+    // truncate last line with ellipsis
+    let last = cur;
+    while (last.length > 1 && ctx.measureText(last + '…').width > maxW) {
+      last = last.slice(0, -1);
+    }
+    lines[lines.length - 1] = last + '…';
+  }
+  return lines;
+}
+
+/* =============================================================================
+   COMPONENTS
+   ============================================================================= */
+
+function Logo() {
+  return (
+    <a href={UPSELL_URL} target="_blank" rel="noopener" className="logo" aria-label="Meal Planning OS">
+      <svg className="logo-svg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="34" height="34" rx="8" fill="#FFFFFF" stroke="#DDE4F0"/>
+        <g stroke="#0D1829" strokeWidth="1.6" strokeLinecap="round">
+          <line x1="10" y1="10" x2="10" y2="24"/>
+          <line x1="17" y1="10" x2="17" y2="24"/>
+          <line x1="24" y1="10" x2="24" y2="24"/>
+          <line x1="10" y1="10" x2="24" y2="10"/>
+          <line x1="10" y1="17" x2="24" y2="17"/>
+          <line x1="10" y1="24" x2="24" y2="24"/>
+        </g>
+      </svg>
+      <div className="logo-text">Meal Planning <span>OS</span></div>
+    </a>
+  );
+}
+
+function Header({ step }) {
+  return (
+    <div className="header">
+      <Logo/>
+      <div className="header-meta">{weekOfString()}</div>
+    </div>
+  );
+}
+
+function Progress({ step, totalSteps }) {
+  const pct = Math.round((step / totalSteps) * 100);
+  return (
+    <div className="progress-row">
+      <div className="progress-label">Step {step} of {totalSteps}</div>
+      <div className="progress-track">
+        <div className="progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M2 6.5L5 9.5L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function OptionCard({ selected, onClick, title, meta, badge, radio }) {
+  const cls = `option-card ${radio ? 'option-card--radio' : ''} ${selected ? 'selected' : ''}`;
+  return (
+    <button type="button" className={cls} onClick={onClick}>
+      <div className="check"><CheckIcon/></div>
+      <div className="option-body">
+        <div className="option-title">{title}{badge && <span className="option-badge">{badge}</span>}</div>
+        {meta && <div className="option-meta">{meta}</div>}
+      </div>
+    </button>
+  );
+}
+
+/* =============================================================================
+   STEP 1 — HOUSEHOLD
+   ============================================================================= */
+function Step1Household({ value, onPick, onNext }) {
+  return (
+    <>
+      <div className="eyebrow">Who are you feeding</div>
+      <h1 className="h1">First — who's eating this week?</h1>
+      <p className="sub">
+        This tunes the grocery list and the leftover math.
+        Change it whenever your week changes.
+      </p>
+      <div className="option-list">
+        {HOUSEHOLDS.map(h => (
+          <OptionCard
+            key={h.key}
+            selected={value === h.key}
+            onClick={() => onPick(h.key)}
+            title={h.label}
+            meta={h.meta}
+          />
+        ))}
+      </div>
+      <div className="cta-row">
+        <button className="cta cta-primary" disabled={!value} onClick={onNext}>
+          Next: which nights need a plan →
+        </button>
+      </div>
+    </>
+  );
+}
+
+/* =============================================================================
+   STEP 2 — NIGHTS
+   ============================================================================= */
+function Step2Nights({ nights, onToggle, onNext, onBack }) {
+  const count = nights.size;
+  return (
+    <>
+      <div className="eyebrow">Your realistic week</div>
+      <h1 className="h1">Which nights need a plan?</h1>
+      <p className="sub">
+        Only pick the nights you need a fresh cooked dinner. Skip leftover nights,
+        takeout nights, or nights you're eating out — those take care of themselves.
+      </p>
+      <div className="nights-list">
+        {DAYS.map(d => {
+          const on = nights.has(d.key);
+          return (
+            <button
+              key={d.key}
+              type="button"
+              className={`night-row ${on ? 'selected' : ''}`}
+              onClick={() => onToggle(d.key)}
+              aria-pressed={on}
+            >
+              <div className="night-row-check"><CheckIcon/></div>
+              <div className="night-row-label">{d.label}</div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="night-count">
+        {count === 0
+          ? 'Pick at least one night that needs a meal.'
+          : `${count} dinner${count === 1 ? '' : 's'} to plan`}
+      </div>
+      <div className="cta-row">
+        <button className="cta cta-ghost" onClick={onBack}>← Back</button>
+        <button className="cta cta-primary" disabled={count === 0} onClick={onNext}>
+          Next: pick themes →
+        </button>
+      </div>
+    </>
+  );
+}
+
+/* =============================================================================
+   STEP 3 — THEMES (per night)
+   ============================================================================= */
+function Step3Themes({ nights, selections, onPickTheme, onNext, onBack, cookIdx, onIdxChange }) {
+  const ordered = DAYS.filter(d => nights.has(d.key));
+  const current = ordered[cookIdx];
+  const selectedTheme = selections[current?.key]?.theme;
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [cookIdx]);
+
+  return (
+    <>
+      <div className="eyebrow">Themes, not recipes</div>
+      <h1 className="h1">{current?.label} night — what's the vibe?</h1>
+      <p className="sub">
+        Each night gets a <em>theme</em>, not a specific recipe yet.
+        This is the thing that makes the system repeatable.
+      </p>
+      <div className="context-meta">
+        <span className="day-chip">{current?.short} · {dateForDay(current?.key)}</span>
+        Night {cookIdx + 1} of {ordered.length}
+      </div>
+      <div className="theme-grid">
+        {THEMES.map(t => {
+          const on = selectedTheme === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              className={`theme-card ${on ? 'selected' : ''}`}
+              onClick={() => onPickTheme(current.key, t.key)}
+              aria-pressed={on}
+            >
+              <div className="theme-card-title">{t.label}</div>
+              <div className="theme-card-meta">{t.meta}</div>
+            </button>
+          );
+        })}
+      </div>
+      {selectedTheme && (
+        <div className="theme-confirm">
+          <div className="eyebrow">You picked {THEMES.find(t => t.key === selectedTheme)?.label}</div>
+          <div className="theme-confirm-sub">
+            {THEME_CONFIRM_COPY[selectedTheme] || 'Lock it in — the dish comes next.'}
+          </div>
+        </div>
+      )}
+      <div className="cta-row">
+        <button className="cta cta-ghost" onClick={cookIdx === 0 ? onBack : () => onIdxChange(cookIdx - 1)}>
+          ← Back
+        </button>
+        <button
+          className="cta cta-primary"
+          disabled={!selectedTheme}
+          onClick={() => {
+            if (cookIdx < ordered.length - 1) onIdxChange(cookIdx + 1);
+            else onNext();
+          }}
+        >
+          {cookIdx < ordered.length - 1 ? 'Next night →' : 'Next: pick the meals →'}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/* =============================================================================
+   STEP 4 — MEALS (per night)
+   ============================================================================= */
+function Step4Meals({ nights, selections, onPickMeal, onNext, onBack, cookIdx, onIdxChange }) {
+  const ordered = DAYS.filter(d => nights.has(d.key));
+  const current = ordered[cookIdx];
+  const themeKey = selections[current?.key]?.theme;
+  const theme = THEMES.find(t => t.key === themeKey);
+  const mealOptions = mealsForTheme(themeKey);
+  const selectedMeal = selections[current?.key]?.meal;
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [cookIdx]);
+
+  return (
+    <>
+      <div className="eyebrow">Pick the dish</div>
+      <h1 className="h1">{current?.label} · {theme?.label}</h1>
+      <p className="sub">
+        You can swap the dish next week — the theme stays the same, so your grocery list barely moves.
+        That's the win.
+      </p>
+      <div className="context-meta">
+        <span className="day-chip">{current?.short} · {dateForDay(current?.key)}</span>
+        Meal {cookIdx + 1} of {ordered.length}
+      </div>
+      <div className="option-list">
+        {mealOptions.map(m => (
+          <OptionCard
+            key={m.key}
+            radio
+            selected={selectedMeal === m.key}
+            onClick={() => onPickMeal(current.key, m.key)}
+            title={m.title}
+            meta={`${m.timeMin} min · ${m.meta}`}
+            badge={m.vegetarian ? 'VEG' : null}
+          />
+        ))}
+      </div>
+      <div className="cta-row">
+        <button className="cta cta-ghost" onClick={cookIdx === 0 ? onBack : () => onIdxChange(cookIdx - 1)}>
+          ← Back
+        </button>
+        <button
+          className="cta cta-primary"
+          disabled={!selectedMeal}
+          onClick={() => {
+            if (cookIdx < ordered.length - 1) onIdxChange(cookIdx + 1);
+            else onNext();
+          }}
+        >
+          {cookIdx < ordered.length - 1 ? 'Next night →' : 'Show me the plan →'}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/* =============================================================================
+   STEP 5 — PLAN REVEAL + EMAIL CAPTURE
+   ============================================================================= */
+/* =============================================================================
+   SubscribeForm — reusable native lead-capture form
+   -----------------------------------------------------------------------------
+   POSTs to a Netlify Function proxy that forwards to the Beehiiv v2 API.
+   Lives as its own component so it can be dropped onto any landing page that
+   shares this design system.
+
+   Configuration:
+   - SUBSCRIBE_ENDPOINT (below) — the Netlify Function URL. Currently
+     /.netlify/functions/subscribe; the function itself reads BEEHIIV_API_KEY
+     and BEEHIIV_PUB_ID from Netlify env vars (same vars used by
+     stripe-webhook.js for purchase → Beehiiv enrollment).
+   - Default UTM values are supplied via props (`defaultUtms`). Any UTM params
+     present in the current page URL override the defaults.
+
+   Props:
+   - defaultUtms?: { utm_source, utm_medium, utm_campaign } — fallback UTM values
+   - referringSite?: string — referring_site override (defaults to current host+path)
+   - successMessage?: string — inline text shown on success when no redirect
+   - submitLabel?: string — button copy (default "Get the system (free)")
+   - redirectTo?: string — if set, navigate here on success instead of
+     showing the inline success state (e.g. "/thank-you")
+   - onSuccess?: (email) => void — optional hook, fires before redirect
+   ============================================================================= */
+const SUBSCRIBE_ENDPOINT = '/.netlify/functions/subscribe';
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Pull any utm_* params already present in the page URL so attribution
+// survives when users arrive from YouTube, LinkedIn, paid, etc.
+function readUrlUtms() {
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const out = {};
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(k => {
+      const v = p.get(k);
+      if (v) out[k] = v;
+    });
+    return out;
+  } catch { return {}; }
+}
+
+function SubscribeForm({
+  defaultUtms,
+  referringSite,
+  successMessage = 'Check your email',
+  submitLabel = 'Get the system (free)',
+  redirectTo,
+  onSuccess,
+}) {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState('idle'); // 'idle' | 'submitting' | 'success' | 'error'
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (status === 'submitting') return;
+
+    const clean = email.trim().toLowerCase();
+    if (!clean || !EMAIL_RE.test(clean)) {
+      setError('Enter a valid email.');
+      setStatus('error');
+      return;
+    }
+
+    setStatus('submitting');
+    setError('');
+
+    // Merge default UTMs with any present in the URL (URL wins).
+    const urlUtms = readUrlUtms();
+    const utms = { ...(defaultUtms || {}), ...urlUtms };
+
+    const refSite = referringSite
+      || (typeof window !== 'undefined'
+            ? `${window.location.host}${window.location.pathname}`.replace(/\/$/, '')
+            : undefined);
+
+    try {
+      const res = await fetch(SUBSCRIBE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: clean, referring_site: refSite, ...utms }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Something went wrong. Try again.');
+        setStatus('error');
+        track('lm_subscribe_error', { status: res.status });
+        return;
+      }
+
+      setStatus('success');
+      track('lm_subscribe_success', { email: clean });
+      if (typeof onSuccess === 'function') onSuccess(clean);
+
+      // Redirect to the thank-you page if configured. Small delay so the
+      // tracking call flushes and the success flip is visible for a beat.
+      if (redirectTo) {
+        setTimeout(() => { window.location.assign(redirectTo); }, 350);
+      }
+    } catch (err) {
+      setError('Network error. Try again.');
+      setStatus('error');
+      track('lm_subscribe_error', { reason: 'network' });
+    }
+  }
+
+  if (status === 'success') {
+    return (
+      <div className="capture-success" role="status" aria-live="polite">
+        {successMessage}
+      </div>
+    );
+  }
+
+  return (
+    <form className="capture-form" onSubmit={handleSubmit} noValidate>
+      <input
+        type="email"
+        className="capture-input"
+        placeholder="you@example.com"
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          if (status === 'error') setStatus('idle');
+        }}
+        autoComplete="email"
+        required
+        aria-label="Email address"
+        disabled={status === 'submitting'}
+      />
+      <button
+        type="submit"
+        className="capture-submit"
+        disabled={status === 'submitting'}
+      >
+        {status === 'submitting' ? 'Sending…' : submitLabel}
+      </button>
+      {status === 'error' && (
+        <div className="capture-error" role="alert">{error}</div>
+      )}
+    </form>
+  );
+}
+
+function Step5Plan({ nights, selections, household, onBack }) {
+  const plan = useMemo(() => buildPlan(nights, selections), [nights, selections]);
+  const grocery = useMemo(() => buildGrocery(nights, selections), [nights, selections]);
+  const totalGrocery = totalItems(grocery);
+  const cookCount = plan.length;
+  const householdLabel = HOUSEHOLDS.find(h => h.key === household)?.label;
+
+  // ~30 minutes saved per dinner (decision + search + scramble eliminated)
+  const minutesSaved = cookCount * 30;
+  const timeSavedStr = formatTimeSaved(minutesSaved);
+
+  const [checked, setChecked] = useState({});
+
+  useEffect(() => {
+    track('lm_plan_revealed', {
+      nights: Array.from(nights),
+      household,
+      cook_count: cookCount,
+      minutes_saved: minutesSaved,
+    });
+  }, []);
+
+  const toggleItem = (cat, name) => {
+    const k = `${cat}::${name}`;
+    setChecked(prev => ({ ...prev, [k]: !prev[k] }));
+  };
+
+  const shareText = `${cookCount} dinner${cookCount === 1 ? '' : 's'} planned. ${timeSavedStr} reclaimed this week — no more 6pm "what's for dinner?". ${totalGrocery} grocery items, one trip. (Try it free → mealplanningos.com/planner)`;
+
+  const share = async () => {
+    track('lm_share_click', { method: 'image' });
+    try {
+      const canvas = generateShareCard({
+        cookCount,
+        timeSavedStr,
+        plan,
+        weekLabel: weekOfString(),
+        totalGrocery,
+        householdLabel,
+      });
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
+      if (!blob) throw new Error('canvas-blob-failed');
+      const file = new File([blob], 'my-meal-plan.png', { type: 'image/png' });
+
+      // Mobile: native share sheet with image attached
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'My meal plan this week',
+            text: shareText,
+          });
+          return;
+        } catch (e) { /* user cancelled — fall through to download */ }
+      }
+
+      // Desktop fallback: download the PNG
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'my-meal-plan.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      console.log('share error', e);
+      // Last-resort fallback: copy text
+      try {
+        await navigator.clipboard.writeText(shareText + '\n\n' + window.location.href);
+        alert('Copied text to clipboard!');
+      } catch (err) {
+        alert(shareText);
+      }
+    }
+  };
+
+  return (
+    <>
+      {/* PLAN INTRO — light header, no dark block */}
+      <div className="plan-intro">
+        <div className="eyebrow">{weekOfString()}</div>
+        <h1 className="h1">Your week. Planned.</h1>
+        <p className="sub">
+          Built for <strong>{householdLabel}</strong>.
+          {' '}{cookCount} dinner{cookCount === 1 ? '' : 's'} planned.
+          {' '}One shopping trip.
+        </p>
+      </div>
+
+      {/* WIN CALLOUT — time-saved headline, main value prop */}
+      <div className="win-callout">
+        <div className="win-callout-icon">⏱</div>
+        <div className="win-callout-body">
+          <div className="win-callout-headline">
+            You just reclaimed {timeSavedStr} this week.
+          </div>
+          <div className="win-callout-sub">
+            {cookCount} dinner{cookCount === 1 ? '' : 's'} decided, ~30 minutes saved per night (deciding, searching, scrambling).
+            That's energy back for everything else.
+          </div>
+        </div>
+      </div>
+
+      {/* PLAN CARD — hi-fi header bar */}
+      <div className="plan-card">
+        <div className="plan-card-header">
+          <h3>Your week</h3>
+          <div className="eyebrow">{cookCount} dinner{cookCount === 1 ? '' : 's'}</div>
+        </div>
+        {plan.map((row, i) => (
+          <React.Fragment key={row.day}>
+            <div className="plan-row">
+              <div className="plan-day">
+                <div className="day-code">{row.short}</div>
+                <span className="date">{row.date}</span>
+              </div>
+              <div className="plan-meal">
+                <div className="plan-title">
+                  {row.meal.title}
+                </div>
+                <div className="plan-theme">{row.themeLabel}</div>
+              </div>
+            </div>
+            <div className="recipe">
+              <ol className="recipe-steps">
+                {row.meal.steps.map((s, j) => <li key={j}>{s}</li>)}
+              </ol>
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* GROCERY CARD — hi-fi header bar */}
+      <div className="grocery-card">
+        <div className="grocery-header">
+          <h3>Grocery list</h3>
+          <div className="eyebrow">{totalGrocery} items</div>
+        </div>
+        <div className="grocery-body">
+          {CAT_ORDER.filter(k => grocery[k]).map(cat => (
+            <div key={cat} className="grocery-section">
+              <h4>{CAT_LABEL[cat]}</h4>
+              {grocery[cat].map(item => {
+                const k = `${cat}::${item.name}`;
+                const isChecked = !!checked[k];
+                return (
+                  <div
+                    key={item.name}
+                    className={`grocery-item ${isChecked ? 'checked' : ''}`}
+                    onClick={() => toggleItem(cat, item.name)}
+                  >
+                    <div className="check" style={isChecked ? { background: 'var(--cobalt-600)', borderColor: 'var(--cobalt-600)' } : {}}>
+                      {isChecked && <CheckIcon/>}
+                    </div>
+                    <span>{item.name}</span>
+                    <span className="qty">{item.qty}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <div className="grocery-assumes">
+          <strong>Assumed in your pantry:</strong> salt, pepper, red pepper flakes,
+          cumin, chili powder, smoked paprika, Italian seasoning, sugar.
+        </div>
+      </div>
+
+      <div className="save-hint">
+        <strong>This page is your plan.</strong> Bookmark it (⌘D / Ctrl+D) or print to save a copy.
+      </div>
+      <div className="share-row">
+        <button className="primary" onClick={share}>🏆 Share my win</button>
+        <button onClick={() => { track('lm_share_click', { method: 'print' }); window.print(); }}>Print / save as PDF</button>
+      </div>
+
+      {/* EMAIL CAPTURE — reusable SubscribeForm. Posts to the Netlify Function,
+          which forwards to Beehiiv. UTMs from the URL override the defaults. */}
+      <div className="capture">
+        <div className="eyebrow">Keep the momentum</div>
+        <h2>Learn the system that built this plan.</h2>
+        <p>
+          Get the free 10-minute Sunday system — the exact routine that kills the
+          "what's for dinner?" question all week, so your energy shows up where it matters.
+          Your welcome email kicks off a 5-day course to lock the habit in.
+        </p>
+        <SubscribeForm
+          defaultUtms={{
+            utm_source: 'dinner_planner',
+            utm_medium: 'lead_magnet',
+            utm_campaign: 'dinner_planner_v1',
+          }}
+          referringSite="mealplanningos.com/planner"
+          redirectTo="https://www.mealplanningos.com/thank-you"
+        />
+      </div>
+
+      <div className="cta-row" style={{marginTop: 20}}>
+        <button className="cta cta-ghost" onClick={onBack}>← Edit my picks</button>
+      </div>
+
+      <div className="footer-meta">
+        Meal Planning OS · Built from 300,000+ meals · Free planner, no account required
+      </div>
+    </>
+  );
+}
+
+/* =============================================================================
+   APP
+   ============================================================================= */
+function App() {
+  const [step, setStep] = useState(1);
+  const [household, setHousehold] = useState(null);
+  const [nights, setNights] = useState(new Set());
+  const [selections, setSelections] = useState({}); // { MON: { theme, meal } }
+  const [cookIdx, setCookIdx] = useState(0);
+
+  useEffect(() => { track('lm_view'); }, []);
+  useEffect(() => {
+    track('lm_step', { step });
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
+  const toggleNight = (key) => {
+    setNights(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const pickTheme = (day, theme) => {
+    setSelections(prev => {
+      const prior = prev[day] || {};
+      // If theme changed, clear the meal
+      const meal = prior.theme === theme ? prior.meal : null;
+      return { ...prev, [day]: { theme, meal } };
+    });
+    track('lm_theme_selected', { day, theme });
+  };
+
+  const pickMeal = (day, meal) => {
+    setSelections(prev => ({ ...prev, [day]: { ...(prev[day] || {}), meal } }));
+    track('lm_meal_selected', { day, meal });
+  };
+
+  const TOTAL = 5;
+
+  return (
+    <div className="page">
+      <Header step={step} />
+      {step < TOTAL && <Progress step={step} totalSteps={TOTAL} />}
+      {step === 1 && (
+        <Step1Household
+          value={household}
+          onPick={(k) => { setHousehold(k); track('lm_household_selected', { household: k }); }}
+          onNext={() => setStep(2)}
+        />
+      )}
+      {step === 2 && (
+        <Step2Nights
+          nights={nights}
+          onToggle={toggleNight}
+          onNext={() => {
+            track('lm_nights_selected', { count: nights.size, nights: Array.from(nights) });
+            setCookIdx(0);
+            setStep(3);
+          }}
+          onBack={() => setStep(1)}
+        />
+      )}
+      {step === 3 && (
+        <Step3Themes
+          nights={nights}
+          selections={selections}
+          onPickTheme={pickTheme}
+          cookIdx={cookIdx}
+          onIdxChange={setCookIdx}
+          onNext={() => { setCookIdx(0); setStep(4); }}
+          onBack={() => setStep(2)}
+        />
+      )}
+      {step === 4 && (
+        <Step4Meals
+          nights={nights}
+          selections={selections}
+          onPickMeal={pickMeal}
+          cookIdx={cookIdx}
+          onIdxChange={setCookIdx}
+          onNext={() => setStep(5)}
+          onBack={() => { setCookIdx(0); setStep(3); }}
+        />
+      )}
+      {step === 5 && (
+        <Step5Plan
+          nights={nights}
+          selections={selections}
+          household={household}
+          onBack={() => { setCookIdx(0); setStep(4); }}
+        />
+      )}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
