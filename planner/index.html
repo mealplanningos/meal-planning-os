@@ -8,20 +8,22 @@
 <meta property="og:title" content="1-minute dinner planner — Meal Planning OS" />
 <meta property="og:description" content="Decide dinner once. Stop deciding every night. A free 1-minute planner from Meal Planning OS." />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://mealplanningos.com/planner" />
-<meta property="og:image" content="https://mealplanningos.com/og/planner-1200x630.png" />
+<meta property="og:url" content="https://app.mealplanningos.com/planner" />
+<meta property="og:image" content="https://app.mealplanningos.com/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="1-minute dinner planner — Meal Planning OS" />
 <meta name="twitter:description" content="Decide dinner once. Stop deciding every night." />
-<meta name="twitter:image" content="https://mealplanningos.com/og/planner-1200x630.png" />
+<meta name="twitter:image" content="https://app.mealplanningos.com/og-image.png" />
 
 <!-- Subscribe flow goes through /.netlify/functions/subscribe → Beehiiv API.
      No iframe, no embed scripts, no CSRF dance. -->
 
 
-<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="alternate icon" type="image/png" href="/favicon.png" />
+<link rel="apple-touch-icon" href="/favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
@@ -819,6 +821,80 @@ h1.h1 {
 }
 
 /* =============================================================================
+   INTRO MODAL (Step 0)
+   ============================================================================= */
+.intro-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10, 15, 31, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+  animation: introFade 180ms var(--ease-standard);
+}
+.intro-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 36px 32px 30px;
+  max-width: 440px; width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-3);
+  animation: introPop 240ms var(--ease-standard);
+}
+.intro-eyebrow {
+  display: inline-block;
+  background: var(--cobalt-50);
+  color: var(--cobalt-700);
+  font-size: 12px; font-weight: 600;
+  padding: 5px 12px; border-radius: 999px;
+  letter-spacing: 0.02em;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+.intro-title {
+  font-size: 28px; line-height: 1.15;
+  font-weight: 800; letter-spacing: -0.02em;
+  color: var(--ink-900);
+  margin: 0 0 10px;
+}
+.intro-sub {
+  font-size: 17px; line-height: 1.45;
+  color: var(--ink-600);
+  margin: 0 0 26px;
+}
+.intro-cta {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--cobalt-600); color: #fff;
+  padding: 14px 26px; border-radius: 12px;
+  font-size: 16px; font-weight: 700; border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--dur-med) var(--ease-standard), transform 80ms ease;
+  box-shadow: var(--shadow-brand);
+  width: 100%;
+}
+.intro-cta:hover { background: var(--cobalt-700); }
+.intro-cta:active { transform: translateY(1px); }
+.intro-fine {
+  font-size: 13px; color: var(--ink-500);
+  margin: 14px 0 0;
+}
+@keyframes introFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes introPop {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@media (max-width: 480px) {
+  .intro-card { padding: 28px 22px 24px; border-radius: 18px; }
+  .intro-title { font-size: 24px; }
+  .intro-sub { font-size: 15px; }
+}
+
+/* =============================================================================
    PRINT
    ============================================================================= */
 @media print {
@@ -908,21 +984,18 @@ const MEALS = [
   // PASTA
   // =========================================================================
   {
-    key: 'pasta_pantry', theme: 'pasta', title: 'Pantry pasta with garlic & chili',
-    meta: 'vegetarian · 6 ingredients', timeMin: 20, scalable: true, vegetarian: true,
+    key: 'pasta_marinara', theme: 'pasta', title: 'Simple pasta marinara',
+    meta: 'vegetarian · 3 ingredients', timeMin: 15, scalable: true, vegetarian: true,
     ingredients: [
       { name: 'Spaghetti', qty: '1 lb', cat: 'PANTRY' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
-      { name: 'Lemon', qty: '1', cat: 'PRODUCE' },
-      { name: 'Baby spinach', qty: '5 oz', cat: 'PRODUCE' },
-      { name: 'Parmesan', qty: 'wedge', cat: 'DAIRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Marinara sauce', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Parmesan (optional)', qty: 'wedge', cat: 'DAIRY' },
     ],
     steps: [
-      'Boil salted water. Cook spaghetti until al dente. Save 1 cup pasta water, then drain.',
-      'Thin-slice 6 garlic cloves. Warm ⅓ cup olive oil in a wide pan over medium. Add garlic + a pinch of red pepper flakes. Cook gently 2 min — do NOT brown.',
-      'Add drained pasta, spinach, zest + juice of the lemon, and ½ cup pasta water. Toss 1 min until glossy.',
-      'Off heat, grate in Parmesan. Taste for salt. Serve.',
+      'Boil salted water. Cook spaghetti until al dente.',
+      'Heat marinara sauce on the stovetop or in the microwave.',
+      'Add drained pasta to a bowl, toss in sauce.',
+      'Grate in Parmesan (optional).',
     ],
   },
   {
@@ -932,16 +1005,17 @@ const MEALS = [
       { name: 'Rigatoni', qty: '1 lb', cat: 'PANTRY' },
       { name: 'Italian sausage', qty: '1 lb', cat: 'PROTEIN' },
       { name: 'Broccoli', qty: '1 head', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
       { name: 'Chicken stock', qty: '32 oz carton', cat: 'PANTRY' },
       { name: 'Parmesan', qty: 'wedge', cat: 'DAIRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '1 tbsp', cat: 'PANTRY' },
     ],
     steps: [
       'Boil rigatoni until 2 min shy of al dente. Drain, reserve ½ cup pasta water.',
-      'Brown sausage (casings removed) in a wide pan over medium-high, breaking it up. Remove to a plate.',
+      'Brown sausage (casings removed) in a wide pan over medium-high in olive oil, breaking it up. Remove to a plate.',
       'Add broccoli florets + 4 minced garlic cloves + a splash of olive oil to the same pan. Cook 4 min. Add 1½ cups stock and simmer 3 min.',
-      'Return sausage + pasta. Simmer 2–3 min until sauce clings. Finish with grated Parmesan + a glug of olive oil.',
+      'Return sausage + pasta. Simmer 2–3 min until the sauce clings to the pasta.',
+      'Finish with grated Parmesan + olive oil.',
     ],
   },
   {
@@ -952,16 +1026,16 @@ const MEALS = [
       { name: 'Linguine', qty: '1 lb', cat: 'PANTRY' },
       { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
       { name: 'Baby spinach', qty: '5 oz', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
-      { name: 'Heavy cream', qty: '½ pt', cat: 'DAIRY' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
       { name: 'Parmesan', qty: 'wedge', cat: 'DAIRY' },
       { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
     ],
     steps: [
-      'Season chicken with salt + pepper. Sear in olive oil 4 min per side in a wide pan. Rest 5 min, then slice.',
-      'In the same pan, sauté 4 minced garlic cloves 1 min. Add 4 cups water, 1 tsp salt, and linguine (snap in half to fit). Simmer uncovered until tender, ~10 min.',
-      'Stir in heavy cream, juice of 1 lemon, and spinach. Simmer 2 min until it tightens.',
-      'Return sliced chicken. Finish with Parmesan + lemon zest. Taste for salt.',
+      'Boil salted water. Cook linguine until al dente. Save ½ cup pasta water, drain, and run cold water over to stop overcooking.',
+      'Season chicken with salt + pepper. Sear in olive oil 4 min per side in a wide pan (or until 165°F). Rest 5 min, then slice.',
+      'In the same pan, sauté 4 minced garlic cloves 1 min.',
+      'Add juice of 1 lemon and spinach. Cook 2 min.',
+      'Return cooked pasta and sliced chicken. Finish with Parmesan, lemon zest, and fresh black pepper.',
     ],
   },
 
@@ -970,19 +1044,19 @@ const MEALS = [
   // =========================================================================
   {
     key: 'stirfry_chicken', theme: 'stirfry', title: 'Chicken & broccoli stir-fry',
-    meta: 'classic · over rice', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'classic · over rice', timeMin: 30, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
-      { name: 'Broccoli', qty: '2 crowns', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
-      { name: 'Ginger', qty: '2 in piece', cat: 'PRODUCE' },
+      { name: 'Broccoli', qty: '1 crown', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '2 tbsp', cat: 'PRODUCE' },
       { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
-      { name: 'Soy sauce', qty: 'bottle', cat: 'PANTRY' },
-      { name: 'Oyster sauce', qty: 'jar', cat: 'PANTRY' },
-      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Oyster sauce', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
-      'Start rice: rinse jasmine rice, combine with 1.5× water in a pot, bring to a boil, cover, simmer 15 min.',
+      'Start rice: rinse jasmine rice and follow package instructions to cook.',
       'While rice cooks, slice chicken thin against the grain.',
       'Heat 2 tbsp oil in a large skillet until smoking. Blast broccoli florets 3 min. Remove.',
       'Sear chicken 3 min, barely moving it. Add grated ginger + 4 minced garlic cloves, then 2 tbsp soy + 2 tbsp oyster sauce + 2 tbsp water.',
@@ -991,20 +1065,20 @@ const MEALS = [
   },
   {
     key: 'stirfry_steak', theme: 'stirfry', title: 'Pepper steak stir-fry',
-    meta: 'fast · big flavor', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'fast · big flavor', timeMin: 30, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Flank or sirloin steak', qty: '1.25 lb', cat: 'PROTEIN' },
-      { name: 'Bell peppers', qty: '3', cat: 'PRODUCE' },
+      { name: 'Bell peppers', qty: '2', cat: 'PRODUCE' },
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
-      { name: 'Ginger', qty: '2 in piece', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '2 tbsp', cat: 'PRODUCE' },
       { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
       { name: 'Soy sauce', qty: 'bottle', cat: 'PANTRY' },
-      { name: 'Cornstarch', qty: 'small box', cat: 'PANTRY' },
-      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Cornstarch', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
-      'Start rice (1:1.5 water, 15 min covered).',
+      'Start rice according to package instructions.',
       'Slice steak thin against the grain. Toss with 1 tbsp soy + 1 tbsp cornstarch. Let sit 10 min.',
       'Slice peppers + onion. Heat 2 tbsp oil screaming hot. Sear steak in a single layer 90 sec per side. Remove.',
       'Add peppers + onion, cook 3 min until edges char. Add grated ginger + 4 minced garlic cloves, 30 sec.',
@@ -1013,24 +1087,24 @@ const MEALS = [
   },
   {
     key: 'stirfry_tofu', theme: 'stirfry', title: 'Sesame tofu & green bean stir-fry',
-    meta: 'vegetarian · crispy', timeMin: 25, scalable: false, vegetarian: true,
+    meta: 'vegetarian · crispy', timeMin: 30, scalable: false, vegetarian: true,
     ingredients: [
-      { name: 'Firm tofu', qty: '2 × 14 oz blocks', cat: 'PROTEIN' },
+      { name: 'Firm tofu', qty: '14 oz', cat: 'PROTEIN' },
       { name: 'Green beans', qty: '1 lb', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
-      { name: 'Ginger', qty: '2 in piece', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '2 tbsp', cat: 'PRODUCE' },
       { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
-      { name: 'Soy sauce', qty: 'bottle', cat: 'PANTRY' },
-      { name: 'Honey', qty: 'small jar', cat: 'PANTRY' },
-      { name: 'Sesame seeds', qty: 'small jar', cat: 'PANTRY' },
-      { name: 'Cornstarch', qty: 'small box', cat: 'PANTRY' },
-      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: '3 tbsp', cat: 'PANTRY' },
+      { name: 'Honey', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Sesame seeds', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Cornstarch', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: '3 tbsp', cat: 'PANTRY' },
     ],
     steps: [
-      'Start rice (1:1.5 water, 15 min covered).',
+      'Cook rice according to package instructions.',
       'Press tofu 10 min between paper towels. Cube. Toss with 2 tbsp cornstarch + pinch of salt.',
-      'Pan-fry tofu in 3 tbsp hot oil until golden on 3 sides, ~8 min total. Remove.',
-      'Add trimmed green beans, cook 4 min. Add grated ginger + 4 minced garlic cloves, 30 sec.',
+      'Pan-fry tofu in 3 tbsp hot oil until golden on all sides. Remove.',
+      'Add trimmed green beans, cook 4 min or until bright green. Add grated ginger + 4 minced garlic cloves, 30 sec.',
       'Whisk 3 tbsp soy + 1 tbsp honey + 2 tbsp water. Return tofu. Toss 30 sec. Sprinkle sesame seeds. Serve over rice.',
     ],
   },
@@ -1048,56 +1122,55 @@ const MEALS = [
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
       { name: 'Lime', qty: '4', cat: 'PRODUCE' },
       { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
-      { name: 'Corn tortillas', qty: '2 packs', cat: 'PANTRY' },
+      { name: 'Corn tortillas', qty: '1 pack', cat: 'PANTRY' },
       { name: 'Cotija or queso fresco', qty: '4 oz', cat: 'DAIRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
-      'Poach chicken thighs in a pot of salted water, covered, 15 min. Shred with two forks.',
+      'Poach chicken thighs in a pot of salted boiling water, covered, 15 min. Shred with two forks.',
       'Blend tomatoes + 2 chipotles (pick out of the can) + ½ onion + pinch of salt until smooth.',
       'Sauté remaining diced onion in oil 3 min. Add sauce + shredded chicken. Simmer 8 min until thickened.',
-      'Warm tortillas directly over a burner 10 sec per side. Top with chicken, cotija, cilantro, lime.',
+      'Warm tortillas directly over a burner 10 sec per side. Top with chicken, cotija, chopped cilantro, and lime.',
     ],
   },
   {
-    key: 'tacos_beef', theme: 'tacos', title: 'Beef & bean tacos',
+    key: 'tacos_beef', theme: 'tacos', title: 'Beef tacos',
     meta: 'freezer-friendly · kid-approved', timeMin: 20, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Ground beef (85/15)', qty: '1 lb', cat: 'PROTEIN' },
-      { name: 'Black beans', qty: '2 cans', cat: 'PANTRY' },
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
       { name: 'Lime', qty: '2', cat: 'PRODUCE' },
       { name: 'Flour tortillas', qty: '1 pack', cat: 'PANTRY' },
       { name: 'Cheddar', qty: '8 oz', cat: 'DAIRY' },
-      { name: 'Sour cream', qty: 'small tub', cat: 'DAIRY' },
-      { name: 'Salsa', qty: 'jar', cat: 'PANTRY' },
-      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Sour cream', qty: '1 cup', cat: 'DAIRY' },
+      { name: 'Salsa', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Oil', qty: '1 tbsp', cat: 'PANTRY' },
     ],
     steps: [
       'Sauté diced onion in oil 3 min. Add beef, brown, break up with a spoon, 5 min.',
-      'Stir in 2 tbsp chili powder + 1 tsp cumin + 1 tsp paprika + 1 tsp salt + drained beans + ½ cup water. Simmer 5 min.',
-      'Warm tortillas in a dry skillet. Assemble with cheese, sour cream, salsa, lime.',
+      'Stir in 2 tbsp chili powder + 1 tsp cumin + 1 tsp paprika + 1 tsp salt. Simmer 5 min.',
+      'Warm tortillas in a dry skillet. Assemble with cheese, sour cream, salsa, and lime.',
     ],
   },
   {
     key: 'tacos_blackbean', theme: 'tacos', title: 'Crispy black bean tacos',
     meta: 'vegetarian · under 20 min', timeMin: 20, scalable: false, vegetarian: true,
     ingredients: [
-      { name: 'Black beans', qty: '3 cans', cat: 'PANTRY' },
+      { name: 'Black beans', qty: '1 can', cat: 'PANTRY' },
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
       { name: 'Lime', qty: '3', cat: 'PRODUCE' },
       { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
       { name: 'Avocado', qty: '2', cat: 'PRODUCE' },
       { name: 'Corn tortillas', qty: '2 packs', cat: 'PANTRY' },
-      { name: 'Cotija or feta', qty: '4 oz', cat: 'DAIRY' },
-      { name: 'Salsa', qty: 'jar', cat: 'PANTRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Shredded cheese', qty: '4 oz', cat: 'DAIRY' },
+      { name: 'Salsa', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
       'Sauté diced onion in 2 tbsp olive oil 4 min. Add 4 minced garlic cloves + 1 tbsp cumin + 1 tsp smoked paprika + 1 tsp chili powder, 30 sec.',
-      'Add drained beans + ½ cup water. Mash half with a fork. Simmer 5 min. Season with salt + juice of 1 lime.',
-      'Warm tortillas over a burner. Top with beans, sliced avocado, cotija, salsa, cilantro, more lime.',
+      'Add drained beans. Mash half with a fork. Simmer 5 min. Season with salt + juice of 1 lime.',
+      'Warm tortillas over a burner. Top with beans, sliced avocado, shredded cheese, salsa, cilantro, more lime.',
     ],
   },
 
@@ -1115,12 +1188,12 @@ const MEALS = [
       { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
       { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
       { name: 'Fresh rosemary or thyme', qty: '1 bunch', cat: 'PRODUCE' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '3 tbsp', cat: 'PANTRY' },
     ],
     steps: [
-      'Oven to 425°F. Halve potatoes, thick-slice carrots + onions, spread on a sheet pan.',
+      'Heat oven to 425°F. Halve potatoes, thick-slice carrots + onions, spread on a sheet pan.',
       'Toss with 3 tbsp olive oil, salt, pepper, chopped herbs, and smashed garlic cloves.',
-      'Nestle chicken thighs skin-side up on top. Rub skin with oil + salt. Squeeze lemon halves over and tuck in.',
+      'Season chicken with salt, pepper, and chopped herbs. Nestle chicken thighs skin-side up on top. Rub skin with oil + salt. Squeeze lemon halves over and tuck in.',
       'Roast 35–40 min until chicken skin is crisp and a thigh reads 175°F. Rest 5 min before serving.',
     ],
   },
@@ -1129,11 +1202,11 @@ const MEALS = [
     meta: 'dump & roast', timeMin: 40, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Italian sausage (whole links)', qty: '1.5 lb', cat: 'PROTEIN' },
-      { name: 'Bell peppers', qty: '4', cat: 'PRODUCE' },
+      { name: 'Bell peppers', qty: '2', cat: 'PRODUCE' },
       { name: 'Baby potatoes', qty: '1.5 lb', cat: 'PRODUCE' },
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Garlic', qty: '3 cloves', cat: 'PRODUCE' },
+      { name: 'Olive oil', qty: '3 tbsp', cat: 'PANTRY' },
     ],
     steps: [
       'Oven to 425°F. Halve potatoes, chunk peppers + onion.',
@@ -1146,19 +1219,19 @@ const MEALS = [
     key: 'sheet_gnocchi', theme: 'sheet', title: 'Sheet-pan gnocchi with tomato & mozzarella',
     meta: 'vegetarian · no boiling', timeMin: 30, scalable: false, vegetarian: true,
     ingredients: [
-      { name: 'Potato gnocchi (shelf-stable)', qty: '2 × 17 oz packs', cat: 'PANTRY' },
-      { name: 'Cherry tomatoes', qty: '2 pts', cat: 'PRODUCE' },
+      { name: 'Potato gnocchi (shelf-stable)', qty: '17 oz pack', cat: 'PANTRY' },
+      { name: 'Cherry tomatoes', qty: '10', cat: 'PRODUCE' },
       { name: 'Zucchini', qty: '2', cat: 'PRODUCE' },
       { name: 'Red onion', qty: '1', cat: 'PRODUCE' },
       { name: 'Fresh mozzarella', qty: '8 oz ball', cat: 'DAIRY' },
       { name: 'Fresh basil', qty: '1 bunch', cat: 'PRODUCE' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
-      'Oven to 425°F. Do NOT boil gnocchi — dump straight onto the sheet pan.',
-      'Add halved cherry tomatoes, chunked zucchini, sliced red onion. Toss with 4 tbsp olive oil, salt, pepper, Italian seasoning.',
+      'Heat oven to 425°F. Do NOT boil gnocchi — dump straight onto the sheet pan.',
+      'Add halved cherry tomatoes, chunked zucchini, sliced red onion. Toss with 2 tbsp olive oil, salt, pepper, Italian seasoning.',
       'Roast 22 min, stirring once halfway. Gnocchi should be crispy outside, tender inside.',
-      'Tear mozzarella over the top. Return to oven 4 min until melted. Finish with torn basil + a glug of good olive oil.',
+      'Tear mozzarella over the top. Return to oven ~4 min or until melted. Finish with torn basil + a glug of good olive oil.',
     ],
   },
 
@@ -1167,7 +1240,7 @@ const MEALS = [
   // =========================================================================
   {
     key: 'grain_tahini', theme: 'grain', title: 'Chicken & rice bowl with tahini',
-    meta: 'Mediterranean · leftover-friendly', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'Mediterranean · leftover-friendly', timeMin: 30, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
@@ -1176,13 +1249,13 @@ const MEALS = [
       { name: 'Red onion', qty: '1', cat: 'PRODUCE' },
       { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
       { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '1 clove', cat: 'PRODUCE' },
       { name: 'Tahini', qty: '1 jar', cat: 'PANTRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
-      'Start rice (1:1.5 water, 15 min covered).',
-      'Season chicken with salt + 1 tsp cumin. Sear in 2 tbsp olive oil 5 min per side. Rest, then slice.',
+      'Cook rice according to package.',
+      'Season chicken with salt + 1 tsp cumin. Sear in 2 tbsp olive oil 5 min per side (or until 165°F). Rest, then slice.',
       'Chop cucumber + tomatoes + thin-sliced red onion. Dress with olive oil, juice of ½ lemon, salt.',
       'Whisk ⅓ cup tahini + juice of 1 lemon + 1 minced garlic clove + water, a splash at a time, until pourable.',
       'Build bowls: rice, sliced chicken, chopped salad, tahini drizzle, torn parsley.',
@@ -1190,23 +1263,23 @@ const MEALS = [
   },
   {
     key: 'grain_peanut', theme: 'grain', title: 'Chicken & rice bowl with peanut sauce',
-    meta: 'Thai-inspired', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'Thai-inspired', timeMin: 30, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
       { name: 'Cucumber', qty: '2', cat: 'PRODUCE' },
-      { name: 'Carrots', qty: '1 lb', cat: 'PRODUCE' },
+      { name: 'Large carrots', qty: '2', cat: 'PRODUCE' },
       { name: 'Scallions', qty: '1 bunch', cat: 'PRODUCE' },
       { name: 'Lime', qty: '2', cat: 'PRODUCE' },
       { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
-      { name: 'Peanut butter', qty: '1 jar', cat: 'PANTRY' },
-      { name: 'Soy sauce', qty: 'bottle', cat: 'PANTRY' },
-      { name: 'Honey', qty: 'small jar', cat: 'PANTRY' },
-      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Peanut butter', qty: '⅓ cup', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Honey', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
       'Start rice (1:1.5 water, 15 min covered).',
-      'Season chicken with salt. Sear in 2 tbsp oil 5 min per side. Rest, then slice.',
+      'Season chicken with salt. Sear in 2 tbsp oil 5 min per side (or until 165°F). Rest, then slice.',
       'Shred carrots on a box grater. Thin-slice cucumber + scallions.',
       'Whisk ⅓ cup peanut butter + 2 tbsp soy + 1 tbsp honey + juice of 1 lime + 3 tbsp warm water until pourable.',
       'Build bowls: rice, sliced chicken, vegetables, peanut sauce, cilantro + lime wedge.',
@@ -1223,12 +1296,12 @@ const MEALS = [
       { name: 'Chickpeas', qty: '2 cans', cat: 'PANTRY' },
       { name: 'Feta', qty: '6 oz block', cat: 'DAIRY' },
       { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
-      { name: 'Kalamata olives', qty: '1 jar', cat: 'PANTRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Kalamata olives', qty: '1 cup', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '3 tbsp', cat: 'PANTRY' },
     ],
     steps: [
       'Oven to 425°F. Chop zucchini + peppers + onion into chunks; drain chickpeas. Toss everything on a sheet pan with 3 tbsp olive oil, salt, 1 tbsp cumin. Roast 22 min.',
-      'Meanwhile cook quinoa: rinse well, combine with 3 cups water + pinch salt, simmer 15 min covered, then fluff.',
+      'Meanwhile, cook quinoa according to package.',
       'Build bowls: quinoa, roasted vegetables, crumbled feta, olives, squeeze of lemon + glug of olive oil.',
     ],
   },
@@ -1241,19 +1314,19 @@ const MEALS = [
     meta: 'batch-cook · freezes', timeMin: 40, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
-      { name: 'Carrots', qty: '1 lb', cat: 'PRODUCE' },
-      { name: 'Celery', qty: '1 bunch', cat: 'PRODUCE' },
-      { name: 'Yellow onion', qty: '2', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Large carrots', qty: '3', cat: 'PRODUCE' },
+      { name: 'Celery stalks', qty: '3', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
       { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
-      { name: 'Chicken stock', qty: '64 oz', cat: 'PANTRY' },
+      { name: 'Chicken stock', qty: '48 oz', cat: 'PANTRY' },
       { name: 'Egg noodles', qty: '12 oz', cat: 'PANTRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
       'Dice onion + carrots + celery. Sauté in 2 tbsp olive oil over medium 6 min until soft.',
-      'Add 4 minced garlic cloves + stock + whole chicken breasts. Bring to a simmer, cook 15 min.',
-      'Remove chicken, shred with two forks. Add egg noodles to the pot, cook 8 min.',
+      'Add 4 minced garlic cloves + stock + whole chicken breasts. Bring to a simmer, cook 15–20 min.',
+      'Remove chicken, shred with two forks. Add egg noodles to the pot, cook 8 min (add water or more stock if needed).',
       'Return shredded chicken. Season with salt + pepper. Finish with a big handful of chopped parsley.',
     ],
   },
@@ -1263,12 +1336,12 @@ const MEALS = [
     ingredients: [
       { name: 'Whole peeled tomatoes', qty: '2 × 28 oz cans', cat: 'PANTRY' },
       { name: 'Yellow onion', qty: '2', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
       { name: 'Sourdough loaf', qty: '1', cat: 'PANTRY' },
       { name: 'Heavy cream', qty: '½ pt', cat: 'DAIRY' },
       { name: 'Sharp cheddar', qty: '12 oz', cat: 'DAIRY' },
       { name: 'Butter', qty: '1 stick', cat: 'DAIRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
       'Sauté diced onion in 2 tbsp olive oil 6 min until soft. Add 4 minced garlic cloves, 30 sec.',
@@ -1284,14 +1357,14 @@ const MEALS = [
       { name: 'Cannellini beans', qty: '2 cans', cat: 'PANTRY' },
       { name: 'Diced tomatoes', qty: '1 × 28 oz can', cat: 'PANTRY' },
       { name: 'Kale', qty: '1 bunch', cat: 'PRODUCE' },
-      { name: 'Carrots', qty: '1 lb', cat: 'PRODUCE' },
-      { name: 'Celery', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Large carrots', qty: '2', cat: 'PRODUCE' },
+      { name: 'Celery stalks', qty: '2', cat: 'PRODUCE' },
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
       { name: 'Vegetable stock', qty: '32 oz', cat: 'PANTRY' },
       { name: 'Small pasta (ditalini or elbows)', qty: '8 oz', cat: 'PANTRY' },
       { name: 'Parmesan rind (optional)', qty: '1', cat: 'DAIRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
       'Dice onion + carrots + celery. Sauté in 2 tbsp olive oil 6 min. Add 4 minced garlic cloves, 30 sec.',
@@ -1312,10 +1385,10 @@ const MEALS = [
       { name: 'Baby potatoes', qty: '1.5 lb', cat: 'PRODUCE' },
       { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
       { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
-      { name: 'Garlic', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
       { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
-      { name: 'Red wine vinegar', qty: 'bottle', cat: 'PANTRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Red wine vinegar', qty: '3 tbsp', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '½ cup', cat: 'PANTRY' },
     ],
     steps: [
       'Boil potatoes in salted water 15 min until tender. Drain, toss with olive oil + salt.',
@@ -1331,17 +1404,17 @@ const MEALS = [
       { name: 'Ground beef (80/20)', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Russet potatoes', qty: '2 lb', cat: 'PRODUCE' },
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
-      { name: 'Tomato', qty: '2', cat: 'PRODUCE' },
+      { name: 'Tomato', qty: '1', cat: 'PRODUCE' },
       { name: 'Lettuce', qty: '1 head', cat: 'PRODUCE' },
       { name: 'Brioche buns', qty: '1 pack', cat: 'PANTRY' },
       { name: 'American cheese', qty: '8 slices', cat: 'DAIRY' },
-      { name: 'Pickles', qty: 'jar', cat: 'PANTRY' },
-      { name: 'Neutral oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Pickles', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: '3 tbsp', cat: 'PANTRY' },
     ],
     steps: [
-      'Oven to 450°F. Cut potatoes into fries, toss with 3 tbsp oil + salt, spread on a sheet pan. Roast 25–30 min, flipping once.',
+      'Oven to 450°F. Cut potatoes into fries, toss with 3 tbsp oil + salt, spread on a sheet pan. Roast 25–30 min, flipping once in the middle of cook time.',
       'Form beef into 6 loose balls (do NOT pack tight). Slice onion + tomato, wash lettuce.',
-      'Heat a cast-iron or heavy skillet until screaming hot. Place 2 balls at a time, smash flat with a spatula, salt generously. Cook 2 min. Flip, add cheese, 1 more min.',
+      'Heat a cast-iron or heavy skillet until screaming hot. Place 2 balls at a time, smash flat with a spatula, and salt generously. Cook 2 min. Flip, add cheese, 1 more min.',
       'Toast buns in the same pan. Build: bottom bun, lettuce, patty, tomato, onion, pickles, top bun.',
     ],
   },
@@ -1353,16 +1426,16 @@ const MEALS = [
       { name: 'Zucchini', qty: '2', cat: 'PRODUCE' },
       { name: 'Bell peppers', qty: '3', cat: 'PRODUCE' },
       { name: 'Red onion', qty: '2', cat: 'PRODUCE' },
-      { name: 'Cherry tomatoes', qty: '1 pt', cat: 'PRODUCE' },
+      { name: 'Cherry tomatoes', qty: '10', cat: 'PRODUCE' },
       { name: 'Feta', qty: '6 oz', cat: 'DAIRY' },
       { name: 'Baguette', qty: '1', cat: 'PANTRY' },
-      { name: 'Olive oil', qty: 'bottle', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
     ],
     steps: [
       'Fire up the grill (or heat a grill pan over medium-high). Slice zucchini lengthwise, quarter peppers, thick-slice red onion. Toss with olive oil + salt + pepper.',
       'Grill vegetables, turning once, ~4 min per side until charred. Remove to a platter.',
       'Grill sausages, turning occasionally, 10–12 min until browned and cooked through. Slice on a bias.',
-      'Arrange on the platter with cherry tomatoes + crumbled feta. Serve with warm baguette torn at the table.',
+      'Arrange on the platter with cherry tomatoes + crumbled feta. Serve with a warm baguette torn at the table.',
     ],
   },
 ];
@@ -1586,26 +1659,32 @@ function generateShareCard(data) {
   ctx.fillStyle = COBALT;
   ctx.font = `700 14px ${sysFont}`;
   const eyebrowY = dividerY + 46;
-  ctx.fillText('MY WEEK · PLANNED', PAD, eyebrowY);
+  ctx.fillText('PLANNED IN 60 SECONDS', PAD, eyebrowY);
 
   // ======= BIG HEADLINE =======
-  // Line 1: "N dinners."   Line 2: [cobalt time] + " reclaimed."
+  // Line 1: "N dinners planned in 1 minute."   Line 2: "[time] saved this week."
   ctx.textAlign = 'left';
-  ctx.fillStyle = INK_900;
-  const headlineSize = 84;
+  const headlineSize = 64;
   ctx.font = `800 ${headlineSize}px ${sysFont}`;
-  const line1Y = eyebrowY + 78;
-  const line1 = `${data.cookCount} dinner${data.cookCount === 1 ? '' : 's'}.`;
-  ctx.fillText(line1, PAD, line1Y);
 
-  // Line 2 — split into cobalt time + ink "reclaimed."
-  const line2Y = line1Y + 92;
+  // Line 1 — "N dinners planned in 1 minute." with N in cobalt
+  const line1Y = eyebrowY + 72;
+  const nStr = `${data.cookCount}`;
+  const nW = ctx.measureText(nStr).width;
+  ctx.fillStyle = COBALT;
+  ctx.fillText(nStr, PAD, line1Y);
+  ctx.fillStyle = INK_900;
+  const dinnerWord = ` dinner${data.cookCount === 1 ? '' : 's'} planned in 1 minute.`;
+  ctx.fillText(dinnerWord, PAD + nW, line1Y);
+
+  // Line 2 — "[time] saved this week." with time in cobalt
+  const line2Y = line1Y + 84;
   const timeStr = data.timeSavedStr || '0 minutes';
   ctx.fillStyle = COBALT;
   ctx.fillText(timeStr, PAD, line2Y);
   const timeW = ctx.measureText(timeStr).width;
   ctx.fillStyle = INK_900;
-  ctx.fillText(' reclaimed.', PAD + timeW, line2Y);
+  ctx.fillText(' saved this week.', PAD + timeW, line2Y);
 
   // ======= DAY CARDS =======
   // Show up to 5 planned nights in a horizontal row
@@ -1714,7 +1793,7 @@ function generateShareCard(data) {
 
   // URL chip (right)
   ctx.font = `700 17px ${sysFont}`;
-  const urlText = 'Build yours free → mealplanningos.com/planner';
+  const urlText = 'Build yours free → app.mealplanningos.com/planner';
   ctx.textAlign = 'right';
   const urlW = ctx.measureText(urlText).width;
   const chipPadX = 16, chipPadY = 10;
@@ -1780,6 +1859,22 @@ function Logo() {
       </svg>
       <div className="logo-text">Meal Planning <span>OS</span></div>
     </a>
+  );
+}
+
+function IntroModal({ onStart }) {
+  return (
+    <div className="intro-overlay" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+      <div className="intro-card">
+        <div className="intro-eyebrow">Free · no account needed</div>
+        <h2 id="intro-title" className="intro-title">Stop the 6pm scramble.</h2>
+        <p className="intro-sub">Plan this week in 60 seconds.</p>
+        <button type="button" className="intro-cta" onClick={onStart}>
+          Start planning →
+        </button>
+        <p className="intro-fine">Pick your nights · pick your meals · done.</p>
+      </div>
+    </div>
   );
 }
 
@@ -2204,7 +2299,17 @@ function Step5Plan({ nights, selections, household, onBack }) {
     setChecked(prev => ({ ...prev, [k]: !prev[k] }));
   };
 
-  const shareText = `${cookCount} dinner${cookCount === 1 ? '' : 's'} planned. ${timeSavedStr} reclaimed this week — no more 6pm "what's for dinner?". ${totalGrocery} grocery items, one trip. (Try it free → mealplanningos.com/planner)`;
+  // Canonical URL passed to navigator.share. Having a url field is CRITICAL
+  // for LinkedIn/X/FB iOS share extensions — they ignore files + text and
+  // render a preview card only from the shared URL's OG metadata. Without
+  // this, LinkedIn auto-guesses a URL from page context (we saw it land on
+  // mealplanningos.com/planner, which 404s on the Beehiiv root).
+  const SHARE_URL = 'https://app.mealplanningos.com/planner';
+
+  // Body text WITHOUT the URL — the share sheet will attach the URL
+  // separately and let each target app decide where to put it (card vs
+  // body). Duplicating the URL in text creates ugly LinkedIn posts.
+  const shareText = `${cookCount} dinner${cookCount === 1 ? '' : 's'} planned in 1 minute. ${timeSavedStr} saved this week. Try the free planner:`;
 
   const share = async () => {
     track('lm_share_click', { method: 'image' });
@@ -2221,16 +2326,28 @@ function Step5Plan({ nights, selections, household, onBack }) {
       if (!blob) throw new Error('canvas-blob-failed');
       const file = new File([blob], 'my-meal-plan.png', { type: 'image/png' });
 
-      // Mobile: native share sheet with image attached
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      // Mobile: native share sheet with image + URL + text.
+      // - Messages/Mail/WhatsApp: attach the image + text (url becomes a link)
+      // - LinkedIn/X/FB: use url only → renders preview card from OG tags
+      // - Pinterest/Gmail: use all three
+      const sharePayload = {
+        files: [file],
+        title: 'My meal plan this week',
+        text: shareText,
+        url: SHARE_URL,
+      };
+      if (navigator.canShare && navigator.canShare(sharePayload)) {
         try {
-          await navigator.share({
-            files: [file],
-            title: 'My meal plan this week',
-            text: shareText,
-          });
+          await navigator.share(sharePayload);
           return;
         } catch (e) { /* user cancelled — fall through to download */ }
+      }
+      // Some browsers can share url+text but not files. Try without files.
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'My meal plan this week', text: shareText, url: SHARE_URL });
+          return;
+        } catch (e) { /* fall through */ }
       }
 
       // Desktop fallback: download the PNG
@@ -2244,12 +2361,12 @@ function Step5Plan({ nights, selections, household, onBack }) {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
       console.log('share error', e);
-      // Last-resort fallback: copy text
+      // Last-resort fallback: copy text + URL
       try {
-        await navigator.clipboard.writeText(shareText + '\n\n' + window.location.href);
+        await navigator.clipboard.writeText(`${shareText} ${SHARE_URL}`);
         alert('Copied text to clipboard!');
       } catch (err) {
-        alert(shareText);
+        alert(`${shareText} ${SHARE_URL}`);
       }
     }
   };
@@ -2272,11 +2389,11 @@ function Step5Plan({ nights, selections, household, onBack }) {
         <div className="win-callout-icon">⏱</div>
         <div className="win-callout-body">
           <div className="win-callout-headline">
-            You just reclaimed {timeSavedStr} this week.
+            {cookCount} dinner{cookCount === 1 ? '' : 's'} planned in 1 minute.
           </div>
           <div className="win-callout-sub">
-            {cookCount} dinner{cookCount === 1 ? '' : 's'} decided, ~30 minutes saved per night (deciding, searching, scrambling).
-            That's energy back for everything else.
+            That's <strong>{timeSavedStr} saved this week</strong> — no more 6pm "what's for dinner?"
+            (at ~30 minutes back per dinner: deciding, searching, scrambling).
           </div>
         </div>
       </div>
@@ -2370,8 +2487,8 @@ function Step5Plan({ nights, selections, household, onBack }) {
             utm_medium: 'lead_magnet',
             utm_campaign: 'dinner_planner_v1',
           }}
-          referringSite="mealplanningos.com/planner"
-          redirectTo="https://www.mealplanningos.com/thank-you"
+          referringSite="app.mealplanningos.com/planner"
+          redirectTo="https://app.mealplanningos.com/thank-you"
         />
       </div>
 
@@ -2395,6 +2512,8 @@ function App() {
   const [nights, setNights] = useState(new Set());
   const [selections, setSelections] = useState({}); // { MON: { theme, meal } }
   const [cookIdx, setCookIdx] = useState(0);
+  const [showIntro, setShowIntro] = useState(true);
+  const [planStartAt, setPlanStartAt] = useState(null); // ms when user clicked Start
 
   useEffect(() => { track('lm_view'); }, []);
   useEffect(() => {
@@ -2430,6 +2549,15 @@ function App() {
 
   return (
     <div className="page">
+      {showIntro && (
+        <IntroModal
+          onStart={() => {
+            setShowIntro(false);
+            setPlanStartAt(Date.now());
+            track('lm_intro_dismissed');
+          }}
+        />
+      )}
       <Header step={step} />
       {step < TOTAL && <Progress step={step} totalSteps={TOTAL} />}
       {step === 1 && (

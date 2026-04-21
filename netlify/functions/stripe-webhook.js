@@ -29,13 +29,34 @@ exports.handler = async (event) => {
 
   // ── Successful one-time payment ───────────────────────────────
   if (stripeEvent.type === 'checkout.session.completed') {
-    const session = stripeEvent.data.object;
-    const email   = session.customer_details?.email?.toLowerCase().trim();
+    const rawSession = stripeEvent.data.object;
+    const email      = rawSession.customer_details?.email?.toLowerCase().trim();
 
     if (!email) {
-      console.error('No customer email in session:', session.id);
+      console.error('No customer email in session:', rawSession.id);
       return { statusCode: 400, body: 'Missing customer email' };
     }
+
+    // Re-fetch session with expansions so we can capture coupon/promo info.
+    // Falls back to the raw event payload if the expand call fails.
+    let session = rawSession;
+    try {
+      session = await stripe.checkout.sessions.retrieve(rawSession.id, {
+        expand: ['total_details.breakdown.discounts', 'discounts.promotion_code'],
+      });
+    } catch (err) {
+      console.error('Could not expand session, using raw payload:', err.message);
+    }
+
+    // Pull discount/coupon info (if any)
+    const discountEntry   = Array.isArray(session.discounts) ? session.discounts[0] : null;
+    const promotionCode   = discountEntry?.promotion_code?.code || null; // e.g. "TESTFORSTEVE"
+    const couponId        = discountEntry?.coupon?.id
+                         || (typeof discountEntry?.coupon === 'string' ? discountEntry.coupon : null)
+                         || null;
+    const amountTotal     = typeof session.amount_total === 'number' ? session.amount_total : null;
+    const amountDiscount  = session.total_details?.amount_discount ?? null;
+    const currency        = session.currency || null;
 
     // Upsert is idempotent — safe if Stripe retries this event
     const { error } = await supabase
@@ -51,18 +72,25 @@ exports.handler = async (event) => {
           product:                  'meal_planning_os',
           payment_status:           'paid',
           access_status:            'unclaimed',
+          promotion_code:           promotionCode,
+          coupon_code:              couponId,
+          amount_total:             amountTotal,
+          amount_discount:          amountDiscount,
+          currency,
           purchased_at:             new Date().toISOString(),
           updated_at:               new Date().toISOString(),
         },
         { onConflict: 'stripe_session_id' }
       );
 
+    console.log(
+      `Entitlement upsert — email: ${email}, total: ${amountTotal} ${currency}, promo: ${promotionCode || 'none'}`
+    );
+
     if (error) {
       console.error('Failed to create entitlement:', error.message);
       return { statusCode: 500, body: 'Database error' };
     }
-
-    console.log(`Entitlement created — email: ${email}, session: ${session.id}`);
 
     // ── Beehiiv onboarding (secondary path — never blocks access) ─
     await enrollInBeehiiv(email, session.id);
