@@ -1,0 +1,44 @@
+# Meal Planning OS — allow all crawlers, especially link-preview bots.
+# Explicit allows for the social-preview user-agents so Facebook/LinkedIn/etc
+# never see a 403 when scraping og:tags for link cards.
+
+User-agent: *
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: facebookexternalhit/1.1
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Slackbot-LinkExpanding
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: Pinterestbot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+Sitemap: https://app.mealplanningos.com/sitemap.xml

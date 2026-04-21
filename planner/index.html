@@ -4,17 +4,17 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>1-minute dinner planner — Meal Planning OS</title>
-<meta name="description" content="Decide dinner once. Stop deciding every night. A free 1-minute planner from Meal Planning OS." />
-<meta property="og:title" content="1-minute dinner planner — Meal Planning OS" />
-<meta property="og:description" content="Decide dinner once. Stop deciding every night. A free 1-minute planner from Meal Planning OS." />
+<meta name="description" content="Decide dinner once for the whole week and stop the 6pm scramble. A free 1-minute planner with 21 weeknight recipes and a built-in grocery list. No signup required to try it." />
+<meta property="og:title" content="Plan your week of dinners in 1 minute — Meal Planning OS" />
+<meta property="og:description" content="Decide dinner once for the whole week and stop the 6pm scramble. A free 1-minute planner with 21 weeknight recipes and a built-in grocery list. No signup required to try it." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://app.mealplanningos.com/planner" />
 <meta property="og:image" content="https://app.mealplanningos.com/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="1-minute dinner planner — Meal Planning OS" />
-<meta name="twitter:description" content="Decide dinner once. Stop deciding every night." />
+<meta name="twitter:title" content="Plan your week of dinners in 1 minute — Meal Planning OS" />
+<meta name="twitter:description" content="Decide dinner once for the whole week and stop the 6pm scramble. Free planner, 21 weeknight recipes, built-in grocery list. No signup to try." />
 <meta name="twitter:image" content="https://app.mealplanningos.com/og-image.png" />
 
 <!-- Subscribe flow goes through /.netlify/functions/subscribe → Beehiiv API.
@@ -2304,7 +2304,11 @@ function Step5Plan({ nights, selections, household, onBack }) {
   // render a preview card only from the shared URL's OG metadata. Without
   // this, LinkedIn auto-guesses a URL from page context (we saw it land on
   // mealplanningos.com/planner, which 404s on the Beehiiv root).
-  const SHARE_URL = 'https://app.mealplanningos.com/planner';
+  //
+  // UTMs on the share URL: friend-share hits get tagged so we can filter
+  // them in Beehiiv's acquisition report (utm_source=friend). These UTMs
+  // propagate to the subscribe.js call when the recipient clicks through.
+  const SHARE_URL = 'https://app.mealplanningos.com/planner?utm_source=friend&utm_medium=share&utm_campaign=planner_v1';
 
   // Body text WITHOUT the URL — the share sheet will attach the URL
   // separately and let each target app decide where to put it (card vs
@@ -2466,8 +2470,11 @@ function Step5Plan({ nights, selections, household, onBack }) {
       <div className="save-hint">
         <strong>This page is your plan.</strong> Bookmark it (⌘D / Ctrl+D) or print to save a copy.
       </div>
+      <div className="save-hint" style={{marginTop: 12}}>
+        Know someone drowning in the 6pm scramble? Send this to them — it's free and no signup to try.
+      </div>
       <div className="share-row">
-        <button className="primary" onClick={share}>🏆 Share my win</button>
+        <button className="primary" onClick={share}>💛 Send to a friend who needs this</button>
         <button onClick={() => { track('lm_share_click', { method: 'print' }); window.print(); }}>Print / save as PDF</button>
       </div>
 
