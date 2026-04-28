@@ -1540,8 +1540,14 @@ function totalItems(grocery) {
   return Object.values(grocery).reduce((n, arr) => n + arr.length, 0);
 }
 
-// Analytics stub — swap for posthog.capture() later.
+// Analytics — fires PostHog event if loaded; falls back to console for local dev.
+// Wrapped in try/catch so a missing/blocked PostHog can never break the planner.
 function track(event, props) {
+  try {
+    if (typeof window !== 'undefined' && window.posthog && typeof window.posthog.capture === 'function') {
+      window.posthog.capture(event, props || {});
+    }
+  } catch (_) { /* swallow — never let analytics throw */ }
   if (typeof window !== 'undefined' && window.console) {
     console.log('[track]', event, props || {});
   }
@@ -2226,6 +2232,16 @@ function SubscribeForm({
         track('lm_subscribe_error', { status: res.status });
         return;
       }
+
+      // Identify the user in PostHog so prior anonymous events on this session
+      // (lm_household_set, lm_meal_picked, lm_plan_revealed, etc.) merge into
+      // a real person profile keyed by email. UTMs ride along as person props
+      // so we can slice acquisition cohorts in PostHog without leaving the tool.
+      try {
+        if (typeof window !== 'undefined' && window.posthog && typeof window.posthog.identify === 'function') {
+          window.posthog.identify(clean, { email: clean, ...utms });
+        }
+      } catch (_) { /* never let analytics break the conversion */ }
 
       setStatus('success');
       track('lm_subscribe_success', { email: clean });
