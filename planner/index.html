@@ -934,8 +934,11 @@ h1.h1 {
 // from /planner show up tagged in the Beehiiv subscriber detail view.
 const BEEHIIV_FORM_ID = "3de9ac58-4416-491a-af08-7df9ede64d1f";
 
-// Soft-upsell target (logo link at top of page)
-const UPSELL_URL = "https://mealplanningos.com";
+// Soft-upsell target (logo link at top of page).
+// UTM-tagged so logo clicks → homepage signups are attributable in Beehiiv.
+// utm_content=logo distinguishes these from the planner's email form submits
+// (no utm_content) and the friend-share link (utm_source=friend).
+const UPSELL_URL = "https://mealplanningos.com/?utm_source=dinner_planner&utm_medium=lead_magnet&utm_campaign=dinner_planner_v1&utm_content=logo";
 
 /* =============================================================================
    DATA
