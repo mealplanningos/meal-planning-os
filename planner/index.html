@@ -1077,13 +1077,6 @@ h1.h1 {
    CONFIG — edit these two lines before deploying
    ============================================================================= */
 
-// Soft-upsell target (logo link at top of page).
-// UTM-tagged so logo clicks → homepage signups are attributable in Beehiiv.
-// utm_medium=paid_product reflects the planner's pivot from lead magnet to
-// $19 paid product. utm_content=logo distinguishes these from the bottom-of-
-// page tripwire (utm_medium=tripwire).
-const UPSELL_URL = "https://mealplanningos.com/?utm_source=dinner_planner&utm_medium=paid_product&utm_campaign=paid_planner_v1&utm_content=logo";
-
 /* =============================================================================
    DATA
    ============================================================================= */
@@ -2713,8 +2706,11 @@ function wrapLines(ctx, text, maxW, maxLines) {
    ============================================================================= */
 
 function Logo() {
+  // Logo is intentionally NOT a link. Paid customers landing here don't need
+  // to be sent back to the marketing landing page — they already converted.
+  // The tripwire at the bottom of the plan is the only intended outbound link.
   return (
-    <a href={UPSELL_URL} target="_blank" rel="noopener" className="logo" aria-label="Meal Planning OS">
+    <div className="logo" aria-label="Meal Planning OS">
       <svg className="logo-svg" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <rect width="34" height="34" rx="8" fill="#FFFFFF" stroke="#DDE4F0"/>
         <g stroke="#0D1829" strokeWidth="1.6" strokeLinecap="round">
@@ -2727,7 +2723,7 @@ function Logo() {
         </g>
       </svg>
       <div className="logo-text">Meal Planning <span>OS</span></div>
-    </a>
+    </div>
   );
 }
 
