@@ -4,9 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>1-minute dinner planner — Meal Planning OS</title>
-<meta name="description" content="Decide dinner once for the whole week and stop the 6pm scramble. A free 1-minute planner with 21 weeknight recipes and a built-in grocery list. No signup required to try it." />
+<meta name="description" content="Decide dinner once for the whole week and stop the 6pm scramble. A 1-minute planner with 50 weeknight recipes and a built-in grocery list — saves ~30 min per dinner." />
 <meta property="og:title" content="Plan your week of dinners in 1 minute — Meal Planning OS" />
-<meta property="og:description" content="Decide dinner once for the whole week and stop the 6pm scramble. A free 1-minute planner with 21 weeknight recipes and a built-in grocery list. No signup required to try it." />
+<meta property="og:description" content="Decide dinner once for the whole week and stop the 6pm scramble. A 1-minute planner with 50 weeknight recipes and a built-in grocery list — saves ~30 min per dinner." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://app.mealplanningos.com/planner" />
 <meta property="og:image" content="https://app.mealplanningos.com/og-image.png" />
@@ -14,12 +14,11 @@
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Plan your week of dinners in 1 minute — Meal Planning OS" />
-<meta name="twitter:description" content="Decide dinner once for the whole week and stop the 6pm scramble. Free planner, 21 weeknight recipes, built-in grocery list. No signup to try." />
+<meta name="twitter:description" content="Decide dinner once for the whole week and stop the 6pm scramble. 50 weeknight recipes, built-in grocery list, saves ~30 min per dinner." />
 <meta name="twitter:image" content="https://app.mealplanningos.com/og-image.png" />
 
-<!-- Subscribe flow goes through /.netlify/functions/subscribe → Beehiiv API.
-     No iframe, no embed scripts, no CSRF dance. -->
-
+<!-- Paid product (April 2026 onwards). Delivered via Beehiiv Product purchase
+     link. No email capture on this page — link sharing + bookmark only. -->
 
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="alternate icon" type="image/png" href="/favicon.png" />
@@ -372,7 +371,8 @@ h1.h1 {
   border-bottom: 1px solid var(--ink-100);
   background: var(--bg-surface);
 }
-.plan-row:last-child { border-bottom: none; }
+.plan-entry:last-child .plan-row,
+.plan-entry:last-child .recipe { border-bottom: none; }
 .plan-day {
   width: 42px;
   flex-shrink: 0;
@@ -404,16 +404,19 @@ h1.h1 {
   margin-top: 2px;
 }
 
+/* Plan-entry wrapper — pairs a plan-row + its recipe block. Used by print
+   CSS to guarantee each recipe lands on its own page. */
+.plan-entry { background: var(--bg-surface); }
+
 /* Recipe collapsibles */
 .recipe {
-  padding: 0 16px 14px 70px;
+  padding: 14px 16px 16px 70px;
   border-bottom: 1px solid var(--ink-100);
   font-size: 13px;
   line-height: 1.55;
   color: var(--ink-700);
   background: var(--bg-surface);
 }
-.recipe:last-child { border-bottom: none; }
 .recipe-steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
 .recipe-steps li {
   counter-increment: step;
@@ -635,6 +638,119 @@ h1.h1 {
   border-color: var(--cobalt-600);
 }
 .share-row button.primary:hover { background: var(--cobalt-700); border-color: var(--cobalt-700); }
+.share-row button.primary.copied {
+  background: var(--accent-status);
+  border-color: var(--accent-status);
+  transition: background-color 200ms var(--ease-standard), border-color 200ms var(--ease-standard);
+}
+.share-row button.primary.copied:hover { background: var(--accent-status); border-color: var(--accent-status); }
+
+/* Tripwire — a subtle, one-line cross-sell to the full MPOS web app.
+   Lives between the share row and the final CTA row. Easy to ignore, easy
+   to click — should NOT feel like a paid-product hard sell. */
+.tripwire {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--ink-500);
+  margin: 4px 0 20px;
+  line-height: 1.5;
+}
+.tripwire a {
+  color: var(--cobalt-600);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--cobalt-300);
+  padding-bottom: 1px;
+  transition: color 150ms var(--ease-standard), border-color 150ms var(--ease-standard);
+}
+.tripwire a:hover { color: var(--cobalt-700); border-bottom-color: var(--cobalt-600); }
+
+/* Week-nav — interactive ◀ ▶ pills around the displayed week label.
+   Sits in the header, replacing the static week label when interactive. */
+.week-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--ink-200);
+  border-radius: 999px;
+  padding: 2px 4px;
+  box-shadow: var(--shadow-1);
+}
+.week-nav-btn {
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--ink-600);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background var(--dur-med) var(--ease-standard), color var(--dur-med) var(--ease-standard);
+}
+.week-nav-btn:hover { background: var(--ink-100); color: var(--ink-900); }
+.week-nav-btn:active { transform: translateY(1px); }
+.week-nav-btn:focus-visible { outline: 2px solid var(--cobalt-500); outline-offset: 1px; }
+.week-nav-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-700);
+  padding: 0 6px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Per-recipe ingredient expand — a quiet pill button that toggles the recipe's
+   own ingredient list. Default collapsed; print CSS forces it open so the
+   printed plan always includes ingredients. */
+.recipe-toggle {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--cobalt-600);
+  background: var(--cobalt-50);
+  border: 1px solid var(--cobalt-200);
+  border-radius: 999px;
+  padding: 5px 12px;
+  margin: 0 0 10px;
+  cursor: pointer;
+  transition: background var(--dur-med) var(--ease-standard);
+}
+.recipe-toggle:hover { background: #dde6ff; }
+.recipe-toggle:focus-visible { outline: 2px solid var(--cobalt-500); outline-offset: 1px; }
+.recipe-ingredients {
+  display: none;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--ink-100);
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+.recipe.open .recipe-ingredients { display: block; }
+.recipe-ingredients li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--ink-100);
+}
+.recipe-ingredients li:last-child { border-bottom: 0; }
+.recipe-ingredients .ing-name { color: var(--ink-800); }
+.recipe-ingredients .ing-qty {
+  color: var(--ink-500);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
 
 /* Win callout — the "you saved X hours" block */
 .win-callout {
@@ -900,10 +1016,42 @@ h1.h1 {
 @media print {
   body { background: #fff; }
   .page { padding: 0; max-width: none; }
-  .header, .progress-row, .cta-row, .share-row, .save-hint, .capture, .win-callout, .eyebrow.no-print { display: none !important; }
+  .header, .progress-row, .save-hint, .capture, .win-callout, .tripwire, .footer-meta, .no-print, .eyebrow.no-print { display: none !important; }
   .plan-intro h1.h1 { color: #000; }
-  .plan-card, .grocery-card { break-inside: avoid; box-shadow: none; border: 1px solid #999; }
-  .recipe { break-inside: avoid; }
+  /* Drop card chrome and — critically — the screen-mode `overflow: hidden` on
+     .plan-card. With overflow hidden, browsers ignore page-break properties on
+     descendants, which is why the print was cutting off mid-recipe. */
+  .plan-card, .grocery-card {
+    box-shadow: none;
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+    overflow: visible;
+  }
+  .plan-card-header, .grocery-header { padding: 0 0 12px; }
+  /* One recipe per page. The first plan-entry shares the page with the
+     plan-intro / plan-card-header; every subsequent entry starts fresh.
+     Both legacy (page-break-*) and modern (break-*) properties for max
+     browser coverage — Safari still relies on the legacy variants. */
+  .plan-entry {
+    display: block;
+    page-break-before: always;
+    break-before: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .plan-entry:first-of-type {
+    page-break-before: auto;
+    break-before: auto;
+  }
+  .grocery-card {
+    page-break-before: always;
+    break-before: page;
+  }
+  .recipe { padding-left: 0; }
+  /* Force every recipe's ingredient list visible on the printed copy regardless
+     of in-app toggle state — paper plans without ingredients are useless. */
+  .recipe-ingredients { display: block !important; }
 }
 </style>
 <!-- PostHog Analytics -->
@@ -929,16 +1077,12 @@ h1.h1 {
    CONFIG — edit these two lines before deploying
    ============================================================================= */
 
-// Beehiiv subscribe — uses Beehiiv's published iframe embed. embed.js auto-resizes.
-// Attribution: Beehiiv captures the parent page URL as referrer, so subscribers who sign up
-// from /planner show up tagged in the Beehiiv subscriber detail view.
-const BEEHIIV_FORM_ID = "3de9ac58-4416-491a-af08-7df9ede64d1f";
-
 // Soft-upsell target (logo link at top of page).
 // UTM-tagged so logo clicks → homepage signups are attributable in Beehiiv.
-// utm_content=logo distinguishes these from the planner's email form submits
-// (no utm_content) and the friend-share link (utm_source=friend).
-const UPSELL_URL = "https://mealplanningos.com/?utm_source=dinner_planner&utm_medium=lead_magnet&utm_campaign=dinner_planner_v1&utm_content=logo";
+// utm_medium=paid_product reflects the planner's pivot from lead magnet to
+// $19 paid product. utm_content=logo distinguishes these from the bottom-of-
+// page tripwire (utm_medium=tripwire).
+const UPSELL_URL = "https://mealplanningos.com/?utm_source=dinner_planner&utm_medium=paid_product&utm_campaign=paid_planner_v1&utm_content=logo";
 
 /* =============================================================================
    DATA
@@ -989,7 +1133,7 @@ const CAT_LABEL = {
   PANTRY: 'Pantry', DAIRY: 'Dairy & fridge', OTHER: 'Other',
 };
 
-/* 21 meals — seasonings assumed (salt, pepper, red pepper flakes, cumin, chili powder,
+/* 50 meals — seasonings assumed (salt, pepper, red pepper flakes, cumin, chili powder,
    smoked paprika, Italian seasoning, sugar). Butter, eggs, honey included on grocery list. */
 const MEALS = [
   // =========================================================================
@@ -1048,6 +1192,90 @@ const MEALS = [
       'In the same pan, sauté 4 minced garlic cloves 1 min.',
       'Add juice of 1 lemon and spinach. Cook 2 min.',
       'Return cooked pasta and sliced chicken. Finish with Parmesan, lemon zest, and fresh black pepper.',
+    ],
+  },
+
+  {
+    key: 'pasta_cajun', theme: 'pasta', title: 'Cajun chicken pasta',
+    meta: 'creamy · weeknight win', timeMin: 30, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Penne', qty: '1 lb', cat: 'PANTRY' },
+      { name: 'Bell peppers', qty: '2', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Heavy cream', qty: '1 cup', cat: 'DAIRY' },
+      { name: 'Parmesan', qty: 'wedge', cat: 'DAIRY' },
+      { name: 'Cajun seasoning', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Boil salted water. Cook penne until al dente. Reserve ½ cup pasta water, drain.',
+      'Slice chicken into strips. Slice peppers + onion. Toss chicken with 1 tbsp Cajun seasoning. Sear in 2 tbsp olive oil 4 min per side until cooked. Remove.',
+      'In the same pan, sauté peppers + onion 4 min. Add 4 minced garlic cloves, 30 sec.',
+      'Add cream + remaining 1 tbsp Cajun seasoning. Simmer 2 min. Return chicken + pasta. Toss with reserved pasta water until glossy.',
+      'Finish with grated Parmesan.',
+    ],
+  },
+  {
+    key: 'pasta_pesto', theme: 'pasta', title: 'Pesto chicken pasta with sun-dried tomato',
+    meta: 'jarred-pesto cheat code', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Fusilli or rotini', qty: '1 lb', cat: 'PANTRY' },
+      { name: 'Cherry tomatoes', qty: '1 pint', cat: 'PRODUCE' },
+      { name: 'Baby spinach', qty: '4 oz', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '3 cloves', cat: 'PRODUCE' },
+      { name: 'Sun-dried tomatoes', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Pesto', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Parmesan', qty: 'wedge', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Boil salted water. Cook pasta until al dente. Reserve ½ cup pasta water, drain.',
+      'Halve cherry tomatoes. Drain + chop sun-dried tomatoes. Slice chicken into strips. Sear in 2 tbsp olive oil 4 min per side. Remove and rest.',
+      'In the same pan, sauté 3 minced garlic cloves 30 sec. Add cherry tomatoes + sun-dried tomatoes, 2 min.',
+      'Lower heat. Stir in pesto + 3 tbsp pasta water. Add spinach, toss until wilted. Return pasta + chicken.',
+      'Loosen with more pasta water if needed. Top with Parmesan.',
+    ],
+  },
+  {
+    key: 'pasta_carbonara', theme: 'pasta', title: 'Bacon carbonara',
+    meta: 'eggs + cheese + pasta water', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Spaghetti', qty: '1 lb', cat: 'PANTRY' },
+      { name: 'Bacon', qty: '8 oz', cat: 'PROTEIN' },
+      { name: 'Eggs', qty: '4', cat: 'PROTEIN' },
+      { name: 'Pecorino or Parmesan', qty: 'wedge', cat: 'DAIRY' },
+      { name: 'Garlic', qty: '2 cloves', cat: 'PRODUCE' },
+    ],
+    steps: [
+      'Boil salted water. Cook spaghetti until al dente. Reserve 1 cup pasta water, drain.',
+      'Dice bacon. Crisp in a wide pan, 6 min. Add 2 smashed garlic cloves the last minute, then discard.',
+      'Whisk eggs with 1 cup grated cheese + lots of black pepper.',
+      'Pull bacon pan off the heat. Add drained pasta, toss to coat. Slowly pour egg mixture over, tossing constantly. Add splashes of pasta water until creamy. Do not return to heat.',
+      'Plate immediately with more cheese + pepper.',
+    ],
+  },
+  {
+    key: 'pasta_baked_ziti', theme: 'pasta', title: 'Baked ziti with sausage',
+    meta: 'freezer-dinner of legend', timeMin: 45, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Ziti or penne', qty: '1.5 lb', cat: 'PANTRY' },
+      { name: 'Italian sausage', qty: '1 lb', cat: 'PROTEIN' },
+      { name: 'Marinara sauce', qty: '2 jars', cat: 'PANTRY' },
+      { name: 'Ricotta', qty: '15 oz container', cat: 'DAIRY' },
+      { name: 'Mozzarella (shredded)', qty: '16 oz', cat: 'DAIRY' },
+      { name: 'Parmesan', qty: 'wedge', cat: 'DAIRY' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Heat oven to 400°F. Boil salted water. Cook ziti 2 min shy of al dente. Drain.',
+      'Brown sausage (casings removed) in 2 tbsp olive oil, 6 min. Add 4 minced garlic cloves, 30 sec. Stir in both jars of marinara, simmer 2 min.',
+      'In a 9x13 dish, layer: ⅓ sauce, half the ziti, dollops of ricotta, ⅓ mozzarella. Repeat. Top with remaining sauce, mozzarella, + grated Parmesan.',
+      'Bake 20 min until bubbly + golden. Rest 5 min before cutting.',
+      'Freezer note: assemble through layering, cover, freeze up to 2 months. Bake from frozen at 375°F, 60 min covered + 10 min uncovered.',
     ],
   },
 
@@ -1121,6 +1349,97 @@ const MEALS = [
     ],
   },
 
+  {
+    key: 'stirfry_beef', theme: 'stirfry', title: 'Beef & broccoli',
+    meta: 'better than takeout', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Flank steak', qty: '1 lb', cat: 'PROTEIN' },
+      { name: 'Broccoli', qty: '1 crown', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '3 cloves', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '1 tsp', cat: 'PRODUCE' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: '¼ cup', cat: 'PANTRY' },
+      { name: 'Sesame oil', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Cornstarch', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cook rice according to package.',
+      'Slice flank steak thin against the grain. Toss with cornstarch, salt + pepper.',
+      'Sear beef in sesame oil over high heat 2–3 min until browned. Set aside.',
+      'Stir-fry broccoli florets in the same pan, 3 min.',
+      'Return beef. Add soy sauce, 3 minced garlic cloves + 1 tsp grated ginger. Toss + cook 1–2 min. Serve over rice.',
+    ],
+  },
+  {
+    key: 'stirfry_shrimp', theme: 'stirfry', title: 'Shrimp & snap pea stir-fry',
+    meta: 'frozen-shrimp speed', timeMin: 20, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Shrimp (peeled, deveined)', qty: '1.25 lb', cat: 'PROTEIN' },
+      { name: 'Snap peas', qty: '12 oz', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '2 tbsp', cat: 'PRODUCE' },
+      { name: 'Scallions', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: '3 tbsp', cat: 'PANTRY' },
+      { name: 'Honey', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Sesame oil', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cook rice according to package.',
+      'Pat shrimp dry. Slice scallions. Heat 2 tbsp neutral oil screaming hot. Sear shrimp 90 sec per side. Remove.',
+      'Add snap peas, 2 min. Add 4 minced garlic cloves + grated ginger, 30 sec.',
+      'Whisk 3 tbsp soy + 1 tbsp honey + 2 tbsp water. Pour in. Return shrimp. Toss 30 sec.',
+      'Off heat, drizzle sesame oil. Top with scallions. Serve over rice.',
+    ],
+  },
+  {
+    key: 'stirfry_cashew', theme: 'stirfry', title: 'Cashew chicken stir-fry',
+    meta: 'crunch + glaze', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken thighs (boneless)', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Bell peppers', qty: '2', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '2 tbsp', cat: 'PRODUCE' },
+      { name: 'Roasted cashews', qty: '1 cup', cat: 'PANTRY' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: '3 tbsp', cat: 'PANTRY' },
+      { name: 'Hoisin sauce', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Rice vinegar', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cook rice according to package. Cube chicken. Slice peppers + onion.',
+      'Toast cashews in a dry pan over medium, 2 min. Remove.',
+      'Heat 2 tbsp oil. Sear chicken 5 min until golden. Add peppers + onion, 3 min.',
+      'Add 4 minced garlic cloves + grated ginger, 30 sec. Add 3 tbsp soy + 2 tbsp hoisin + 1 tbsp rice vinegar + 2 tbsp water. Toss 1 min.',
+      'Off heat, fold in cashews. Serve over rice.',
+    ],
+  },
+  {
+    key: 'stirfry_mongolian', theme: 'stirfry', title: 'Mongolian beef',
+    meta: 'caramelized · scallion-heavy', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Flank steak', qty: '1.25 lb', cat: 'PROTEIN' },
+      { name: 'Scallions', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '1 tbsp', cat: 'PRODUCE' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: '½ cup', cat: 'PANTRY' },
+      { name: 'Brown sugar', qty: '⅓ cup', cat: 'PANTRY' },
+      { name: 'Cornstarch', qty: '¼ cup', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: '3 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cook rice according to package. Slice flank thin against the grain. Toss with cornstarch.',
+      'Cut scallions into 2-inch pieces. Heat 3 tbsp oil screaming hot. Fry steak in batches 90 sec per side. Remove.',
+      'Pour off all but 1 tbsp oil. Sauté 4 minced garlic cloves + grated ginger, 30 sec.',
+      'Add ½ cup soy + ⅓ cup brown sugar + ½ cup water. Simmer 2 min until syrupy.',
+      'Return steak + scallions. Toss 1 min until glossy. Serve over rice.',
+    ],
+  },
+
   // =========================================================================
   // TACOS
   // =========================================================================
@@ -1186,6 +1505,92 @@ const MEALS = [
     ],
   },
 
+  {
+    key: 'tacos_burrito', theme: 'tacos', title: 'Chicken & bean burrito',
+    meta: 'wrap + freeze', timeMin: 30, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken breast', qty: '1 lb', cat: 'PROTEIN' },
+      { name: 'Black beans', qty: '1 can', cat: 'PANTRY' },
+      { name: 'Jasmine rice', qty: '1 cup dry', cat: 'PANTRY' },
+      { name: 'Large flour tortillas', qty: '6', cat: 'PANTRY' },
+      { name: 'Shredded cheese', qty: '6 oz', cat: 'DAIRY' },
+      { name: 'Salsa', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Garlic powder', qty: '1 tsp', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '1 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cook rice according to package.',
+      'Season chicken with cumin, paprika, garlic powder, salt + pepper. Cook in olive oil, 5 min per side. Shred or chop.',
+      'Drain black beans. Warm in a small pot with a pinch of cumin + salt.',
+      'Warm tortillas. Layer rice, chicken, beans, cheese, + salsa. Fold + wrap tightly.',
+      'Heat all sides in the same pan until browned. Eat now or wrap in foil + freeze for busy weeks.',
+    ],
+  },
+  {
+    key: 'tacos_fish', theme: 'tacos', title: 'Fish tacos with cabbage slaw',
+    meta: 'lime crema · 25 min', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'White fish (cod, mahi, tilapia)', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Green cabbage', qty: '½ head', cat: 'PRODUCE' },
+      { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '4', cat: 'PRODUCE' },
+      { name: 'Jalapeño', qty: '1', cat: 'PRODUCE' },
+      { name: 'Corn tortillas', qty: '12', cat: 'PANTRY' },
+      { name: 'Sour cream', qty: '1 cup', cat: 'DAIRY' },
+      { name: 'Mayonnaise', qty: '¼ cup', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Shred cabbage. Mince jalapeño. Cut limes into wedges.',
+      'Whisk sour cream + mayo + juice of 1 lime + pinch of salt. Toss half with cabbage + jalapeño for slaw. Reserve the rest as crema.',
+      'Pat fish dry. Season with cumin, smoked paprika + salt.',
+      'Heat 2 tbsp olive oil over medium-high. Cook fish 3 min per side until flaky. Break into chunks.',
+      'Warm tortillas. Build: tortilla, fish, slaw, crema, cilantro, squeeze of lime.',
+    ],
+  },
+  {
+    key: 'tacos_carnitas', theme: 'tacos', title: 'Pressure-cooker carnitas tacos',
+    meta: 'instant pot + sheet-pan crisp', timeMin: 45, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Pork shoulder (boneless)', qty: '3 lb', cat: 'PROTEIN' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '6 cloves', cat: 'PRODUCE' },
+      { name: 'Orange', qty: '2', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '4', cat: 'PRODUCE' },
+      { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Corn tortillas', qty: '16', cat: 'PANTRY' },
+      { name: 'Oregano', qty: '1 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cube pork into 2-inch pieces. Quarter onion. Smash garlic cloves.',
+      'In a pressure cooker / Instant Pot: pork, onion, garlic, juice of 2 oranges + 2 limes, cumin, oregano, 1 tbsp salt + 1 cup water. Cook on high pressure 45 min. Quick-release.',
+      'Heat oven to 450°F. Drain pork, reserving ½ cup liquid. Shred. Spread on a sheet pan, drizzle with the reserved liquid.',
+      'Roast 10 min until edges crisp.',
+      'Warm tortillas. Assemble with carnitas, cilantro + lime. Freeze leftovers in 1-cup portions for next-week tacos.',
+    ],
+  },
+  {
+    key: 'tacos_fajita', theme: 'tacos', title: 'Steak fajitas',
+    meta: 'cast-iron char', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Skirt or flank steak', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Bell peppers', qty: '3', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '3', cat: 'PRODUCE' },
+      { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Flour tortillas', qty: '12', cat: 'PANTRY' },
+      { name: 'Sour cream', qty: '1 cup', cat: 'DAIRY' },
+      { name: 'Neutral oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Slice peppers + onion. Cut limes into wedges.',
+      'Pat steak dry. Rub with cumin, chili powder, smoked paprika + salt.',
+      'Heat cast-iron screaming hot with 1 tbsp oil. Sear steak 3 min per side for medium. Rest 5 min.',
+      'In the same pan, add 1 tbsp oil + peppers + onion. Char hard 6 min, barely stirring.',
+      'Slice steak thin against the grain. Warm tortillas. Assemble: tortilla, steak, peppers, sour cream, cilantro, lime.',
+    ],
+  },
+
   // =========================================================================
   // SHEET-PAN
   // =========================================================================
@@ -1244,6 +1649,97 @@ const MEALS = [
       'Add halved cherry tomatoes, chunked zucchini, sliced red onion. Toss with 2 tbsp olive oil, salt, pepper, Italian seasoning.',
       'Roast 22 min, stirring once halfway. Gnocchi should be crispy outside, tender inside.',
       'Tear mozzarella over the top. Return to oven ~4 min or until melted. Finish with torn basil + a glug of good olive oil.',
+    ],
+  },
+
+  {
+    key: 'sheet_salmon', theme: 'sheet', title: 'Sheet-pan salmon with asparagus',
+    meta: 'honey-Dijon glaze · 20 min', timeMin: 20, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Salmon fillets', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Asparagus', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '3 cloves', cat: 'PRODUCE' },
+      { name: 'Dijon mustard', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Honey', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '3 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Heat oven to 425°F. Trim woody ends off asparagus. Slice 1 lemon thin.',
+      'Toss asparagus on a sheet pan with 2 tbsp olive oil + salt + pepper. Roast 5 min.',
+      'Whisk Dijon + honey + 3 minced garlic cloves + juice of 1 lemon + 1 tbsp olive oil.',
+      'Push asparagus aside. Add salmon, skin-side down. Brush salmon generously with the glaze. Top with lemon slices.',
+      'Roast 12 min, then broil 1–2 min until glaze bubbles. Serve from the pan.',
+    ],
+  },
+  {
+    key: 'sheet_honey_garlic', theme: 'sheet', title: 'Sheet-pan honey garlic chicken',
+    meta: 'pan-sauce + rice', timeMin: 35, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken thighs (bone-in, skin-on)', qty: '2.5 lb', cat: 'PROTEIN' },
+      { name: 'Broccoli', qty: '2 crowns', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '6 cloves', cat: 'PRODUCE' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: '¼ cup', cat: 'PANTRY' },
+      { name: 'Honey', qty: '⅓ cup', cat: 'PANTRY' },
+      { name: 'Rice vinegar', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Sesame seeds', qty: '1 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Heat oven to 425°F. Cook rice according to package.',
+      'Whisk soy sauce + honey + rice vinegar + 6 minced garlic cloves.',
+      'Pat chicken dry. Season with salt + pepper. Place skin-side up on a sheet pan. Pour half the sauce over.',
+      'Roast 20 min. Add broccoli florets tossed with 2 tbsp olive oil. Pour remaining sauce over chicken. Roast 12 more min until skin is crisp + chicken is 175°F.',
+      'Sprinkle sesame seeds. Serve over rice with the pan juices.',
+    ],
+  },
+  {
+    key: 'sheet_shrimp_boil', theme: 'sheet', title: 'Sheet-pan shrimp boil',
+    meta: 'one-tray · Old Bay', timeMin: 30, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Shrimp (peeled, deveined)', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Andouille sausage', qty: '12 oz', cat: 'PROTEIN' },
+      { name: 'Baby potatoes', qty: '1.5 lb', cat: 'PRODUCE' },
+      { name: 'Corn on the cob', qty: '6 ears', cat: 'PRODUCE' },
+      { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
+      { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Old Bay seasoning', qty: '3 tbsp', cat: 'PANTRY' },
+      { name: 'Butter', qty: '6 tbsp', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Heat oven to 425°F. Halve potatoes. Cut corn into 2-inch rounds. Slice sausage.',
+      'Toss potatoes with 2 tbsp olive oil + 1 tbsp Old Bay + salt. Roast on a sheet pan 18 min.',
+      'Melt butter. Stir in 4 minced garlic cloves + 1 tbsp Old Bay.',
+      'Add corn, sausage + shrimp to the pan. Drizzle with the garlic butter + remaining Old Bay. Roast 10 min until shrimp are pink + curled.',
+      'Squeeze lemon over the pan. Sprinkle with chopped parsley. Serve straight from the tray.',
+    ],
+  },
+  {
+    key: 'sheet_teriyaki', theme: 'sheet', title: 'Sheet-pan teriyaki chicken & broccoli',
+    meta: 'glaze · over rice', timeMin: 35, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken thighs (boneless)', qty: '2 lb', cat: 'PROTEIN' },
+      { name: 'Broccoli', qty: '2 crowns', cat: 'PRODUCE' },
+      { name: 'Bell pepper', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '1 tbsp', cat: 'PRODUCE' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Soy sauce', qty: '⅓ cup', cat: 'PANTRY' },
+      { name: 'Brown sugar', qty: '¼ cup', cat: 'PANTRY' },
+      { name: 'Rice vinegar', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Cornstarch', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Sesame seeds', qty: '1 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Heat oven to 425°F. Cook rice according to package. Cube chicken. Slice bell pepper.',
+      'Whisk soy + brown sugar + rice vinegar + 4 minced garlic cloves + grated ginger + cornstarch.',
+      'Toss chicken on a sheet pan with half the sauce. Roast 12 min.',
+      'Add broccoli florets + bell pepper, tossed with 2 tbsp olive oil. Pour remaining sauce over the pan. Roast 12 more min.',
+      'Sprinkle sesame seeds. Serve over rice.',
     ],
   },
 
@@ -1318,6 +1814,106 @@ const MEALS = [
     ],
   },
 
+  {
+    key: 'grain_jambalaya', theme: 'grain', title: 'One-pot jambalaya',
+    meta: 'big batch · freezes', timeMin: 45, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Andouille sausage', qty: '12 oz', cat: 'PROTEIN' },
+      { name: 'Chicken thighs (boneless)', qty: '1 lb', cat: 'PROTEIN' },
+      { name: 'Long-grain rice', qty: '1.5 cups dry', cat: 'PANTRY' },
+      { name: 'Diced tomatoes', qty: '1 can', cat: 'PANTRY' },
+      { name: 'Bell pepper', qty: '1', cat: 'PRODUCE' },
+      { name: 'Celery', qty: '2 stalks', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Cajun seasoning', qty: '2 tsp', cat: 'PANTRY' },
+      { name: 'Chicken stock', qty: '2 cups', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '1 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cube chicken. Slice sausage. Dice onion, bell pepper + celery.',
+      'Brown sausage in a large pot in 1 tbsp olive oil, then chicken — set both aside.',
+      'In the same pot, sauté onion, bell pepper + celery until softened, 3–4 min.',
+      'Return meat. Add diced tomatoes, Cajun seasoning + stock. Stir in rice. Bring to a boil, cover + simmer 20–25 min until rice is tender.',
+      'Fluff with a fork. Freeze leftovers in individual portions.',
+    ],
+  },
+  {
+    key: 'grain_burrito_bowl', theme: 'grain', title: 'Burrito bowl with cilantro lime rice',
+    meta: 'Chipotle at home', timeMin: 30, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken thighs (boneless)', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Black beans', qty: '2 cans', cat: 'PANTRY' },
+      { name: 'Jasmine rice', qty: '2.5 cups dry', cat: 'PANTRY' },
+      { name: 'Romaine lettuce', qty: '1 head', cat: 'PRODUCE' },
+      { name: 'Cherry tomatoes', qty: '1 pint', cat: 'PRODUCE' },
+      { name: 'Avocado', qty: '2', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '4', cat: 'PRODUCE' },
+      { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Shredded cheese', qty: '6 oz', cat: 'DAIRY' },
+      { name: 'Salsa', qty: '1 jar', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cook rice. While hot, fluff with juice of 2 limes + ⅓ cup chopped cilantro + a pinch of salt.',
+      'Pat chicken dry. Rub with cumin + chili powder + salt. Sear in 2 tbsp olive oil 5 min per side until 165°F. Rest 5 min, then chop.',
+      'Drain + rinse black beans. Warm in a small pot with cumin + salt.',
+      'Chop romaine. Halve cherry tomatoes. Slice avocado.',
+      'Build bowls: lime rice, chicken, black beans, lettuce, tomatoes, avocado, cheese, salsa, more cilantro + lime.',
+    ],
+  },
+  {
+    key: 'grain_med', theme: 'grain', title: 'Mediterranean chicken & farro bowl',
+    meta: 'farro holds up · day-3 friendly', timeMin: 35, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Farro or pearl barley', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Cucumber', qty: '2', cat: 'PRODUCE' },
+      { name: 'Cherry tomatoes', qty: '1 pint', cat: 'PRODUCE' },
+      { name: 'Red onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
+      { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Feta', qty: '6 oz', cat: 'DAIRY' },
+      { name: 'Kalamata olives', qty: '1 cup', cat: 'PANTRY' },
+      { name: 'Hummus', qty: '1 container', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '4 tbsp', cat: 'PANTRY' },
+      { name: 'Oregano', qty: '1 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cook farro according to package. Drain.',
+      'Dice cucumber. Halve cherry tomatoes. Thinly slice red onion. Chop parsley. Cut lemons into wedges.',
+      'Pat chicken dry. Season with oregano, salt + pepper. Sear in 2 tbsp olive oil 5 min per side until 165°F. Rest 5 min, then slice.',
+      'Toss cucumber, tomatoes + onion with 2 tbsp olive oil + juice of 1 lemon + salt.',
+      'Build bowls: farro, sliced chicken, vegetable salad, crumbled feta, olives, dollop of hummus, parsley, lemon wedge.',
+    ],
+  },
+  {
+    key: 'grain_korean', theme: 'grain', title: 'Korean beef bowl',
+    meta: 'gochujang glaze · 20 min', timeMin: 20, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Ground beef (85/15)', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Eggs', qty: '6', cat: 'PROTEIN' },
+      { name: 'Jasmine rice', qty: '2.5 cups dry', cat: 'PANTRY' },
+      { name: 'Cucumber', qty: '2', cat: 'PRODUCE' },
+      { name: 'Carrots', qty: '2', cat: 'PRODUCE' },
+      { name: 'Scallions', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Ginger', qty: '1 tbsp', cat: 'PRODUCE' },
+      { name: 'Soy sauce', qty: '¼ cup', cat: 'PANTRY' },
+      { name: 'Brown sugar', qty: '3 tbsp', cat: 'PANTRY' },
+      { name: 'Gochujang or sriracha', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Sesame oil', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Sesame seeds', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Neutral oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cook rice according to package. Shred carrots. Slice cucumber + scallions.',
+      'Brown ground beef in 2 tbsp neutral oil, breaking it up, 5 min. Drain fat.',
+      'Add 4 minced garlic cloves + grated ginger to the beef, 30 sec. Add soy + brown sugar + gochujang. Simmer 2 min.',
+      'Fry eggs sunny-side up in a separate pan.',
+      'Build bowls: rice, beef, cucumber, carrot, fried egg, scallions, sesame seeds, drizzle of sesame oil.',
+    ],
+  },
+
   // =========================================================================
   // SOUP & BREAD
   // =========================================================================
@@ -1386,6 +1982,127 @@ const MEALS = [
     ],
   },
 
+  {
+    key: 'soup_lentil', theme: 'soup', title: 'Red lentil soup',
+    meta: 'vegetarian · freezes', timeMin: 35, scalable: true, vegetarian: true,
+    ingredients: [
+      { name: 'Red lentils', qty: '1 cup', cat: 'PROTEIN' },
+      { name: 'Vegetable stock', qty: '32 oz', cat: 'PANTRY' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Carrots', qty: '2', cat: 'PRODUCE' },
+      { name: 'Celery', qty: '2 stalks', cat: 'PRODUCE' },
+      { name: 'Sweet potato', qty: '2', cat: 'PRODUCE' },
+      { name: 'Lemon', qty: '1', cat: 'PRODUCE' },
+      { name: 'Tomato paste', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Dice onion, carrots + celery. Cube sweet potatoes.',
+      'Sauté onion, carrots + celery in 2 tbsp olive oil over medium heat, 5 min. Add 4 minced garlic cloves + cumin + chili powder, 30 sec.',
+      'Stir in tomato paste, 30 sec.',
+      'Add lentils, sweet potato, stock + 1.5 cups water. Bring to a boil, then simmer 25 min until lentils are soft.',
+      'Blend partially for body. Finish with juice of 1 lemon. Freezes 3 months in portions.',
+    ],
+  },
+  {
+    key: 'soup_wedding', theme: 'soup', title: 'Italian wedding soup',
+    meta: 'mini meatballs · escarole', timeMin: 35, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Ground turkey or chicken', qty: '1 lb', cat: 'PROTEIN' },
+      { name: 'Egg', qty: '1', cat: 'PROTEIN' },
+      { name: 'Breadcrumbs', qty: '½ cup', cat: 'PANTRY' },
+      { name: 'Acini di pepe or orzo', qty: '1 cup', cat: 'PANTRY' },
+      { name: 'Escarole or baby spinach', qty: '6 oz', cat: 'PRODUCE' },
+      { name: 'Carrots', qty: '3', cat: 'PRODUCE' },
+      { name: 'Celery', qty: '3 stalks', cat: 'PRODUCE' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Chicken stock', qty: '64 oz', cat: 'PANTRY' },
+      { name: 'Parmesan', qty: 'wedge', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Dice carrots, celery + onion. Mix ground meat with egg, breadcrumbs, ¼ cup grated Parmesan, salt + pepper. Roll into ¾-inch meatballs.',
+      'Sauté carrots, celery + onion in 2 tbsp olive oil, 6 min. Add 4 minced garlic cloves, 30 sec.',
+      'Add stock + 2 cups water. Bring to a simmer.',
+      'Drop meatballs into the simmering broth. Cook 8 min.',
+      'Add pasta + chopped escarole. Cook 7 min until pasta is tender. Finish with grated Parmesan + pepper.',
+    ],
+  },
+  {
+    key: 'soup_blackbean', theme: 'soup', title: 'Black bean soup',
+    meta: 'pantry pull · 25 min', timeMin: 25, scalable: true, vegetarian: true,
+    ingredients: [
+      { name: 'Black beans', qty: '4 cans', cat: 'PANTRY' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '3', cat: 'PRODUCE' },
+      { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Avocado', qty: '2', cat: 'PRODUCE' },
+      { name: 'Vegetable stock', qty: '32 oz', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Sour cream', qty: '1 cup', cat: 'DAIRY' },
+    ],
+    steps: [
+      'Dice onion. Slice avocado. Cut limes into wedges.',
+      'Sauté onion in 2 tbsp olive oil, 5 min. Add 4 minced garlic cloves + cumin + smoked paprika, 30 sec.',
+      'Drain + rinse 3 cans of beans (leave the 4th canned with liquid). Add all beans + stock. Simmer 10 min.',
+      'Blend half the soup with an immersion blender until creamy. Leave the rest chunky. Stir in juice of 1 lime.',
+      'Serve with sour cream, avocado, cilantro + lime wedges.',
+    ],
+  },
+  {
+    key: 'soup_tortilla', theme: 'soup', title: 'Chicken tortilla soup',
+    meta: 'rotisserie shortcut', timeMin: 30, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Rotisserie chicken', qty: '1', cat: 'PROTEIN' },
+      { name: 'Black beans', qty: '1 can', cat: 'PANTRY' },
+      { name: 'Diced tomatoes', qty: '1 × 28 oz can', cat: 'PANTRY' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '3', cat: 'PRODUCE' },
+      { name: 'Cilantro', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Avocado', qty: '2', cat: 'PRODUCE' },
+      { name: 'Jalapeño', qty: '1', cat: 'PRODUCE' },
+      { name: 'Corn tortillas', qty: '6', cat: 'PANTRY' },
+      { name: 'Chicken stock', qty: '48 oz', cat: 'PANTRY' },
+      { name: 'Shredded cheese', qty: '4 oz', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: '3 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Heat oven to 400°F. Cut tortillas into strips. Toss with 1 tbsp olive oil + salt. Bake 10 min until crispy.',
+      'Dice onion + jalapeño. Drain beans. Shred chicken from the rotisserie.',
+      'Sauté onion + jalapeño in 2 tbsp olive oil, 5 min. Add 4 minced garlic cloves + cumin + chili powder + smoked paprika, 30 sec.',
+      'Add tomatoes, beans, stock + 1 cup water. Simmer 10 min. Add shredded chicken, 3 min. Stir in juice of 1 lime.',
+      'Top each bowl with tortilla strips, cheese, avocado, cilantro + lime.',
+    ],
+  },
+  {
+    key: 'soup_potato', theme: 'soup', title: 'Loaded baked potato soup',
+    meta: 'creamy · weekend dinner', timeMin: 40, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Russet potatoes', qty: '2 lb', cat: 'PRODUCE' },
+      { name: 'Bacon', qty: '8 oz', cat: 'PROTEIN' },
+      { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Scallions', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Chicken stock', qty: '32 oz', cat: 'PANTRY' },
+      { name: 'Heavy cream', qty: '1 cup', cat: 'DAIRY' },
+      { name: 'Sharp cheddar', qty: '8 oz', cat: 'DAIRY' },
+      { name: 'Sour cream', qty: '1 cup', cat: 'DAIRY' },
+      { name: 'Butter', qty: '4 tbsp', cat: 'DAIRY' },
+      { name: 'Flour', qty: '¼ cup', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Pierce potatoes. Microwave 12 min until fork-tender. Cool slightly, peel + dice.',
+      'Dice bacon. Crisp in a soup pot, 6 min. Remove to a paper towel, leaving 1 tbsp fat.',
+      'Dice onion. Sauté in bacon fat + butter, 5 min. Add 4 minced garlic cloves, 30 sec.',
+      'Sprinkle in flour. Whisk 1 min. Slowly add stock + cream, whisking. Simmer 5 min until thickened.',
+      'Add diced potatoes. Mash partially with a wooden spoon. Stir in half the cheddar. Top each bowl with bacon, more cheddar, sour cream + sliced scallions.',
+    ],
+  },
+
   // =========================================================================
   // GRILL NIGHT
   // =========================================================================
@@ -1450,6 +2167,89 @@ const MEALS = [
       'Arrange on the platter with cherry tomatoes + crumbled feta. Serve with a warm baguette torn at the table.',
     ],
   },
+  {
+    key: 'grill_shrimp', theme: 'grill', title: 'Lemon shrimp skewers',
+    meta: 'soak skewers · 4-min cook', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Shrimp (peeled, deveined, large)', qty: '1.5 lb', cat: 'PROTEIN' },
+      { name: 'Lemon', qty: '3', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '¼ cup', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Cook rice according to package. Soak 12 wooden skewers in water 10 min.',
+      'Whisk olive oil + juice of 1 lemon + 4 minced garlic cloves + smoked paprika + red pepper flakes + salt.',
+      'Toss shrimp with the marinade. Thread onto skewers, 5–6 per stick.',
+      'Grill (or hot grill pan) 2 min per side until pink + curled.',
+      'Squeeze remaining lemons over the skewers. Sprinkle parsley. Serve over rice.',
+    ],
+  },
+  {
+    key: 'grill_chicken', theme: 'grill', title: 'Grilled chicken thighs with peach BBQ',
+    meta: 'glaze · batch-cookable', timeMin: 30, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Chicken thighs (boneless)', qty: '2.5 lb', cat: 'PROTEIN' },
+      { name: 'Peaches (fresh or frozen)', qty: '2 cups', cat: 'PRODUCE' },
+      { name: 'Garlic', qty: '3 cloves', cat: 'PRODUCE' },
+      { name: 'Lime', qty: '2', cat: 'PRODUCE' },
+      { name: 'BBQ sauce', qty: '1 cup', cat: 'PANTRY' },
+      { name: 'Apple cider vinegar', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Brown sugar', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Dice peaches. In a small saucepan, simmer peaches + BBQ sauce + cider vinegar + brown sugar + 3 minced garlic cloves for 8 min until peaches break down. Mash partially.',
+      'Pat chicken dry. Rub with smoked paprika + salt + pepper. Drizzle with olive oil.',
+      'Grill chicken over medium-high, 5 min per side until 175°F. Brush with peach BBQ in the last 2 min.',
+      'Rest 5 min. Slice.',
+      'Serve with extra peach BBQ on the side + lime wedges.',
+    ],
+  },
+  {
+    key: 'grill_steak', theme: 'grill', title: 'Grilled flank steak with garlic butter',
+    meta: 'compound butter · medium-rare', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Flank steak', qty: '1.75 lb', cat: 'PROTEIN' },
+      { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
+      { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Lemon', qty: '1', cat: 'PRODUCE' },
+      { name: 'Butter', qty: '1 stick', cat: 'DAIRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Soften butter at room temp. Mince 4 garlic cloves + ½ cup parsley. Mash into the butter with juice of ½ lemon + a pinch of salt. Roll in plastic wrap into a log. Chill 10 min.',
+      'Pat steak dry. Rub with olive oil, salt + lots of pepper.',
+      'Heat grill (or cast iron) screaming hot. Grill steak 4 min per side for medium-rare.',
+      'Rest 8 min on a cutting board.',
+      'Slice thin against the grain. Top each portion with a thick coin of garlic butter — it melts into a sauce.',
+    ],
+  },
+  {
+    key: 'grill_pork', theme: 'grill', title: 'Grilled pork chops with apple slaw',
+    meta: 'bone-in · slaw contrast', timeMin: 25, scalable: true, vegetarian: false,
+    ingredients: [
+      { name: 'Pork chops (bone-in)', qty: '6', cat: 'PROTEIN' },
+      { name: 'Green cabbage', qty: '½ head', cat: 'PRODUCE' },
+      { name: 'Apple (Granny Smith)', qty: '2', cat: 'PRODUCE' },
+      { name: 'Fennel bulb', qty: '1', cat: 'PRODUCE' },
+      { name: 'Lemon', qty: '2', cat: 'PRODUCE' },
+      { name: 'Parsley', qty: '1 bunch', cat: 'PRODUCE' },
+      { name: 'Mayonnaise', qty: '⅓ cup', cat: 'PANTRY' },
+      { name: 'Dijon mustard', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Apple cider vinegar', qty: '2 tbsp', cat: 'PANTRY' },
+      { name: 'Honey', qty: '1 tbsp', cat: 'PANTRY' },
+      { name: 'Olive oil', qty: '2 tbsp', cat: 'PANTRY' },
+    ],
+    steps: [
+      'Shred cabbage. Julienne apples + fennel. Chop parsley.',
+      'Whisk mayo + Dijon + cider vinegar + honey + juice of 1 lemon + salt + pepper. Toss with cabbage, apple, fennel + parsley. Set aside.',
+      'Pat chops dry. Rub with olive oil + smoked paprika + salt + pepper.',
+      'Grill chops over medium-high, 4 min per side until 145°F.',
+      'Rest 5 min. Plate with a generous heap of slaw + a lemon wedge.',
+    ],
+  },
 ];
 
 /* =============================================================================
@@ -1460,20 +2260,22 @@ function mealsForTheme(themeKey) {
   return MEALS.filter(m => m.theme === themeKey);
 }
 
-function weekOfString(d) {
-  const now = d || new Date();
-  // Find this week's Monday
+// weekOffset: 0 = this week, 1 = next week, -1 = last week, etc.
+// Used by the week-toggle in the header so users can plan ahead or look back.
+function weekOfString(weekOffset = 0) {
+  const now = new Date();
+  // Find the relevant Monday based on offset.
   const dow = now.getDay(); // 0=Sun
-  const diff = (dow === 0 ? -6 : 1 - dow);
+  const diff = (dow === 0 ? -6 : 1 - dow) + weekOffset * 7;
   const mon = new Date(now);
   mon.setDate(now.getDate() + diff);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `Week of ${months[mon.getMonth()]} ${mon.getDate()}`;
 }
-function dateForDay(dayKey, baseDate) {
-  const now = baseDate || new Date();
+function dateForDay(dayKey, weekOffset = 0) {
+  const now = new Date();
   const dow = now.getDay();
-  const diff = (dow === 0 ? -6 : 1 - dow);
+  const diff = (dow === 0 ? -6 : 1 - dow) + weekOffset * 7;
   const mon = new Date(now);
   mon.setDate(now.getDate() + diff);
   const idx = DAYS.findIndex(d => d.key === dayKey);
@@ -1492,7 +2294,7 @@ function formatTimeSaved(mins) {
   return `${hours.toFixed(1)} hours`;
 }
 
-function buildPlan(nights, selections) {
+function buildPlan(nights, selections, weekOffset = 0) {
   // Only emit rows for the nights the user asked to plan. Leftover/off nights are
   // intentionally excluded — people aren't worried about them.
   const plan = [];
@@ -1502,7 +2304,7 @@ function buildPlan(nights, selections) {
     const meal = MEALS.find(m => m.key === sel?.meal);
     if (!meal) continue;
     plan.push({
-      day: d.key, label: d.label, short: d.short, date: dateForDay(d.key),
+      day: d.key, label: d.label, short: d.short, date: dateForDay(d.key, weekOffset),
       meal, themeLabel: THEMES.find(t => t.key === meal.theme)?.label,
     });
   }
@@ -1541,6 +2343,55 @@ function buildGrocery(nights, selections) {
 
 function totalItems(grocery) {
   return Object.values(grocery).reduce((n, arr) => n + arr.length, 0);
+}
+
+/* =============================================================================
+   PERSISTENCE — localStorage so a paid customer's plan survives refresh/return.
+   Versioned key in case data shape changes; just bump v1 → v2 to invalidate old.
+   Sets don't JSON-serialize natively, so we round-trip nights through an array.
+   ============================================================================= */
+const STORAGE_KEY = 'mpos_planner_v1';
+
+function loadState() {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Defensive: any field could be missing or malformed if the user has been
+    // through multiple versions. Coerce to safe defaults.
+    return {
+      step: typeof parsed.step === 'number' ? parsed.step : 1,
+      household: parsed.household || null,
+      nights: new Set(Array.isArray(parsed.nights) ? parsed.nights : []),
+      selections: (parsed.selections && typeof parsed.selections === 'object') ? parsed.selections : {},
+      weekOffset: typeof parsed.weekOffset === 'number' ? parsed.weekOffset : 0,
+      checked: (parsed.checked && typeof parsed.checked === 'object') ? parsed.checked : {},
+    };
+  } catch (_) { return null; }
+}
+
+function saveState(state) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    const serialized = {
+      step: state.step,
+      household: state.household,
+      nights: Array.from(state.nights || []),
+      selections: state.selections || {},
+      weekOffset: state.weekOffset || 0,
+      checked: state.checked || {},
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
+  } catch (_) { /* quota exceeded / private mode — never crash on persistence */ }
+}
+
+function clearState() {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+  } catch (_) {}
 }
 
 // Analytics — fires PostHog event if loaded; falls back to console for local dev.
@@ -1811,7 +2662,7 @@ function generateShareCard(data) {
 
   // URL chip (right)
   ctx.font = `700 17px ${sysFont}`;
-  const urlText = 'Build yours free → app.mealplanningos.com/planner';
+  const urlText = 'app.mealplanningos.com/planner';
   ctx.textAlign = 'right';
   const urlW = ctx.measureText(urlText).width;
   const chipPadX = 16, chipPadY = 10;
@@ -1884,7 +2735,7 @@ function IntroModal({ onStart }) {
   return (
     <div className="intro-overlay" role="dialog" aria-modal="true" aria-labelledby="intro-title">
       <div className="intro-card">
-        <div className="intro-eyebrow">Free · no account needed</div>
+        <div className="intro-eyebrow">50 recipes · 1-minute plan</div>
         <h2 id="intro-title" className="intro-title">Stop the 6pm scramble.</h2>
         <p className="intro-sub">Plan this week in 60 seconds.</p>
         <button type="button" className="intro-cta" onClick={onStart}>
@@ -1896,11 +2747,32 @@ function IntroModal({ onStart }) {
   );
 }
 
-function Header({ step }) {
+function Header({ step, weekOffset, onWeekChange }) {
+  // Week-nav is interactive when handlers are wired through. ◀ goes back, ▶ forward.
+  // We don't clamp the range — Steven wants the user to be able to scroll freely.
+  const interactive = typeof onWeekChange === 'function';
   return (
     <div className="header">
       <Logo/>
-      <div className="header-meta">{weekOfString()}</div>
+      {interactive ? (
+        <div className="week-nav" role="group" aria-label="Pick a week">
+          <button
+            type="button"
+            className="week-nav-btn"
+            onClick={() => { track('lm_week_change', { dir: 'prev', to: (weekOffset || 0) - 1 }); onWeekChange((weekOffset || 0) - 1); }}
+            aria-label="Previous week"
+          >◀</button>
+          <span className="week-nav-label">{weekOfString(weekOffset || 0)}</span>
+          <button
+            type="button"
+            className="week-nav-btn"
+            onClick={() => { track('lm_week_change', { dir: 'next', to: (weekOffset || 0) + 1 }); onWeekChange((weekOffset || 0) + 1); }}
+            aria-label="Next week"
+          >▶</button>
+        </div>
+      ) : (
+        <div className="header-meta">{weekOfString(weekOffset || 0)}</div>
+      )}
     </div>
   );
 }
@@ -2143,165 +3015,10 @@ function Step4Meals({ nights, selections, onPickMeal, onNext, onBack, cookIdx, o
 }
 
 /* =============================================================================
-   STEP 5 — PLAN REVEAL + EMAIL CAPTURE
+   STEP 5 — PLAN REVEAL
    ============================================================================= */
-/* =============================================================================
-   SubscribeForm — reusable native lead-capture form
-   -----------------------------------------------------------------------------
-   POSTs to a Netlify Function proxy that forwards to the Beehiiv v2 API.
-   Lives as its own component so it can be dropped onto any landing page that
-   shares this design system.
-
-   Configuration:
-   - SUBSCRIBE_ENDPOINT (below) — the Netlify Function URL. Currently
-     /.netlify/functions/subscribe; the function itself reads BEEHIIV_API_KEY
-     and BEEHIIV_PUB_ID from Netlify env vars (same vars used by
-     stripe-webhook.js for purchase → Beehiiv enrollment).
-   - Default UTM values are supplied via props (`defaultUtms`). Any UTM params
-     present in the current page URL override the defaults.
-
-   Props:
-   - defaultUtms?: { utm_source, utm_medium, utm_campaign } — fallback UTM values
-   - referringSite?: string — referring_site override (defaults to current host+path)
-   - successMessage?: string — inline text shown on success when no redirect
-   - submitLabel?: string — button copy (default "Get the system (free)")
-   - redirectTo?: string — if set, navigate here on success instead of
-     showing the inline success state (e.g. "/thank-you")
-   - onSuccess?: (email) => void — optional hook, fires before redirect
-   ============================================================================= */
-const SUBSCRIBE_ENDPOINT = '/.netlify/functions/subscribe';
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// Pull any utm_* params already present in the page URL so attribution
-// survives when users arrive from YouTube, LinkedIn, paid, etc.
-function readUrlUtms() {
-  try {
-    const p = new URLSearchParams(window.location.search);
-    const out = {};
-    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(k => {
-      const v = p.get(k);
-      if (v) out[k] = v;
-    });
-    return out;
-  } catch { return {}; }
-}
-
-function SubscribeForm({
-  defaultUtms,
-  referringSite,
-  successMessage = 'Check your email',
-  submitLabel = 'Get the system (free)',
-  redirectTo,
-  onSuccess,
-}) {
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState('idle'); // 'idle' | 'submitting' | 'success' | 'error'
-  const [error, setError] = useState('');
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (status === 'submitting') return;
-
-    const clean = email.trim().toLowerCase();
-    if (!clean || !EMAIL_RE.test(clean)) {
-      setError('Enter a valid email.');
-      setStatus('error');
-      return;
-    }
-
-    setStatus('submitting');
-    setError('');
-
-    // Merge default UTMs with any present in the URL (URL wins).
-    const urlUtms = readUrlUtms();
-    const utms = { ...(defaultUtms || {}), ...urlUtms };
-
-    const refSite = referringSite
-      || (typeof window !== 'undefined'
-            ? `${window.location.host}${window.location.pathname}`.replace(/\/$/, '')
-            : undefined);
-
-    try {
-      const res = await fetch(SUBSCRIBE_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: clean, referring_site: refSite, ...utms }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || 'Something went wrong. Try again.');
-        setStatus('error');
-        track('lm_subscribe_error', { status: res.status });
-        return;
-      }
-
-      // Identify the user in PostHog so prior anonymous events on this session
-      // (lm_household_set, lm_meal_picked, lm_plan_revealed, etc.) merge into
-      // a real person profile keyed by email. UTMs ride along as person props
-      // so we can slice acquisition cohorts in PostHog without leaving the tool.
-      try {
-        if (typeof window !== 'undefined' && window.posthog && typeof window.posthog.identify === 'function') {
-          window.posthog.identify(clean, { email: clean, ...utms });
-        }
-      } catch (_) { /* never let analytics break the conversion */ }
-
-      setStatus('success');
-      track('lm_subscribe_success', { email: clean });
-      if (typeof onSuccess === 'function') onSuccess(clean);
-
-      // Redirect to the thank-you page if configured. Small delay so the
-      // tracking call flushes and the success flip is visible for a beat.
-      if (redirectTo) {
-        setTimeout(() => { window.location.assign(redirectTo); }, 350);
-      }
-    } catch (err) {
-      setError('Network error. Try again.');
-      setStatus('error');
-      track('lm_subscribe_error', { reason: 'network' });
-    }
-  }
-
-  if (status === 'success') {
-    return (
-      <div className="capture-success" role="status" aria-live="polite">
-        {successMessage}
-      </div>
-    );
-  }
-
-  return (
-    <form className="capture-form" onSubmit={handleSubmit} noValidate>
-      <input
-        type="email"
-        className="capture-input"
-        placeholder="you@example.com"
-        value={email}
-        onChange={(e) => {
-          setEmail(e.target.value);
-          if (status === 'error') setStatus('idle');
-        }}
-        autoComplete="email"
-        required
-        aria-label="Email address"
-        disabled={status === 'submitting'}
-      />
-      <button
-        type="submit"
-        className="capture-submit"
-        disabled={status === 'submitting'}
-      >
-        {status === 'submitting' ? 'Sending…' : submitLabel}
-      </button>
-      {status === 'error' && (
-        <div className="capture-error" role="alert">{error}</div>
-      )}
-    </form>
-  );
-}
-
-function Step5Plan({ nights, selections, household, onBack }) {
-  const plan = useMemo(() => buildPlan(nights, selections), [nights, selections]);
+function Step5Plan({ nights, selections, household, weekOffset = 0, checked, setChecked, onBack, onReset }) {
+  const plan = useMemo(() => buildPlan(nights, selections, weekOffset), [nights, selections, weekOffset]);
   const grocery = useMemo(() => buildGrocery(nights, selections), [nights, selections]);
   const totalGrocery = totalItems(grocery);
   const cookCount = plan.length;
@@ -2311,7 +3028,15 @@ function Step5Plan({ nights, selections, household, onBack }) {
   const minutesSaved = cookCount * 30;
   const timeSavedStr = formatTimeSaved(minutesSaved);
 
-  const [checked, setChecked] = useState({});
+  // `checked` and `setChecked` are now lifted to App() so they survive a
+  // page refresh (saved to localStorage alongside the rest of the plan state).
+  // Per-recipe ingredient expand state, keyed by day. Default closed so the
+  // plan stays scannable; user clicks to reveal that recipe's ingredients.
+  const [openIngredients, setOpenIngredients] = useState({});
+  const toggleIngredients = (day) => {
+    setOpenIngredients(prev => ({ ...prev, [day]: !prev[day] }));
+    track('lm_ingredients_toggle', { day });
+  };
 
   useEffect(() => {
     track('lm_plan_revealed', {
@@ -2327,79 +3052,46 @@ function Step5Plan({ nights, selections, household, onBack }) {
     setChecked(prev => ({ ...prev, [k]: !prev[k] }));
   };
 
-  // Canonical URL passed to navigator.share. Having a url field is CRITICAL
-  // for LinkedIn/X/FB iOS share extensions — they ignore files + text and
-  // render a preview card only from the shared URL's OG metadata. Without
-  // this, LinkedIn auto-guesses a URL from page context (we saw it land on
-  // mealplanningos.com/planner, which 404s on the Beehiiv root).
-  //
-  // UTMs on the share URL: friend-share hits get tagged so we can filter
-  // them in Beehiiv's acquisition report (utm_source=friend). These UTMs
-  // propagate to the subscribe.js call when the recipient clicks through.
-  const SHARE_URL = 'https://app.mealplanningos.com/planner?utm_source=friend&utm_medium=share&utm_campaign=planner_v1';
+  // The canonical URL the user paid for. We surface it via a Copy-link button
+  // so they can save it back to themselves (Notes, email, bookmarks bar).
+  const PLANNER_URL = 'https://app.mealplanningos.com/planner';
 
-  // Body text WITHOUT the URL — the share sheet will attach the URL
-  // separately and let each target app decide where to put it (card vs
-  // body). Duplicating the URL in text creates ugly LinkedIn posts.
-  const shareText = `${cookCount} dinner${cookCount === 1 ? '' : 's'} planned in 1 minute. ${timeSavedStr} saved this week. Try the free planner:`;
+  // Tripwire URL → MPOS web app sales page, UTM-tagged so we can attribute
+  // upgrades back to dinner-planner buyers in Beehiiv/PostHog.
+  const TRIPWIRE_URL = 'https://meal-planning-os.netlify.app/sales?utm_source=dinner_planner&utm_medium=tripwire&utm_campaign=paid_planner_v1';
 
-  const share = async () => {
-    track('lm_share_click', { method: 'image' });
+  const [copied, setCopied] = useState(false);
+  const copyLink = async () => {
+    track('lm_copy_link');
     try {
-      const canvas = generateShareCard({
-        cookCount,
-        timeSavedStr,
-        plan,
-        weekLabel: weekOfString(),
-        totalGrocery,
-        householdLabel,
-      });
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
-      if (!blob) throw new Error('canvas-blob-failed');
-      const file = new File([blob], 'my-meal-plan.png', { type: 'image/png' });
-
-      // Mobile: native share sheet with image + URL + text.
-      // - Messages/Mail/WhatsApp: attach the image + text (url becomes a link)
-      // - LinkedIn/X/FB: use url only → renders preview card from OG tags
-      // - Pinterest/Gmail: use all three
-      const sharePayload = {
-        files: [file],
-        title: 'My meal plan this week',
-        text: shareText,
-        url: SHARE_URL,
-      };
-      if (navigator.canShare && navigator.canShare(sharePayload)) {
-        try {
-          await navigator.share(sharePayload);
-          return;
-        } catch (e) { /* user cancelled — fall through to download */ }
-      }
-      // Some browsers can share url+text but not files. Try without files.
-      if (navigator.share) {
-        try {
-          await navigator.share({ title: 'My meal plan this week', text: shareText, url: SHARE_URL });
-          return;
-        } catch (e) { /* fall through */ }
-      }
-
-      // Desktop fallback: download the PNG
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'my-meal-plan.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      await navigator.clipboard.writeText(PLANNER_URL);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
     } catch (e) {
-      console.log('share error', e);
-      // Last-resort fallback: copy text + URL
+      // Fallback for older browsers / iOS quirks
       try {
-        await navigator.clipboard.writeText(`${shareText} ${SHARE_URL}`);
-        alert('Copied text to clipboard!');
+        const ta = document.createElement('textarea');
+        ta.value = PLANNER_URL;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
       } catch (err) {
-        alert(`${shareText} ${SHARE_URL}`);
+        // Last resort: show the URL so the user can copy it manually
+        prompt('Copy this link:', PLANNER_URL);
       }
+    }
+  };
+
+  const handleReset = () => {
+    track('lm_reset_click');
+    if (typeof window !== 'undefined' && window.confirm('Start a new plan? This clears your current week.')) {
+      onReset();
     }
   };
 
@@ -2407,7 +3099,7 @@ function Step5Plan({ nights, selections, household, onBack }) {
     <>
       {/* PLAN INTRO — light header, no dark block */}
       <div className="plan-intro">
-        <div className="eyebrow">{weekOfString()}</div>
+        <div className="eyebrow">{weekOfString(weekOffset)}</div>
         <h1 className="h1">Your week. Planned.</h1>
         <p className="sub">
           Built for <strong>{householdLabel}</strong>.
@@ -2436,27 +3128,46 @@ function Step5Plan({ nights, selections, household, onBack }) {
           <h3>Your week</h3>
           <div className="eyebrow">{cookCount} dinner{cookCount === 1 ? '' : 's'}</div>
         </div>
-        {plan.map((row, i) => (
-          <React.Fragment key={row.day}>
-            <div className="plan-row">
-              <div className="plan-day">
-                <div className="day-code">{row.short}</div>
-                <span className="date">{row.date}</span>
-              </div>
-              <div className="plan-meal">
-                <div className="plan-title">
-                  {row.meal.title}
+        {plan.map((row, i) => {
+          const open = !!openIngredients[row.day];
+          return (
+            <div key={row.day} className="plan-entry">
+              <div className="plan-row">
+                <div className="plan-day">
+                  <div className="day-code">{row.short}</div>
+                  <span className="date">{row.date}</span>
                 </div>
-                <div className="plan-theme">{row.themeLabel}</div>
+                <div className="plan-meal">
+                  <div className="plan-title">
+                    {row.meal.title}
+                  </div>
+                  <div className="plan-theme">{row.themeLabel}</div>
+                </div>
+              </div>
+              <div className={`recipe ${open ? 'open' : ''}`}>
+                <button
+                  type="button"
+                  className="recipe-toggle no-print"
+                  onClick={() => toggleIngredients(row.day)}
+                  aria-expanded={open}
+                >
+                  {open ? '▼ Hide ingredients' : '▶ Show ingredients'}
+                </button>
+                <ul className="recipe-ingredients">
+                  {row.meal.ingredients.map((ing, j) => (
+                    <li key={j}>
+                      <span className="ing-name">{ing.name}</span>
+                      <span className="ing-qty">{ing.qty}</span>
+                    </li>
+                  ))}
+                </ul>
+                <ol className="recipe-steps">
+                  {row.meal.steps.map((s, j) => <li key={j}>{s}</li>)}
+                </ol>
               </div>
             </div>
-            <div className="recipe">
-              <ol className="recipe-steps">
-                {row.meal.steps.map((s, j) => <li key={j}>{s}</li>)}
-              </ol>
-            </div>
-          </React.Fragment>
-        ))}
+          );
+        })}
       </div>
 
       {/* GROCERY CARD — hi-fi header bar */}
@@ -2495,44 +3206,46 @@ function Step5Plan({ nights, selections, household, onBack }) {
         </div>
       </div>
 
+      {/* SAVE-LINK BLOCK — the new finale. Copy link, bookmark, or print to keep
+          the plan accessible. Replaces the email capture from the lead-magnet era. */}
       <div className="save-hint">
-        <strong>This page is your plan.</strong> Bookmark it (⌘D / Ctrl+D) or print to save a copy.
+        <strong>This page is your plan.</strong> Save it: copy the link, bookmark it (⌘D / Ctrl+D), or print.
       </div>
-      <div className="save-hint" style={{marginTop: 12}}>
-        Know someone drowning in the 6pm scramble? Send this to them — it's free and no signup to try.
-      </div>
-      <div className="share-row">
-        <button className="primary" onClick={share}>💛 Send to a friend who needs this</button>
-        <button onClick={() => { track('lm_share_click', { method: 'print' }); window.print(); }}>Print / save as PDF</button>
-      </div>
-
-      {/* EMAIL CAPTURE — reusable SubscribeForm. Posts to the Netlify Function,
-          which forwards to Beehiiv. UTMs from the URL override the defaults. */}
-      <div className="capture">
-        <div className="eyebrow">Keep the momentum</div>
-        <h2>Learn the system that built this plan.</h2>
-        <p>
-          Get the free 10-minute Sunday system — the exact routine that kills the
-          "what's for dinner?" question all week, so your energy shows up where it matters.
-          Your welcome email kicks off a 5-day course to lock the habit in.
-        </p>
-        <SubscribeForm
-          defaultUtms={{
-            utm_source: 'dinner_planner',
-            utm_medium: 'lead_magnet',
-            utm_campaign: 'dinner_planner_v1',
-          }}
-          referringSite="app.mealplanningos.com/planner"
-          redirectTo="https://app.mealplanningos.com/thank-you"
-        />
+      <div className="share-row no-print">
+        <button
+          className={`primary ${copied ? 'copied' : ''}`}
+          onClick={copyLink}
+          aria-live="polite"
+        >
+          {copied ? '✓ Copied!' : '🔗 Copy link'}
+        </button>
+        <button onClick={() => { track('lm_print_click'); window.print(); }}>
+          Print / save as PDF
+        </button>
       </div>
 
-      <div className="cta-row" style={{marginTop: 20}}>
+      {/* TRIPWIRE — subtle one-line link to the full MPOS web app. Only shown to
+          users who've already finished a plan, so they're warm. UTM-tagged for
+          attribution back to dinner-planner buyers. */}
+      <div className="tripwire no-print">
+        Want the full system that planned this?{' '}
+        <a
+          href={TRIPWIRE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track('lm_tripwire_click')}
+        >
+          See the $29 beta →
+        </a>
+      </div>
+
+      <div className="cta-row no-print" style={{marginTop: 20}}>
         <button className="cta cta-ghost" onClick={onBack}>← Edit my picks</button>
+        <button className="cta cta-ghost" onClick={handleReset}>↺ Start over</button>
       </div>
 
       <div className="footer-meta">
-        Meal Planning OS · Built from 300,000+ meals · Free planner, no account required
+        Meal Planning OS · Built from 300,000+ meals
       </div>
     </>
   );
@@ -2542,19 +3255,34 @@ function Step5Plan({ nights, selections, household, onBack }) {
    APP
    ============================================================================= */
 function App() {
-  const [step, setStep] = useState(1);
-  const [household, setHousehold] = useState(null);
-  const [nights, setNights] = useState(new Set());
-  const [selections, setSelections] = useState({}); // { MON: { theme, meal } }
+  // Hydrate from localStorage on first render. If no saved state, defaults apply
+  // and showIntro stays true (first-time visitor sees the explainer modal).
+  const initial = loadState();
+
+  const [step, setStep] = useState(initial?.step || 1);
+  const [household, setHousehold] = useState(initial?.household || null);
+  const [nights, setNights] = useState(initial?.nights || new Set());
+  const [selections, setSelections] = useState(initial?.selections || {});
   const [cookIdx, setCookIdx] = useState(0);
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(!initial); // skip intro on return visits
   const [planStartAt, setPlanStartAt] = useState(null); // ms when user clicked Start
+  const [weekOffset, setWeekOffset] = useState(initial?.weekOffset || 0);
+  // Lifted from Step5Plan so grocery checkmarks survive a refresh — keyed by
+  // `${cat}::${name}` (e.g. "PRODUCE::Garlic"). Orphaned keys (from edited
+  // selections) are harmless: they just don't render against any current row.
+  const [checked, setChecked] = useState(initial?.checked || {});
 
   useEffect(() => { track('lm_view'); }, []);
   useEffect(() => {
     track('lm_step', { step });
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step]);
+
+  // Persist plan state to localStorage on every relevant change. cookIdx and
+  // showIntro are intentionally NOT persisted — they're transient UI state.
+  useEffect(() => {
+    saveState({ step, household, nights, selections, weekOffset, checked });
+  }, [step, household, nights, selections, weekOffset, checked]);
 
   const toggleNight = (key) => {
     setNights(prev => {
@@ -2580,6 +3308,24 @@ function App() {
     track('lm_meal_selected', { day, meal });
   };
 
+  // Full reset — wipes all plan state, clears localStorage, returns to step 1.
+  // Used by the "Start over" button on the final page. We do NOT re-show the
+  // intro modal: a paid customer who's seen the planner once doesn't need the
+  // explainer every time they replan. Scroll resets via the existing step
+  // effect. clearState before setStep so persistence useEffect doesn't re-save
+  // the half-cleared state mid-update.
+  const reset = () => {
+    clearState();
+    setStep(1);
+    setHousehold(null);
+    setNights(new Set());
+    setSelections({});
+    setCookIdx(0);
+    setWeekOffset(0);
+    setChecked({});
+    setPlanStartAt(Date.now());
+  };
+
   const TOTAL = 5;
 
   return (
@@ -2593,7 +3339,7 @@ function App() {
           }}
         />
       )}
-      <Header step={step} />
+      <Header step={step} weekOffset={weekOffset} onWeekChange={setWeekOffset} />
       {step < TOTAL && <Progress step={step} totalSteps={TOTAL} />}
       {step === 1 && (
         <Step1Household
@@ -2641,7 +3387,11 @@ function App() {
           nights={nights}
           selections={selections}
           household={household}
+          weekOffset={weekOffset}
+          checked={checked}
+          setChecked={setChecked}
           onBack={() => { setCookIdx(0); setStep(4); }}
+          onReset={reset}
         />
       )}
     </div>
