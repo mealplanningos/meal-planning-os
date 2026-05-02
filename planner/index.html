@@ -1134,7 +1134,7 @@ const MEALS = [
   // =========================================================================
   {
     key: 'pasta_marinara', theme: 'pasta', title: 'Simple pasta marinara',
-    meta: 'vegetarian · 3 ingredients', timeMin: 15, scalable: true, vegetarian: true,
+    meta: 'vegetarian · 3 ingredients', timeMin: 15, baseServings: 4, scalable: true, vegetarian: true,
     ingredients: [
       { name: 'Spaghetti', qty: '1 lb', cat: 'PANTRY' },
       { name: 'Marinara sauce', qty: '1 jar', cat: 'PANTRY' },
@@ -1149,7 +1149,7 @@ const MEALS = [
   },
   {
     key: 'pasta_sausage', theme: 'pasta', title: 'Sausage & broccoli rigatoni',
-    meta: 'one pot · crowd-pleaser', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'one pot · crowd-pleaser', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Rigatoni', qty: '1 lb', cat: 'PANTRY' },
       { name: 'Italian sausage', qty: '1 lb', cat: 'PROTEIN' },
@@ -1169,7 +1169,7 @@ const MEALS = [
   },
   {
     key: 'pasta_lemon', theme: 'pasta', title: 'One-pan lemon chicken pasta',
-    meta: 'protein + veg in one pan', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'protein + veg in one pan', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Linguine', qty: '1 lb', cat: 'PANTRY' },
@@ -1190,7 +1190,7 @@ const MEALS = [
 
   {
     key: 'pasta_cajun', theme: 'pasta', title: 'Cajun chicken pasta',
-    meta: 'creamy · weeknight win', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'creamy · weeknight win', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Penne', qty: '1 lb', cat: 'PANTRY' },
@@ -1212,7 +1212,7 @@ const MEALS = [
   },
   {
     key: 'pasta_pesto', theme: 'pasta', title: 'Pesto chicken pasta with sun-dried tomato',
-    meta: 'jarred-pesto cheat code', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'jarred-pesto cheat code', timeMin: 25, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Fusilli or rotini', qty: '1 lb', cat: 'PANTRY' },
@@ -1234,7 +1234,7 @@ const MEALS = [
   },
   {
     key: 'pasta_carbonara', theme: 'pasta', title: 'Bacon carbonara',
-    meta: 'eggs + cheese + pasta water', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'eggs + cheese + pasta water', timeMin: 25, baseServings: 4, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Spaghetti', qty: '1 lb', cat: 'PANTRY' },
       { name: 'Bacon', qty: '8 oz', cat: 'PROTEIN' },
@@ -1252,7 +1252,7 @@ const MEALS = [
   },
   {
     key: 'pasta_baked_ziti', theme: 'pasta', title: 'Baked ziti with sausage',
-    meta: 'freezer-dinner of legend', timeMin: 45, scalable: true, vegetarian: false,
+    meta: 'freezer-dinner of legend', timeMin: 45, baseServings: 8, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Ziti or penne', qty: '1.5 lb', cat: 'PANTRY' },
       { name: 'Italian sausage', qty: '1 lb', cat: 'PROTEIN' },
@@ -1277,7 +1277,7 @@ const MEALS = [
   // =========================================================================
   {
     key: 'stirfry_chicken', theme: 'stirfry', title: 'Chicken & broccoli stir-fry',
-    meta: 'classic · over rice', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'classic · over rice', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Broccoli', qty: '1 crown', cat: 'PRODUCE' },
@@ -1298,7 +1298,7 @@ const MEALS = [
   },
   {
     key: 'stirfry_steak', theme: 'stirfry', title: 'Pepper steak stir-fry',
-    meta: 'fast · big flavor', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'fast · big flavor', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Flank or sirloin steak', qty: '1.25 lb', cat: 'PROTEIN' },
       { name: 'Bell peppers', qty: '2', cat: 'PRODUCE' },
@@ -1320,7 +1320,7 @@ const MEALS = [
   },
   {
     key: 'stirfry_tofu', theme: 'stirfry', title: 'Sesame tofu & green bean stir-fry',
-    meta: 'vegetarian · crispy', timeMin: 30, scalable: false, vegetarian: true,
+    meta: 'vegetarian · crispy', timeMin: 30, baseServings: 6, scalable: false, vegetarian: true,
     ingredients: [
       { name: 'Firm tofu', qty: '14 oz', cat: 'PROTEIN' },
       { name: 'Green beans', qty: '1 lb', cat: 'PRODUCE' },
@@ -1344,7 +1344,7 @@ const MEALS = [
 
   {
     key: 'stirfry_beef', theme: 'stirfry', title: 'Beef & broccoli',
-    meta: 'better than takeout', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'better than takeout', timeMin: 25, baseServings: 4, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Flank steak', qty: '1 lb', cat: 'PROTEIN' },
       { name: 'Broccoli', qty: '1 crown', cat: 'PRODUCE' },
@@ -1365,7 +1365,7 @@ const MEALS = [
   },
   {
     key: 'stirfry_shrimp', theme: 'stirfry', title: 'Shrimp & snap pea stir-fry',
-    meta: 'frozen-shrimp speed', timeMin: 20, scalable: true, vegetarian: false,
+    meta: 'frozen-shrimp speed', timeMin: 20, baseServings: 4, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Shrimp (peeled, deveined)', qty: '1.25 lb', cat: 'PROTEIN' },
       { name: 'Snap peas', qty: '12 oz', cat: 'PRODUCE' },
@@ -1388,7 +1388,7 @@ const MEALS = [
   },
   {
     key: 'stirfry_cashew', theme: 'stirfry', title: 'Cashew chicken stir-fry',
-    meta: 'crunch + glaze', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'crunch + glaze', timeMin: 25, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken thighs (boneless)', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Bell peppers', qty: '2', cat: 'PRODUCE' },
@@ -1412,7 +1412,7 @@ const MEALS = [
   },
   {
     key: 'stirfry_mongolian', theme: 'stirfry', title: 'Mongolian beef',
-    meta: 'caramelized · scallion-heavy', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'caramelized · scallion-heavy', timeMin: 25, baseServings: 4, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Flank steak', qty: '1.25 lb', cat: 'PROTEIN' },
       { name: 'Scallions', qty: '1 bunch', cat: 'PRODUCE' },
@@ -1438,7 +1438,7 @@ const MEALS = [
   // =========================================================================
   {
     key: 'tacos_tinga', theme: 'tacos', title: 'Chicken tinga tacos',
-    meta: 'pantry protein · smoky', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'pantry protein · smoky', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken thighs (boneless)', qty: '2 lb', cat: 'PROTEIN' },
       { name: 'Chipotle in adobo', qty: '1 small can', cat: 'PANTRY' },
@@ -1459,7 +1459,7 @@ const MEALS = [
   },
   {
     key: 'tacos_beef', theme: 'tacos', title: 'Beef tacos',
-    meta: 'freezer-friendly · kid-approved', timeMin: 20, scalable: true, vegetarian: false,
+    meta: 'freezer-friendly · kid-approved', timeMin: 20, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Ground beef (85/15)', qty: '1 lb', cat: 'PROTEIN' },
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
@@ -1478,7 +1478,7 @@ const MEALS = [
   },
   {
     key: 'tacos_blackbean', theme: 'tacos', title: 'Crispy black bean tacos',
-    meta: 'vegetarian · under 20 min', timeMin: 20, scalable: false, vegetarian: true,
+    meta: 'vegetarian · under 20 min', timeMin: 20, baseServings: 6, scalable: false, vegetarian: true,
     ingredients: [
       { name: 'Black beans', qty: '1 can', cat: 'PANTRY' },
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
@@ -1500,7 +1500,7 @@ const MEALS = [
 
   {
     key: 'tacos_burrito', theme: 'tacos', title: 'Chicken & bean burrito',
-    meta: 'wrap + freeze', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'wrap + freeze', timeMin: 30, baseServings: 3, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1 lb', cat: 'PROTEIN' },
       { name: 'Black beans', qty: '1 can', cat: 'PANTRY' },
@@ -1521,7 +1521,7 @@ const MEALS = [
   },
   {
     key: 'tacos_fish', theme: 'tacos', title: 'Fish tacos with cabbage slaw',
-    meta: 'lime crema · 25 min', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'lime crema · 25 min', timeMin: 25, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'White fish (cod, mahi, tilapia)', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Green cabbage', qty: '½ head', cat: 'PRODUCE' },
@@ -1543,7 +1543,7 @@ const MEALS = [
   },
   {
     key: 'tacos_carnitas', theme: 'tacos', title: 'Pressure-cooker carnitas tacos',
-    meta: 'instant pot + sheet-pan crisp', timeMin: 45, scalable: true, vegetarian: false,
+    meta: 'instant pot + sheet-pan crisp', timeMin: 45, baseServings: 8, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Pork shoulder (boneless)', qty: '3 lb', cat: 'PROTEIN' },
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
@@ -1564,7 +1564,7 @@ const MEALS = [
   },
   {
     key: 'tacos_fajita', theme: 'tacos', title: 'Steak fajitas',
-    meta: 'cast-iron char', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'cast-iron char', timeMin: 25, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Skirt or flank steak', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Bell peppers', qty: '3', cat: 'PRODUCE' },
@@ -1589,7 +1589,7 @@ const MEALS = [
   // =========================================================================
   {
     key: 'sheet_chicken', theme: 'sheet', title: 'Sheet-pan chicken, potatoes & lemon',
-    meta: 'hands-off · classic', timeMin: 45, scalable: true, vegetarian: false,
+    meta: 'hands-off · classic', timeMin: 45, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Bone-in chicken thighs', qty: '2 lb', cat: 'PROTEIN' },
       { name: 'Baby potatoes', qty: '1.5 lb', cat: 'PRODUCE' },
@@ -1609,7 +1609,7 @@ const MEALS = [
   },
   {
     key: 'sheet_sausage', theme: 'sheet', title: 'Sheet-pan sausage, peppers & potatoes',
-    meta: 'dump & roast', timeMin: 40, scalable: true, vegetarian: false,
+    meta: 'dump & roast', timeMin: 40, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Italian sausage (whole links)', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Bell peppers', qty: '2', cat: 'PRODUCE' },
@@ -1627,7 +1627,7 @@ const MEALS = [
   },
   {
     key: 'sheet_gnocchi', theme: 'sheet', title: 'Sheet-pan gnocchi with tomato & mozzarella',
-    meta: 'vegetarian · no boiling', timeMin: 30, scalable: false, vegetarian: true,
+    meta: 'vegetarian · no boiling', timeMin: 30, baseServings: 6, scalable: false, vegetarian: true,
     ingredients: [
       { name: 'Potato gnocchi (shelf-stable)', qty: '17 oz pack', cat: 'PANTRY' },
       { name: 'Cherry tomatoes', qty: '10', cat: 'PRODUCE' },
@@ -1647,7 +1647,7 @@ const MEALS = [
 
   {
     key: 'sheet_salmon', theme: 'sheet', title: 'Sheet-pan salmon with asparagus',
-    meta: 'honey-Dijon glaze · 20 min', timeMin: 20, scalable: true, vegetarian: false,
+    meta: 'honey-Dijon glaze · 20 min', timeMin: 20, baseServings: 4, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Salmon fillets', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Asparagus', qty: '1 bunch', cat: 'PRODUCE' },
@@ -1667,7 +1667,7 @@ const MEALS = [
   },
   {
     key: 'sheet_honey_garlic', theme: 'sheet', title: 'Sheet-pan honey garlic chicken',
-    meta: 'pan-sauce + rice', timeMin: 35, scalable: true, vegetarian: false,
+    meta: 'pan-sauce + rice', timeMin: 35, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken thighs (bone-in, skin-on)', qty: '2.5 lb', cat: 'PROTEIN' },
       { name: 'Broccoli', qty: '2 crowns', cat: 'PRODUCE' },
@@ -1689,7 +1689,7 @@ const MEALS = [
   },
   {
     key: 'sheet_shrimp_boil', theme: 'sheet', title: 'Sheet-pan shrimp boil',
-    meta: 'one-tray · Old Bay', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'one-tray · Old Bay', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Shrimp (peeled, deveined)', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Andouille sausage', qty: '12 oz', cat: 'PROTEIN' },
@@ -1712,7 +1712,7 @@ const MEALS = [
   },
   {
     key: 'sheet_teriyaki', theme: 'sheet', title: 'Sheet-pan teriyaki chicken & broccoli',
-    meta: 'glaze · over rice', timeMin: 35, scalable: true, vegetarian: false,
+    meta: 'glaze · over rice', timeMin: 35, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken thighs (boneless)', qty: '2 lb', cat: 'PROTEIN' },
       { name: 'Broccoli', qty: '2 crowns', cat: 'PRODUCE' },
@@ -1741,7 +1741,7 @@ const MEALS = [
   // =========================================================================
   {
     key: 'grain_tahini', theme: 'grain', title: 'Chicken & rice bowl with tahini',
-    meta: 'Mediterranean · leftover-friendly', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'Mediterranean · leftover-friendly', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
@@ -1764,7 +1764,7 @@ const MEALS = [
   },
   {
     key: 'grain_peanut', theme: 'grain', title: 'Chicken & rice bowl with peanut sauce',
-    meta: 'Thai-inspired', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'Thai-inspired', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Jasmine rice', qty: '2 cups dry', cat: 'PANTRY' },
@@ -1788,7 +1788,7 @@ const MEALS = [
   },
   {
     key: 'grain_veg', theme: 'grain', title: 'Roasted veg & quinoa bowl with feta',
-    meta: 'vegetarian · Mediterranean', timeMin: 30, scalable: false, vegetarian: true,
+    meta: 'vegetarian · Mediterranean', timeMin: 30, baseServings: 6, scalable: false, vegetarian: true,
     ingredients: [
       { name: 'Quinoa', qty: '1.5 cups dry', cat: 'PANTRY' },
       { name: 'Zucchini', qty: '2', cat: 'PRODUCE' },
@@ -1809,7 +1809,7 @@ const MEALS = [
 
   {
     key: 'grain_jambalaya', theme: 'grain', title: 'One-pot jambalaya',
-    meta: 'big batch · freezes', timeMin: 45, scalable: true, vegetarian: false,
+    meta: 'big batch · freezes', timeMin: 45, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Andouille sausage', qty: '12 oz', cat: 'PROTEIN' },
       { name: 'Chicken thighs (boneless)', qty: '1 lb', cat: 'PROTEIN' },
@@ -1832,7 +1832,7 @@ const MEALS = [
   },
   {
     key: 'grain_burrito_bowl', theme: 'grain', title: 'Burrito bowl with cilantro lime rice',
-    meta: 'Chipotle at home', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'Chipotle at home', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken thighs (boneless)', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Black beans', qty: '2 cans', cat: 'PANTRY' },
@@ -1856,7 +1856,7 @@ const MEALS = [
   },
   {
     key: 'grain_med', theme: 'grain', title: 'Mediterranean chicken & farro bowl',
-    meta: 'farro holds up · day-3 friendly', timeMin: 35, scalable: true, vegetarian: false,
+    meta: 'farro holds up · day-3 friendly', timeMin: 35, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Farro or pearl barley', qty: '2 cups dry', cat: 'PANTRY' },
@@ -1881,7 +1881,7 @@ const MEALS = [
   },
   {
     key: 'grain_korean', theme: 'grain', title: 'Korean beef bowl',
-    meta: 'gochujang glaze · 20 min', timeMin: 20, scalable: true, vegetarian: false,
+    meta: 'gochujang glaze · 20 min', timeMin: 20, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Ground beef (85/15)', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Eggs', qty: '6', cat: 'PROTEIN' },
@@ -1912,7 +1912,7 @@ const MEALS = [
   // =========================================================================
   {
     key: 'soup_chicken', theme: 'soup', title: 'Classic chicken noodle soup',
-    meta: 'batch-cook · freezes', timeMin: 40, scalable: true, vegetarian: false,
+    meta: 'batch-cook · freezes', timeMin: 40, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken breast', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Large carrots', qty: '3', cat: 'PRODUCE' },
@@ -1933,7 +1933,7 @@ const MEALS = [
   },
   {
     key: 'soup_tomato', theme: 'soup', title: 'Creamy tomato soup + grilled cheese',
-    meta: 'comfort food anchor', timeMin: 30, scalable: false, vegetarian: true,
+    meta: 'comfort food anchor', timeMin: 30, baseServings: 6, scalable: false, vegetarian: true,
     ingredients: [
       { name: 'Whole peeled tomatoes', qty: '2 × 28 oz cans', cat: 'PANTRY' },
       { name: 'Yellow onion', qty: '2', cat: 'PRODUCE' },
@@ -1953,7 +1953,7 @@ const MEALS = [
   },
   {
     key: 'soup_minestrone', theme: 'soup', title: 'White bean & kale minestrone',
-    meta: 'vegetarian · hearty', timeMin: 35, scalable: true, vegetarian: true,
+    meta: 'vegetarian · hearty', timeMin: 35, baseServings: 6, scalable: true, vegetarian: true,
     ingredients: [
       { name: 'Cannellini beans', qty: '2 cans', cat: 'PANTRY' },
       { name: 'Diced tomatoes', qty: '1 × 28 oz can', cat: 'PANTRY' },
@@ -1977,7 +1977,7 @@ const MEALS = [
 
   {
     key: 'soup_lentil', theme: 'soup', title: 'Red lentil soup',
-    meta: 'vegetarian · freezes', timeMin: 35, scalable: true, vegetarian: true,
+    meta: 'vegetarian · freezes', timeMin: 35, baseServings: 4, scalable: true, vegetarian: true,
     ingredients: [
       { name: 'Red lentils', qty: '1 cup', cat: 'PROTEIN' },
       { name: 'Vegetable stock', qty: '32 oz', cat: 'PANTRY' },
@@ -2000,7 +2000,7 @@ const MEALS = [
   },
   {
     key: 'soup_wedding', theme: 'soup', title: 'Italian wedding soup',
-    meta: 'mini meatballs · escarole', timeMin: 35, scalable: true, vegetarian: false,
+    meta: 'mini meatballs · escarole', timeMin: 35, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Ground turkey or chicken', qty: '1 lb', cat: 'PROTEIN' },
       { name: 'Egg', qty: '1', cat: 'PROTEIN' },
@@ -2025,7 +2025,7 @@ const MEALS = [
   },
   {
     key: 'soup_blackbean', theme: 'soup', title: 'Black bean soup',
-    meta: 'pantry pull · 25 min', timeMin: 25, scalable: true, vegetarian: true,
+    meta: 'pantry pull · 25 min', timeMin: 25, baseServings: 6, scalable: true, vegetarian: true,
     ingredients: [
       { name: 'Black beans', qty: '4 cans', cat: 'PANTRY' },
       { name: 'Yellow onion', qty: '1', cat: 'PRODUCE' },
@@ -2047,7 +2047,7 @@ const MEALS = [
   },
   {
     key: 'soup_tortilla', theme: 'soup', title: 'Chicken tortilla soup',
-    meta: 'rotisserie shortcut', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'rotisserie shortcut', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Rotisserie chicken', qty: '1', cat: 'PROTEIN' },
       { name: 'Black beans', qty: '1 can', cat: 'PANTRY' },
@@ -2073,7 +2073,7 @@ const MEALS = [
   },
   {
     key: 'soup_potato', theme: 'soup', title: 'Loaded baked potato soup',
-    meta: 'creamy · weekend dinner', timeMin: 40, scalable: true, vegetarian: false,
+    meta: 'creamy · weekend dinner', timeMin: 40, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Russet potatoes', qty: '2 lb', cat: 'PRODUCE' },
       { name: 'Bacon', qty: '8 oz', cat: 'PROTEIN' },
@@ -2101,7 +2101,7 @@ const MEALS = [
   // =========================================================================
   {
     key: 'grill_halloumi', theme: 'grill', title: 'Grilled halloumi with chimichurri',
-    meta: 'vegetarian · herby', timeMin: 25, scalable: false, vegetarian: true,
+    meta: 'vegetarian · herby', timeMin: 25, baseServings: 6, scalable: false, vegetarian: true,
     ingredients: [
       { name: 'Halloumi', qty: '2 × 8 oz blocks', cat: 'DAIRY' },
       { name: 'Baby potatoes', qty: '1.5 lb', cat: 'PRODUCE' },
@@ -2121,7 +2121,7 @@ const MEALS = [
   },
   {
     key: 'grill_burgers', theme: 'grill', title: 'Smash burgers with oven fries',
-    meta: 'weeknight treat', timeMin: 35, scalable: false, vegetarian: false,
+    meta: 'weeknight treat', timeMin: 35, baseServings: 6, scalable: false, vegetarian: false,
     ingredients: [
       { name: 'Ground beef (80/20)', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Russet potatoes', qty: '2 lb', cat: 'PRODUCE' },
@@ -2142,7 +2142,7 @@ const MEALS = [
   },
   {
     key: 'grill_sausage', theme: 'grill', title: 'Grilled sausage & vegetable platter',
-    meta: 'zero-fuss · scalable', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'zero-fuss · scalable', timeMin: 25, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Italian sausage (whole links)', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Zucchini', qty: '2', cat: 'PRODUCE' },
@@ -2162,7 +2162,7 @@ const MEALS = [
   },
   {
     key: 'grill_shrimp', theme: 'grill', title: 'Lemon shrimp skewers',
-    meta: 'soak skewers · 4-min cook', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'soak skewers · 4-min cook', timeMin: 25, baseServings: 4, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Shrimp (peeled, deveined, large)', qty: '1.5 lb', cat: 'PROTEIN' },
       { name: 'Lemon', qty: '3', cat: 'PRODUCE' },
@@ -2181,7 +2181,7 @@ const MEALS = [
   },
   {
     key: 'grill_chicken', theme: 'grill', title: 'Grilled chicken thighs with peach BBQ',
-    meta: 'glaze · batch-cookable', timeMin: 30, scalable: true, vegetarian: false,
+    meta: 'glaze · batch-cookable', timeMin: 30, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Chicken thighs (boneless)', qty: '2.5 lb', cat: 'PROTEIN' },
       { name: 'Peaches (fresh or frozen)', qty: '2 cups', cat: 'PRODUCE' },
@@ -2202,7 +2202,7 @@ const MEALS = [
   },
   {
     key: 'grill_steak', theme: 'grill', title: 'Grilled flank steak with garlic butter',
-    meta: 'compound butter · medium-rare', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'compound butter · medium-rare', timeMin: 25, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Flank steak', qty: '1.75 lb', cat: 'PROTEIN' },
       { name: 'Garlic', qty: '4 cloves', cat: 'PRODUCE' },
@@ -2221,7 +2221,7 @@ const MEALS = [
   },
   {
     key: 'grill_pork', theme: 'grill', title: 'Grilled pork chops with apple slaw',
-    meta: 'bone-in · slaw contrast', timeMin: 25, scalable: true, vegetarian: false,
+    meta: 'bone-in · slaw contrast', timeMin: 25, baseServings: 6, scalable: true, vegetarian: false,
     ingredients: [
       { name: 'Pork chops (bone-in)', qty: '6', cat: 'PROTEIN' },
       { name: 'Green cabbage', qty: '½ head', cat: 'PRODUCE' },
@@ -2287,6 +2287,157 @@ function formatTimeSaved(mins) {
   return `${hours.toFixed(1)} hours`;
 }
 
+/* =============================================================================
+   SERVING-SIZE SCALER — scales an ingredient quantity string from a recipe's
+   base servings to the household's target servings.
+
+   Households map to: solo=1, duo=2, family=4.
+
+   Behavior:
+   - If qty contains a non-scaling unit (jar, can, bunch, head, wedge, crown,
+     pack, container, bottle, stick, ball, block, carton, sleeve, bag, loaf,
+     "to taste", "pinch", "dash", "splash", "drizzle", "for garnish", "for
+     serving", "to serve", "optional"), or a "×" multiplier (e.g. "1 × 28 oz
+     can"), the qty is returned unchanged.
+   - Bare-number qtys ("2", "12") are treated as a count of whole items
+     (eggs, lemons, etc.) and round UP.
+   - Whole-count units (cloves, stalks, ears, slices, sprigs, leaves) round UP.
+   - Other measured units (tbsp, tsp, cup, cups, lb, oz, pint, etc.) snap to
+     the nearest unicode fraction (½, ⅓, ⅔, ¼, ¾, ⅛, ⅜, ⅝, ⅞).
+   - Hyphen ranges ("1-2 lbs") scale both endpoints.
+   ============================================================================= */
+const FRACTION_MAP = {
+  '½': 0.5, '⅓': 1/3, '⅔': 2/3, '¼': 0.25, '¾': 0.75,
+  '⅕': 0.2, '⅖': 0.4, '⅗': 0.6, '⅘': 0.8,
+  '⅙': 1/6, '⅚': 5/6, '⅛': 0.125, '⅜': 0.375, '⅝': 0.625, '⅞': 0.875,
+};
+
+const FRACTION_TUPLES = [
+  [1/8, '⅛'], [1/4, '¼'], [1/3, '⅓'], [3/8, '⅜'],
+  [1/2, '½'], [5/8, '⅝'], [2/3, '⅔'], [3/4, '¾'], [7/8, '⅞'],
+];
+
+const NON_SCALING_PATTERNS = [
+  /\bto taste\b/i, /\bpinch\b/i, /\bdash\b/i, /\bsplash\b/i, /\bdrizzle\b/i,
+  /\bfor serving\b/i, /\bfor garnish\b/i, /\bto serve\b/i, /\boptional\b/i,
+  /\bjars?\b/i, /\bcans?\b/i, /\bbunch(?:es)?\b/i, /\bheads?\b/i, /\bwedges?\b/i,
+  /\bcrowns?\b/i, /\bpacks?\b/i, /\bpackages?\b/i, /\bcontainers?\b/i,
+  /\bbottles?\b/i, /\bsleeves?\b/i, /\bbags?\b/i, /\bloaf\b/i, /\bloaves\b/i,
+  /\bballs?\b/i, /\bblocks?\b/i, /\bcartons?\b/i, /\bsticks?\b/i,
+  /×/,
+];
+
+const WHOLE_COUNT_UNIT_PATTERNS = [
+  /\bcloves?\b/i, /\bstalks?\b/i, /\bears?\b/i, /\bslices?\b/i,
+  /\bsprigs?\b/i, /\bleaves\b/i, /\bleaf\b/i,
+];
+
+// Singularize whole-count units when the scaled value resolves to exactly 1.
+const SINGULARIZE = {
+  cloves: 'clove', stalks: 'stalk', ears: 'ear', slices: 'slice',
+  sprigs: 'sprig', leaves: 'leaf', cups: 'cup',
+};
+
+function householdServings(household) {
+  if (household === 'family') return 4;
+  if (household === 'duo') return 2;
+  if (household === 'solo') return 1;
+  return null;
+}
+
+function parseLeadingValue(s) {
+  // Returns { value: number, length: number } consumed, or null.
+  let m = s.match(/^(\d+)([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/);
+  if (m) return { value: parseInt(m[1], 10) + FRACTION_MAP[m[2]], length: m[0].length };
+  m = s.match(/^(\d+)\s+(\d+)\/(\d+)/);
+  if (m) return { value: parseInt(m[1], 10) + parseInt(m[2], 10) / parseInt(m[3], 10), length: m[0].length };
+  m = s.match(/^([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/);
+  if (m) return { value: FRACTION_MAP[m[1]], length: m[0].length };
+  m = s.match(/^(\d+)\/(\d+)/);
+  if (m) return { value: parseInt(m[1], 10) / parseInt(m[2], 10), length: m[0].length };
+  m = s.match(/^(\d+(?:\.\d+)?)/);
+  if (m) return { value: parseFloat(m[1]), length: m[0].length };
+  return null;
+}
+
+function formatScaledNumber(value, roundUpWhole) {
+  if (value <= 0) return '0';
+  if (roundUpWhole) {
+    return String(Math.max(1, Math.ceil(value - 1e-6)));
+  }
+  const whole = Math.floor(value);
+  let best = String(whole > 0 ? whole : '0');
+  let bestDelta = Math.abs(value - whole);
+  // Consider rounding up to next whole.
+  if (Math.abs(value - (whole + 1)) < bestDelta) {
+    best = String(whole + 1);
+    bestDelta = Math.abs(value - (whole + 1));
+  }
+  // Consider whole + each unicode fraction.
+  for (const [decimal, glyph] of FRACTION_TUPLES) {
+    const candidate = whole + decimal;
+    const d = Math.abs(value - candidate);
+    if (d < bestDelta) {
+      bestDelta = d;
+      best = whole === 0 ? glyph : (String(whole) + glyph);
+    }
+  }
+  // Floor: never display a literal "0" for a positive value.
+  if (best === '0' && value > 0) best = '⅛';
+  return best;
+}
+
+function scaleQty(qty, baseServings, targetServings, name = '') {
+  if (!qty) return qty;
+  if (!baseServings || !targetServings || baseServings === targetServings) return qty;
+  if (NON_SCALING_PATTERNS.some(p => p.test(qty))) return qty;
+
+  // Hyphen / en-dash range like "1-2 lbs" or "1–2 lbs"
+  const rangeMatch = qty.match(/^\s*(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)(.*)$/);
+  if (rangeMatch) {
+    const factor = targetServings / baseServings;
+    const rest = rangeMatch[3];
+    const restTrim = rest.trim();
+    const wholeOnly = !restTrim || WHOLE_COUNT_UNIT_PATTERNS.some(p => p.test(restTrim));
+    const lo = parseFloat(rangeMatch[1]) * factor;
+    const hi = parseFloat(rangeMatch[2]) * factor;
+    return formatScaledNumber(lo, wholeOnly) + '–' + formatScaledNumber(hi, wholeOnly) + rest;
+  }
+
+  const trimmed = qty.trim();
+  const parsed = parseLeadingValue(trimmed);
+  if (!parsed) return qty;
+
+  const factor = targetServings / baseServings;
+  const newValue = parsed.value * factor;
+  const tail = trimmed.substring(parsed.length).trim();
+  const wholeOnly = !tail || WHOLE_COUNT_UNIT_PATTERNS.some(p => p.test(tail));
+  const formatted = formatScaledNumber(newValue, wholeOnly);
+
+  // Preserve any leading whitespace, then append the original unit text —
+  // singularizing the unit if the scaled value resolved to exactly "1".
+  const leadIdx = qty.indexOf(trimmed);
+  const lead = qty.substring(0, leadIdx);
+  let unitText = trimmed.substring(parsed.length);
+  // Singularize unit when the scaled value is ≤ 1 (convention: "1 cup",
+  // "½ cup", "⅓ cup" are all singular; "1½ cups", "2 cups" are plural).
+  const formattedIsOneOrLess =
+    formatted === '1' || /^[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]$/.test(formatted);
+  if (formattedIsOneOrLess) {
+    unitText = unitText.replace(/^(\s+)([A-Za-z]+)/, (_m, ws, word) => {
+      const lower = word.toLowerCase();
+      if (SINGULARIZE[lower]) {
+        const singular = SINGULARIZE[lower];
+        return ws + (word[0] === word[0].toUpperCase()
+          ? singular[0].toUpperCase() + singular.slice(1)
+          : singular);
+      }
+      return ws + word;
+    });
+  }
+  return lead + formatted + unitText;
+}
+
 function buildPlan(nights, selections, weekOffset = 0) {
   // Only emit rows for the nights the user asked to plan. Leftover/off nights are
   // intentionally excluded — people aren't worried about them.
@@ -2304,7 +2455,8 @@ function buildPlan(nights, selections, weekOffset = 0) {
   return plan;
 }
 
-function buildGrocery(nights, selections) {
+function buildGrocery(nights, selections, household) {
+  const target = householdServings(household);
   const byName = {};
   for (const dayKey of nights) {
     const sel = selections[dayKey];
@@ -2313,11 +2465,15 @@ function buildGrocery(nights, selections) {
     if (!meal) continue;
     for (const ing of meal.ingredients) {
       const k = ing.name.toLowerCase();
+      // Pre-scale per recipe before aggregating across recipes.
+      const scaledQty = (target && meal.baseServings)
+        ? scaleQty(ing.qty, meal.baseServings, target, ing.name)
+        : ing.qty;
       if (!byName[k]) {
-        byName[k] = { name: ing.name, qty: ing.qty, cat: ing.cat };
+        byName[k] = { name: ing.name, qty: scaledQty, cat: ing.cat };
       } else {
-        if (byName[k].qty && byName[k].qty !== ing.qty) {
-          byName[k].qty = byName[k].qty + ' + ' + ing.qty;
+        if (byName[k].qty && byName[k].qty !== scaledQty) {
+          byName[k].qty = byName[k].qty + ' + ' + scaledQty;
         }
       }
     }
@@ -3015,10 +3171,11 @@ function Step4Meals({ nights, selections, onPickMeal, onNext, onBack, cookIdx, o
    ============================================================================= */
 function Step5Plan({ nights, selections, household, weekOffset = 0, checked, setChecked, onBack, onReset }) {
   const plan = useMemo(() => buildPlan(nights, selections, weekOffset), [nights, selections, weekOffset]);
-  const grocery = useMemo(() => buildGrocery(nights, selections), [nights, selections]);
+  const grocery = useMemo(() => buildGrocery(nights, selections, household), [nights, selections, household]);
   const totalGrocery = totalItems(grocery);
   const cookCount = plan.length;
   const householdLabel = HOUSEHOLDS.find(h => h.key === household)?.label;
+  const targetServings = householdServings(household);
 
   // ~30 minutes saved per dinner (decision + search + scramble eliminated)
   const minutesSaved = cookCount * 30;
@@ -3150,12 +3307,17 @@ function Step5Plan({ nights, selections, household, weekOffset = 0, checked, set
                   {open ? '▼ Hide ingredients' : '▶ Show ingredients'}
                 </button>
                 <ul className="recipe-ingredients">
-                  {row.meal.ingredients.map((ing, j) => (
-                    <li key={j}>
-                      <span className="ing-name">{ing.name}</span>
-                      <span className="ing-qty">{ing.qty}</span>
-                    </li>
-                  ))}
+                  {row.meal.ingredients.map((ing, j) => {
+                    const displayQty = (targetServings && row.meal.baseServings)
+                      ? scaleQty(ing.qty, row.meal.baseServings, targetServings, ing.name)
+                      : ing.qty;
+                    return (
+                      <li key={j}>
+                        <span className="ing-name">{ing.name}</span>
+                        <span className="ing-qty">{displayQty}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
                 <ol className="recipe-steps">
                   {row.meal.steps.map((s, j) => <li key={j}>{s}</li>)}
