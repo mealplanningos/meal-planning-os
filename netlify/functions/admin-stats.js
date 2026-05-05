@@ -145,6 +145,22 @@ exports.handler = async (event) => {
       }
     }
 
+    // Fallback: auth.sessions / refresh_tokens get pruned on sign-out and on
+    // refresh-token expiry, so the RPC above can miss real logins. Use
+    // auth.users.last_sign_in_at — set by Supabase whenever a user successfully
+    // signs in — as a backstop so users with pruned session rows aren't
+    // mis-reported as "never logged in."
+    // We DO NOT fabricate loginsByUser / loginDaysByUser counts here; those
+    // remain accurate (only real session rows count). This only fills in the
+    // lastLogin / hasLogin signal used by status, funnel, and roster.
+    for (const u of authUsers) {
+      if (lastLoginByUser[u.id]) continue;
+      if (!u.last_sign_in_at) continue;
+      const dt = new Date(u.last_sign_in_at);
+      if (Number.isNaN(dt.getTime())) continue;
+      lastLoginByUser[u.id] = dt;
+    }
+
     // Active = distinct users with at least one login in the window
     const activeUserIdsIn = (nDays) => {
       const cutoff = daysAgo(nDays);
@@ -312,7 +328,9 @@ exports.handler = async (event) => {
     let funnelHasGrocery = 0;
     for (const u of authUsers) {
       const ud = userDataMap[u.id];
-      const loggedIn = !!loginsByUser[u.id];
+      // Use lastLoginByUser (which now includes the auth.users.last_sign_in_at
+      // fallback) so users with pruned session rows still count as "logged in."
+      const loggedIn = !!lastLoginByUser[u.id];
       if (loggedIn) funnelLoggedIn++;
       if (_isOnboardedStrict(ud)) funnelOnboarded++;
       if (_isLearnMoreComplete(ud)) funnelLearnMore++;
