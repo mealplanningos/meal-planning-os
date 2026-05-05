@@ -4639,6 +4639,11 @@ async function loadAndRender(userId) {
   await migrateIfNeeded(userId);
   const cloud = await loadFromSupabase(userId);
   applyCloudData(cloud);
+  // First-time user: cloud row doesn't exist yet → loadFromSupabase returns
+  // null → applyCloudData early-returns → _cloudApplied stays false → ALL
+  // pushes silently blocked. If the load itself succeeded, mark applied so
+  // the user's first save can flow through.
+  if (!_cloudApplied && _cloudLoadedOk) _cloudApplied = true;
 
   // ── Startup stale dirty recovery ───────────────────────────
   // Heal dirty flags left by interrupted iOS PWA sessions on previous visits.
