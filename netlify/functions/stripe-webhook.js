@@ -1,6 +1,12 @@
 // netlify/functions/stripe-webhook.js
 // Receives verified Stripe events and creates entitlement records.
 // This is the ONLY place access is granted — never trust the frontend.
+//
+// Multiple Stripe products share this endpoint (web app, Dinner Planner, etc.).
+// Only purchases whose line item matches STRIPE_PRICE_ID (the web app price)
+// create an entitlement + Beehiiv enrollment. Everything else is logged and
+// ignored. If we can't read the line items, we FAIL CLOSED — no access is
+// granted, recover the sale manually from Stripe.
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
@@ -37,15 +43,45 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: 'Missing customer email' };
     }
 
-    // Re-fetch session with expansions so we can capture coupon/promo info.
-    // Falls back to the raw event payload if the expand call fails.
-    let session = rawSession;
+    // Re-fetch session with expansions so we can (a) verify the buyer actually
+    // purchased the web app (vs. another Stripe product that shares this
+    // endpoint, like the Dinner Planner) and (b) capture coupon/promo info.
+    //
+    // FAIL CLOSED: if retrieve fails we cannot tell what was bought, and
+    // granting blanket access would replay the bug that gave a Dinner Planner
+    // buyer web app access (Jayde Selan, 2026-05-11). Log loudly and skip.
+    let session;
     try {
       session = await stripe.checkout.sessions.retrieve(rawSession.id, {
-        expand: ['total_details.breakdown.discounts', 'discounts.promotion_code'],
+        expand: [
+          'line_items.data.price',
+          'total_details.breakdown.discounts',
+          'discounts.promotion_code',
+        ],
       });
     } catch (err) {
-      console.error('Could not expand session, using raw payload:', err.message);
+      console.error(
+        `CRITICAL: could not retrieve session ${rawSession.id} for ${email}: ${err.message}. ` +
+        `Skipping entitlement — verify in Stripe and grant manually if this was a web app purchase.`
+      );
+      return { statusCode: 200, body: JSON.stringify({ received: true, skipped: 'retrieve_failed' }) };
+    }
+
+    // ── Product gating ──────────────────────────────────────────
+    // Only the web app price grants web app access. Other products on this
+    // Stripe account (Dinner Planner, future SKUs) share this webhook but
+    // must NEVER create an entitlement here — they have their own delivery.
+    const webAppPriceId   = process.env.STRIPE_PRICE_ID;
+    const lineItems       = session.line_items?.data || [];
+    const purchasedPrices = lineItems.map(li => li.price?.id).filter(Boolean);
+    const purchasedWebApp = purchasedPrices.includes(webAppPriceId);
+
+    if (!purchasedWebApp) {
+      console.log(
+        `Skipping non-web-app purchase — email: ${email}, session: ${session.id}, ` +
+        `line_item_prices: [${purchasedPrices.join(', ') || 'none'}]`
+      );
+      return { statusCode: 200, body: JSON.stringify({ received: true, skipped: 'non_web_app' }) };
     }
 
     // Pull discount/coupon info (if any)
