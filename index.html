@@ -33,6 +33,9 @@
   <link rel="stylesheet" href="styles.css?v=20260413i">
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Cloudflare Turnstile (CAPTCHA) — loaded async, calls onTurnstileReady when ready.
+       Widget renders explicitly so we can manage its lifecycle alongside auth state. -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileReady&render=explicit" async defer></script>
   <!-- PostHog Analytics -->
   <script>
     !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Ai Ri init Vi Yi Rr zi Gi Zi capture calculateEventProperties en register register_once register_for_session unregister unregister_for_session sn getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync an identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty rn Ki createPersonProfile setInternalOrTestUser nn $i hn opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Xi debug Mr tn getPageViewId captureTraceFeedback captureTraceMetric Di".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
@@ -103,6 +106,11 @@
     <!-- New password input — visible in reset state only -->
     <div id="authNewPasswordGroup" class="form-group" style="display:none">
       <input type="password" id="authNewPassword" class="form-control" placeholder="New password (min. 6 characters)" autocomplete="new-password" onkeydown="if(event.key==='Enter')authSubmit()">
+    </div>
+    <!-- CAPTCHA — rendered for signup/signin/forgot, hidden for reset.
+         Widget is "Managed" mode: usually invisible, shows a one-click challenge only for suspicious traffic. -->
+    <div id="turnstileWrap" style="display:flex;justify-content:center;margin:8px 0 14px">
+      <div id="turnstile-widget"></div>
     </div>
     <button id="authBtn" class="btn btn-primary" style="width:100%" onclick="authSubmit()">Create Account</button>
     <p id="authPurchaseNote" style="text-align:center;font-size:11px;color:var(--text-3);margin:10px 0 0">Use the same email you used to purchase.</p>

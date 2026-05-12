@@ -3688,6 +3688,60 @@ const SUPABASE_URL = 'https://vgtsxthotnnvknrqyhec.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_lq13XvUG9YsoiHrU8p36qg_EXE0vo8f';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ── Cloudflare Turnstile (CAPTCHA) ───────────────────────────────────
+// Widget renders explicitly so we control when it's shown. Token is single-use
+// and expires after ~5 min; widget auto-refreshes via the expired-callback.
+// Token is passed into Supabase auth calls (signUp / signInWithPassword /
+// resetPasswordForEmail). If Supabase's CAPTCHA enforcement is OFF, the token
+// is ignored — safe to deploy frontend first, then flip the toggle.
+const TURNSTILE_SITEKEY = '0x4AAAAAADN3yCDz_pNmR5kU';
+let _turnstileToken    = null;
+let _turnstileWidgetId = null;
+let _turnstileReady    = false;
+
+// Called by Turnstile's api.js when the library finishes loading.
+window.onTurnstileReady = function() {
+  _turnstileReady = true;
+  _maybeRenderTurnstile();
+};
+
+// Renders or resets the widget based on auth screen visibility + state.
+// Idempotent — safe to call from showAuth(), showAuthState(), etc.
+function _maybeRenderTurnstile() {
+  if (!_turnstileReady) return;
+  const screen = document.getElementById('authScreen');
+  const wrap   = document.getElementById('turnstileWrap');
+  if (!screen || !wrap) return;
+  // Reset state already has a recovery token from the email — no captcha needed
+  if (_authMode === 'reset' || screen.style.display === 'none') {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  const container = document.getElementById('turnstile-widget');
+  if (!container || !window.turnstile) return;
+  if (_turnstileWidgetId !== null) {
+    try { window.turnstile.reset(_turnstileWidgetId); } catch(e) { /* ignore */ }
+    _turnstileToken = null;
+    return;
+  }
+  _turnstileWidgetId = window.turnstile.render(container, {
+    sitekey: TURNSTILE_SITEKEY,
+    callback:           (token) => { _turnstileToken = token; },
+    'expired-callback': ()      => { _turnstileToken = null; },
+    'error-callback':   ()      => { _turnstileToken = null; },
+  });
+}
+
+// Force a fresh challenge — call after any auth failure so the next attempt
+// gets a new token instead of trying to reuse the consumed one.
+function _resetTurnstile() {
+  _turnstileToken = null;
+  if (_turnstileWidgetId !== null && window.turnstile) {
+    try { window.turnstile.reset(_turnstileWidgetId); } catch(e) { /* ignore */ }
+  }
+}
+
 let _currentUser     = null;
 let _saveTimer       = null;
 let _recoveryToken   = null; // access token saved from PASSWORD_RECOVERY event
@@ -3756,6 +3810,8 @@ function showAuthState(state) {
     hide('authEmailGroup'); hide('authPasswordGroup'); hide('authToggleWrap');
     show('authNewPasswordGroup');
   }
+  // Show/hide CAPTCHA widget based on the new state (hidden in reset)
+  _maybeRenderTurnstile();
 }
 
 // context: optional string shown as a green confirmation banner above the form
@@ -3775,6 +3831,7 @@ function showAuth(context) {
     if(context){ ctx.textContent=context; ctx.style.display='block'; }
     else        { ctx.textContent='';     ctx.style.display='none';  }
   }
+  _maybeRenderTurnstile();
 }
 
 function showAccessGate(user) {
@@ -3860,14 +3917,17 @@ async function sendPasswordReset() {
   }
   btn.disabled=true; btn.textContent='Sending…';
   try {
+    const captchaToken = _turnstileToken || undefined;
     const { error } = await _sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname
+      redirectTo: window.location.origin + window.location.pathname,
+      captchaToken,
     });
     btn.disabled=false; btn.textContent='Send Reset Link';
     if(error){
       console.error('Password reset error:', error);
       msg.textContent=error.message||'Could not send reset email. Please try again.';
       msg.className='auth-msg error';
+      _resetTurnstile();
     } else {
       msg.innerHTML='✓ Reset link sent! Check your inbox and spam folder.<br><span style="font-size:11px;color:var(--text-3);margin-top:4px;display:inline-block">If you don\'t see it within 2 minutes, check your spam/junk folder or try again.</span>';
       msg.className='auth-msg success';
@@ -3918,9 +3978,24 @@ async function submitPasswordReset() {
       _recoveryToken = null;
       msg.textContent='✓ Password updated — signing you in…';
       msg.className='auth-msg success';
-      // Sign in automatically with the new password
-      const { data: signInData, error: signInErr } = await _sb.auth.signInWithPassword({ email: data.email, password });
-      if(!signInErr && signInData.session) await handleSession(signInData.session);
+      // Try to sign in automatically. When Supabase CAPTCHA enforcement is on,
+      // this will fail (no token available in reset flow) — fall back to a
+      // manual signin where the user can solve the captcha normally.
+      const captchaToken = _turnstileToken || undefined;
+      const { data: signInData, error: signInErr } = await _sb.auth.signInWithPassword({
+        email: data.email, password, options: { captchaToken }
+      });
+      if(!signInErr && signInData.session) {
+        await handleSession(signInData.session);
+      } else {
+        // Auto-signin failed (usually because captcha required). Prefill email
+        // and switch to signin state — the user completes the loop manually.
+        msg.textContent='✓ Password updated. Please sign in with your new password.';
+        msg.className='auth-msg success';
+        const emailEl = document.getElementById('authEmail');
+        if (emailEl && data.email) emailEl.value = data.email;
+        setTimeout(() => showAuthState('signin'), 1500);
+      }
     }
   } catch(e) {
     btn.disabled=false; btn.textContent='Set New Password';
@@ -3948,19 +4023,30 @@ async function handleAuth() {
   btn.disabled = true;
   btn.textContent = _authMode === 'signin' ? 'Signing in…' : 'Creating account…';
 
+  // CAPTCHA token (single-use). Will be null if widget hasn't loaded yet —
+  // Supabase ignores it when enforcement is off, rejects when enforcement is on.
+  const captchaToken = _turnstileToken || undefined;
+
   if (_authMode === 'signin') {
-    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+    const { data, error } = await _sb.auth.signInWithPassword({
+      email, password, options: { captchaToken }
+    });
     if (error) {
       msg.textContent = error.message || 'Sign in failed. Please check your credentials.';
       msg.className = 'auth-msg error'; btn.disabled = false; btn.textContent = 'Sign In';
+      _resetTurnstile();
     } else if (data.session) {
       await handleSession(data.session);
     }
   } else {
-    const { data, error } = await _sb.auth.signUp({ email, password });
+    const { data, error } = await _sb.auth.signUp({
+      email, password, options: { captchaToken }
+    });
     if (error) {
       msg.textContent = error.message || 'Sign up failed. Please try again.';
-      msg.className = 'auth-msg error'; btn.disabled = false; btn.textContent = 'Create Account'; return;
+      msg.className = 'auth-msg error'; btn.disabled = false; btn.textContent = 'Create Account';
+      _resetTurnstile();
+      return;
     }
     // Create a profile row for metadata
     if (data.user) {
