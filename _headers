@@ -5,3 +5,14 @@
   Cache-Control: no-cache
 /styles.css
   Cache-Control: no-cache
+
+# ── Security headers (Phase 2c hardening, 2026-05-11) ─────────────────────
+# HSTS starts at max-age=300 (5 min) so we can roll back fast if anything
+# breaks. Crank to a week, then a year, only after stable operation.
+# CSP is intentionally NOT here — that's Phase 3 (requires careful tuning).
+/*
+  Strict-Transport-Security: max-age=300
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

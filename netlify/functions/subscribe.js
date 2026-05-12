@@ -15,17 +15,41 @@ const BEEHIIV_LEAD_MAGNET_AUTOMATION_ID =
   process.env.BEEHIIV_LEAD_MAGNET_AUTOMATION_ID ||
   'aut_785ed81b-649e-4e71-a55d-5d6bcca35a30';
 
-exports.handler = async (event) => {
-  const headers = {
+// CORS allowlist — only the two domains that legitimately call this endpoint.
+// Adding wildcards (`*` or `*.netlify.app`) defeats the point of locking CORS,
+// so deploy-preview testing happens against production after merge.
+const ALLOWED_ORIGINS = new Set([
+  'https://app.mealplanningos.com',
+  'https://mealplanningos.com',
+]);
+
+function corsHeaders(origin) {
+  // Echo the matched origin back, or empty string if the origin isn't on the
+  // allowlist. Empty allow-origin → browser blocks the response. The 403 below
+  // is the server-side defense for non-browser clients.
+  const allowOrigin = origin && ALLOWED_ORIGINS.has(origin) ? origin : '';
+  return {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin',
   };
+}
+
+exports.handler = async (event) => {
+  const origin  = event.headers.origin || event.headers.Origin || '';
+  const headers = corsHeaders(origin);
 
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+
+  // Defense-in-depth: reject non-allowed origins server-side too, not just via
+  // CORS. Browser CORS only protects browsers — curl/postman/etc ignore it.
+  if (!ALLOWED_ORIGINS.has(origin)) {
+    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden' }) };
   }
 
   const apiKey = process.env.BEEHIIV_API_KEY;

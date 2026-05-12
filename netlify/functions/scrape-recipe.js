@@ -1,42 +1,153 @@
 const cheerio = require('cheerio');
+const dns     = require('dns').promises;
 
 // Realistic browser User-Agent — some recipe sites (AllRecipes, NYT Cooking,
 // Serious Eats, Bon Appetit) return 403/429 on non-browser UAs.
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
-exports.handler = async (event) => {
-  const headers = {
+// ── SSRF DEFENSE ──────────────────────────────────────────────────────────
+// This endpoint takes a user-supplied URL and fetches it server-side.
+// Without these guards it's an open proxy / internal-network probe.
+// The defense has three layers:
+//   1. CORS+Origin allowlist — only legit caller is the Recipes tab on the app
+//   2. URL validation — https only, hostname must resolve to a public IPv4/v6
+//   3. Manual redirect handling — re-validate the destination before each hop
+//      (prevents an attacker-controlled 302 from bouncing into a private IP)
+
+const ALLOWED_ORIGINS = new Set([
+  'https://app.mealplanningos.com',
+  'https://mealplanningos.com',
+]);
+
+function corsHeaders(origin) {
+  const allowOrigin = origin && ALLOWED_ORIGINS.has(origin) ? origin : '';
+  return {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin',
   };
+}
+
+// IPv4 private/reserved ranges (RFC 1918, loopback, link-local, CGNAT, broadcast)
+function isPrivateIPv4(ip) {
+  const parts = ip.split('.').map(Number);
+  if (parts.length !== 4 || parts.some(n => Number.isNaN(n) || n < 0 || n > 255)) return true;
+  const [a, b] = parts;
+  if (a === 0)   return true;                    // 0.0.0.0/8
+  if (a === 10)  return true;                    // 10.0.0.0/8
+  if (a === 127) return true;                    // 127.0.0.0/8 loopback
+  if (a === 169 && b === 254) return true;       // 169.254.0.0/16 link-local (cloud metadata)
+  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+  if (a === 192 && b === 168) return true;       // 192.168.0.0/16
+  if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10 CGNAT
+  if (a >= 224) return true;                     // multicast + reserved
+  return false;
+}
+
+function isPrivateIPv6(ip) {
+  const s = ip.toLowerCase();
+  if (s === '::1' || s === '::') return true;
+  if (s.startsWith('fe80:'))     return true;    // link-local
+  if (s.startsWith('fc') || s.startsWith('fd')) return true; // unique-local fc00::/7
+  // IPv4-mapped IPv6 (::ffff:1.2.3.4) — re-check the embedded v4 octets
+  const v4Mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(s);
+  if (v4Mapped) return isPrivateIPv4(v4Mapped[1]);
+  return false;
+}
+
+// Validate a URL: must be https, hostname must resolve to public IP(s).
+// Doing DNS resolution here defeats DNS-rebinding to internal hosts.
+async function validateUrl(rawUrl) {
+  let u;
+  try { u = new URL(rawUrl); }
+  catch { return { ok: false, status: 400, error: 'Invalid URL.' }; }
+
+  if (u.protocol !== 'https:') {
+    return { ok: false, status: 400, error: 'Only https:// URLs are supported. Try copying the recipe link from your browser\'s address bar.' };
+  }
+  if (u.username || u.password) {
+    return { ok: false, status: 400, error: 'URLs with embedded credentials are not allowed.' };
+  }
+  if (!u.hostname) {
+    return { ok: false, status: 400, error: 'URL is missing a hostname.' };
+  }
+
+  let addrs;
+  try {
+    addrs = await dns.lookup(u.hostname, { all: true });
+  } catch (e) {
+    return { ok: false, status: 422, error: 'That site couldn\'t be reached. Check the URL and try again.' };
+  }
+  for (const { address, family } of addrs) {
+    if (family === 4 && isPrivateIPv4(address)) return { ok: false, status: 400, error: 'URL resolves to a private or reserved network address.' };
+    if (family === 6 && isPrivateIPv6(address)) return { ok: false, status: 400, error: 'URL resolves to a private or reserved network address.' };
+  }
+  return { ok: true, url: u.href };
+}
+
+// Fetch with manual redirect handling so we re-validate at each hop.
+// Returns { ok: true, response } or { ok: false, status, error }.
+async function safeFetch(initialUrl) {
+  let current = initialUrl;
+  for (let hop = 0; hop < 5; hop++) {
+    const v = await validateUrl(current);
+    if (!v.ok) return v;
+
+    let res;
+    try {
+      res = await fetch(v.url, {
+        headers: {
+          'User-Agent':      BROWSER_UA,
+          'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        redirect: 'manual',
+        signal:   AbortSignal.timeout(12000),
+      });
+    } catch (fetchErr) {
+      if (fetchErr.name === 'TimeoutError' || /timeout/i.test(String(fetchErr))) {
+        return { ok: false, status: 504, error: 'That site took too long to respond. Try a different URL.' };
+      }
+      return { ok: false, status: 502, error: 'Could not reach that site. Check the URL and try again.' };
+    }
+
+    // 3xx — re-validate the redirect target before following
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get('location');
+      if (!loc) return { ok: false, status: 502, error: 'That site redirected without a destination.' };
+      try { current = new URL(loc, v.url).href; }
+      catch { return { ok: false, status: 502, error: 'That site redirected to an invalid URL.' }; }
+      continue;
+    }
+
+    return { ok: true, response: res };
+  }
+  return { ok: false, status: 508, error: 'That site redirected too many times.' };
+}
+
+exports.handler = async (event) => {
+  const origin  = event.headers.origin || event.headers.Origin || '';
+  const headers = corsHeaders(origin);
 
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers, body: '' };
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+
+  // Defense-in-depth: reject non-allowed origins server-side too
+  if (!ALLOWED_ORIGINS.has(origin)) {
+    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Forbidden' }) };
+  }
 
   try {
     const { url } = JSON.parse(event.body || '{}');
     if (!url) return { statusCode: 400, headers, body: JSON.stringify({ error: 'URL is required' }) };
 
-    // Fetch the page HTML with a realistic browser UA + Accept headers.
-    let res;
-    try {
-      res = await fetch(url, {
-        headers: {
-          'User-Agent': BROWSER_UA,
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-        redirect: 'follow',
-        signal: AbortSignal.timeout(12000),
-      });
-    } catch (fetchErr) {
-      if (fetchErr.name === 'TimeoutError' || /timeout/i.test(String(fetchErr))) {
-        return { statusCode: 504, headers, body: JSON.stringify({ error: 'That site took too long to respond. Try a different URL.' }) };
-      }
-      return { statusCode: 502, headers, body: JSON.stringify({ error: 'Could not reach that site. Check the URL and try again.' }) };
+    const fetched = await safeFetch(url);
+    if (!fetched.ok) {
+      return { statusCode: fetched.status, headers, body: JSON.stringify({ error: fetched.error }) };
     }
+    const res = fetched.response;
 
     if (!res.ok) {
       // Distinguish blocked vs missing vs other
