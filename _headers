@@ -7,11 +7,11 @@
   Cache-Control: no-cache
 
 # ── Security headers (Phase 2c hardening, 2026-05-11) ─────────────────────
-# HSTS starts at max-age=300 (5 min) so we can roll back fast if anything
-# breaks. Crank to a week, then a year, only after stable operation.
+# HSTS at 1 year matches what Netlify's default platform setting was before
+# we took over via _headers. Verified safe after Phase 2 deploy 2026-05-12.
 # CSP is intentionally NOT here — that's Phase 3 (requires careful tuning).
 /*
-  Strict-Transport-Security: max-age=300
+  Strict-Transport-Security: max-age=31536000
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
