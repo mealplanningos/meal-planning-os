@@ -2455,6 +2455,51 @@ function buildPlan(nights, selections, weekOffset = 0) {
   return plan;
 }
 
+// Combine the per-recipe quantities for a single ingredient into one
+// human-readable amount. Quantities that share the same unit are added together
+// and re-formatted with the same fraction-snapping used elsewhere (½, ⅓, ¼…);
+// genuinely different units — or amounts we can't safely add, like ranges
+// ("1–2 lbs") and multipliers ("1 × 28 oz can") — are kept and joined with
+// " + " so nothing is silently dropped. This replaces the old behavior that
+// blindly concatenated every amount (e.g. "½ tbsp + ⅓ tbsp + ⅕ tbsp").
+function combineQtys(qtys) {
+  const groups = [];   // ordered, summable groups: { key, tail, sum, wholeOnly, numeric }
+  const opaque = [];   // amounts we won't try to add (ranges, × multipliers)
+  for (const raw of qtys) {
+    if (raw === undefined || raw === null || raw === '') continue;
+    const q = String(raw);
+    // Ranges and multipliers can't be summed safely — pass them through as-is.
+    if (/×/.test(q) || /\d\s*[-–]\s*\d/.test(q)) { opaque.push(q.trim()); continue; }
+    const trimmed = q.trim();
+    if (!trimmed) continue;
+    const parsed = parseLeadingValue(trimmed);
+    if (!parsed) {
+      // No leading number (e.g. "wedge", "bottle"): treat as one of that item,
+      // grouped by its own text so duplicates can still be counted.
+      const key = 'w:' + trimmed.toLowerCase();
+      let g = groups.find(x => x.key === key);
+      if (!g) { g = { key, tail: ' ' + trimmed, sum: 0, wholeOnly: true, numeric: false }; groups.push(g); }
+      g.sum += 1;
+      continue;
+    }
+    const tail = trimmed.substring(parsed.length);          // " cup dry", " tbsp", ""
+    const tailNorm = tail.trim().toLowerCase();
+    const wholeOnly = !tailNorm || WHOLE_COUNT_UNIT_PATTERNS.some(p => p.test(tailNorm));
+    const key = 'n:' + tailNorm;
+    let g = groups.find(x => x.key === key);
+    if (!g) { g = { key, tail, sum: 0, wholeOnly, numeric: true }; groups.push(g); }
+    g.sum += parsed.value;
+  }
+  const parts = groups.map(g => {
+    const formatted = formatScaledNumber(g.sum, g.wholeOnly);
+    // A single non-numeric item ("wedge") shows just its name; two or more get a
+    // leading count ("2 wedge").
+    if (!g.numeric) return g.sum > 1 ? formatted + g.tail : g.tail.trim();
+    return formatted + g.tail;
+  });
+  return parts.concat(opaque).join(' + ');
+}
+
 function buildGrocery(nights, selections, household) {
   const target = householdServings(household);
   const byName = {};
@@ -2470,13 +2515,15 @@ function buildGrocery(nights, selections, household) {
         ? scaleQty(ing.qty, meal.baseServings, target, ing.name)
         : ing.qty;
       if (!byName[k]) {
-        byName[k] = { name: ing.name, qty: scaledQty, cat: ing.cat };
+        byName[k] = { name: ing.name, qtys: [scaledQty], cat: ing.cat };
       } else {
-        if (byName[k].qty && byName[k].qty !== scaledQty) {
-          byName[k].qty = byName[k].qty + ' + ' + scaledQty;
-        }
+        byName[k].qtys.push(scaledQty);
       }
     }
+  }
+  // Collapse each ingredient's collected quantities into one summed amount.
+  for (const k in byName) {
+    byName[k].qty = combineQtys(byName[k].qtys);
   }
   const grouped = {};
   for (const k of CAT_ORDER) grouped[k] = [];
